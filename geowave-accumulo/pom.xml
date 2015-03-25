@@ -32,10 +32,6 @@
 					<groupId>junit</groupId>
 				</exclusion>
 				<exclusion>
-					<artifactId>guava</artifactId>
-					<groupId>com.google.guava</groupId>
-				</exclusion>
-				<exclusion>
 					<groupId>javax.servlet</groupId>
 					<artifactId>*</artifactId>
 				</exclusion>
