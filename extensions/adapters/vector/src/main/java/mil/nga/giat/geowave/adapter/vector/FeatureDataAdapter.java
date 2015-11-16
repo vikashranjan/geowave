@@ -11,9 +11,11 @@ import mil.nga.giat.geowave.adapter.vector.plugin.visibility.JsonDefinitionColum
 import mil.nga.giat.geowave.adapter.vector.stats.StatsConfigurationCollection.SimpleFeatureStatsConfigurationCollection;
 import mil.nga.giat.geowave.adapter.vector.stats.StatsManager;
 import mil.nga.giat.geowave.adapter.vector.util.FeatureDataUtils;
+import mil.nga.giat.geowave.adapter.vector.utils.PreferredIndexConfiguration;
 import mil.nga.giat.geowave.adapter.vector.utils.SimpleFeatureUserDataConfigurationSet;
 import mil.nga.giat.geowave.adapter.vector.utils.TimeDescriptors;
 import mil.nga.giat.geowave.adapter.vector.utils.TimeDescriptors.TimeDescriptorConfiguration;
+import mil.nga.giat.geowave.adapter.vector.utils.VisibilityAttributeConfiguration;
 import mil.nga.giat.geowave.core.geotime.store.dimension.Time;
 import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.index.StringUtils;
@@ -96,6 +98,8 @@ public class FeatureDataAdapter extends
 		StatisticalDataAdapter<SimpleFeature>,
 		HadoopDataAdapter<SimpleFeature, FeatureWritable>
 {
+	public static final String PREFERRED_INDEX_ATT_NAME = "preferredIndex";
+	public static final String VISIBILITY_ATT_NAME = "visibility";
 	private final static Logger LOGGER = Logger.getLogger(FeatureDataAdapter.class);
 	// the original coordinate system will always be represented internally by
 	// the persisted type
@@ -278,7 +282,6 @@ public class FeatureDataAdapter extends
 		reprojectedType = builder.buildFeatureType();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public FieldReader<Object> getReader(
 			final ByteArrayId fieldId ) {
@@ -287,7 +290,6 @@ public class FeatureDataAdapter extends
 		return (FieldReader<Object>) FieldUtils.getDefaultReaderForClass(bindingClass);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public FieldWriter<SimpleFeature, Object> getWriter(
 			final ByteArrayId fieldId ) {
@@ -321,16 +323,14 @@ public class FeatureDataAdapter extends
 		final String axis = FeatureDataUtils.getAxis(persistedType.getCoordinateReferenceSystem());
 		final String typeName = reprojectedType.getTypeName();
 		final byte[] typeNameBytes = StringUtils.stringToBinary(typeName);
+		// for backward compat...leave this in...will be removed on next big release
 		final byte[] fieldVisibilityAtributeNameBytes = StringUtils.stringToBinary(visibilityAttributeName);
 		final byte[] visibilityManagementClassNameBytes = StringUtils.stringToBinary(fieldVisibilityManagement.getClass().getCanonicalName());
 		final byte[] axisBytes = StringUtils.stringToBinary(axis);
 		byte[] attrBytes = new byte[0];
 
-		final SimpleFeatureUserDataConfigurationSet userDataConfiguration = new SimpleFeatureUserDataConfigurationSet();
-		userDataConfiguration.addConfigurations(new TimeDescriptorConfiguration(
-				persistedType));
-		userDataConfiguration.addConfigurations(new SimpleFeatureStatsConfigurationCollection(
-				persistedType));
+		final SimpleFeatureUserDataConfigurationSet userDataConfiguration =
+				createConfigurationSet(persistedType);
 		try {
 			attrBytes = StringUtils.stringToBinary(userDataConfiguration.asJsonString());
 		}
@@ -422,12 +422,13 @@ public class FeatureDataAdapter extends
 					typeName,
 					encodedType,
 					StringUtils.stringFromBinary(axisBytes));
+			// backward compat:
+			final VisibilityAttributeConfiguration visConf = new VisibilityAttributeConfiguration(myType);
+			visConf.setVisibilityAttributeName(visibilityAttributeName);
+			visConf.updateType(myType);
 
-			final SimpleFeatureUserDataConfigurationSet userDataConfiguration = new SimpleFeatureUserDataConfigurationSet();
-			userDataConfiguration.addConfigurations(new TimeDescriptorConfiguration(
-					myType));
-			userDataConfiguration.addConfigurations(new SimpleFeatureStatsConfigurationCollection(
-					myType));
+			final SimpleFeatureUserDataConfigurationSet userDataConfiguration =
+					createConfigurationSet(myType);
 			try {
 				userDataConfiguration.fromJsonString(
 						StringUtils.stringFromBinary(attrBytes),
@@ -439,13 +440,7 @@ public class FeatureDataAdapter extends
 						"Failure to decode simple feature user data configuration",
 						e);
 			}
-			setFeatureType(myType);
-			if (persistedType.getDescriptor(visibilityAttributeName) != null) {
-				persistedType.getDescriptor(
-						visibilityAttributeName).getUserData().put(
-						"visibility",
-						Boolean.TRUE);
-			}
+			setFeatureType(myType);			
 
 			// advertise the reprojected type externally
 			return reprojectedType;
@@ -560,13 +555,13 @@ public class FeatureDataAdapter extends
 	}
 
 	private void determineVisibilityAttribute() {
-		for (final AttributeDescriptor attrDesc : persistedType.getAttributeDescriptors()) {
-			final Boolean isVisibility = (Boolean) attrDesc.getUserData().get(
-					"visibility");
-			if ((isVisibility != null) && isVisibility.booleanValue()) {
-				visibilityAttributeName = attrDesc.getLocalName();
-			}
-		}
+		VisibilityAttributeConfiguration config = new VisibilityAttributeConfiguration(persistedType);
+		visibilityAttributeName = config.getVisibilityAttributeName();	
+	}
+
+	public String getPreferredIndex() {
+		PreferredIndexConfiguration config = new PreferredIndexConfiguration(persistedType);
+		return config.getPreferredIndexName();
 	}
 
 	@Override
@@ -599,5 +594,19 @@ public class FeatureDataAdapter extends
 			return writable.getFeature();
 		}
 
+	}
+
+	private SimpleFeatureUserDataConfigurationSet createConfigurationSet(
+			SimpleFeatureType type ) {
+		final SimpleFeatureUserDataConfigurationSet userDataConfiguration = new SimpleFeatureUserDataConfigurationSet();
+		userDataConfiguration.addConfigurations(new TimeDescriptorConfiguration(
+				type));
+		userDataConfiguration.addConfigurations(new SimpleFeatureStatsConfigurationCollection(
+				type));
+		userDataConfiguration.addConfigurations(new PreferredIndexConfiguration(
+				type));
+		userDataConfiguration.addConfigurations(new VisibilityAttributeConfiguration(
+				type));
+		return userDataConfiguration;
 	}
 }

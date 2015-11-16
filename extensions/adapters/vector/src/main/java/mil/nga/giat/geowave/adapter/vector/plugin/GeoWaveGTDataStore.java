@@ -340,7 +340,11 @@ public class GeoWaveGTDataStore extends
 			return state;
 		}
 	}
-
+/**
+ * Preferred index for 'WRITING'
+ * @param adapter
+ * @return
+ */
 	private Index getPreferredIndex(
 			final FeatureDataAdapter adapter ) {
 
@@ -349,12 +353,19 @@ public class GeoWaveGTDataStore extends
 			return currentSelection;
 		}
 
+		final ByteArrayId preferredIndexId = new ByteArrayId(
+				adapter.getPreferredIndex() == null ? "--NA--" : adapter.getPreferredIndex());
 		final boolean needTime = adapter.hasTemporalConstraints();
 
 		try (CloseableIterator<Index> indices = dataStore.getIndices()) {
 			boolean currentSelectionHasTime = false;
 			while (indices.hasNext()) {
 				final Index index = indices.next();
+				if (index.getId().equals(
+						preferredIndexId)) {
+					currentSelection = index;
+					break;
+				}
 				@SuppressWarnings("rawtypes")
 				final DimensionField[] dims = index.getIndexModel().getDimensions();
 				boolean hasLat = false;
