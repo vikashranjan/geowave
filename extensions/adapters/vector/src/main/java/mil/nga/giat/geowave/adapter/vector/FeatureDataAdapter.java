@@ -216,10 +216,10 @@ public class FeatureDataAdapter extends
 			final SimpleFeatureType type ) {
 		final List<NativeFieldHandler<SimpleFeature, Object>> nativeHandlers = new ArrayList<NativeFieldHandler<SimpleFeature, Object>>(
 				type.getAttributeCount());
-		for (final AttributeDescriptor attrDesc : type.getAttributeDescriptors()) {
-			nativeHandlers.add(new FeatureAttributeHandler(
-					attrDesc));
-		}
+	//	for (final AttributeDescriptor attrDesc : type.getAttributeDescriptors()) {
+	//		nativeHandlers.add(new FeatureAttributeHandler(
+	//				attrDesc));
+	//	}
 		return nativeHandlers;
 	}
 

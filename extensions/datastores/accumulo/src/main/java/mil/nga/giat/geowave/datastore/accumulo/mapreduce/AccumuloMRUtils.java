@@ -153,7 +153,7 @@ public class AccumuloMRUtils
 	private static RowRangeHistogramStatistics<?> getRangeStats(
 			final PrimaryIndex index,
 			final List<ByteArrayId> adapterIds,
-			final AdapterStore adapterStore,
+			final AdapterStore adapterStoqre,
 			final DataStatisticsStore store,
 			final String[] authorizations )
 			throws AccumuloException,
@@ -165,6 +165,7 @@ public class AccumuloMRUtils
 					adapterId,
 					RowRangeHistogramStatistics.composeId(index.getId()),
 					authorizations);
+			
 			if (singleStats == null) {
 				singleStats = rowStat;
 			}
