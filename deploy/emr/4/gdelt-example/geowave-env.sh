@@ -23,3 +23,5 @@ export GEOSERVER_DATA_DIR=$GEOSERVER_HOME/data_dir
 export GEOWAVE_TOOL_JAVA_OPT=-Xmx4g
 export GEOWAVE_TOOLS_HOME=/usr/local/geowave/tools
 export GEOWAVE_VERSION=0.9.1
+export ACCUMULO_HOME=/opt/accumulo
+export PATH=$PATH:${ACCUMULO_HOME}/bin
