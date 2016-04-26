@@ -679,6 +679,7 @@
 		<module>analytics</module>
 		<module>core</module>
 		<module>deploy</module>
+		<module>demos</module>
 		<module>examples</module>
 		<module>extensions</module>
 		<module>services</module>
