@@ -371,7 +371,7 @@ public class NYCTLCIngestPlugin extends
 										// do nothing
 										break;
 									case PAYMENT_TYPE:
-										String pmntType = vals[fieldIdx].toLowerCase();
+										String pmntType = vals[fieldIdx].toLowerCase().replace("_", "").replace(" ", "");
 										if (NumberUtils.isNumber(pmntType))
 											pt.setPaymentType(Integer.parseInt(vals[fieldIdx]));
 										else {
@@ -379,8 +379,14 @@ public class NYCTLCIngestPlugin extends
 												pt.setPaymentType(1);
 											else if (pmntType.contains("cas") || pmntType.contains("csh"))
 												pt.setPaymentType(2);
+											else if (pmntType.contains("nocharge"))
+												pt.setPaymentType(3);
+											else if (pmntType.contains("dispute"))
+												pt.setPaymentType(4);
 											else if (pmntType.contains("unk"))
 												pt.setPaymentType(5);
+											else if (pmntType.contains("nocharge"))
+												pt.setPaymentType(6);
 											else {
 												LOGGER.warn("Unknown payment type [" + pmntType + "]");
 												pt.setPaymentType(0);
