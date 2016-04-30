@@ -379,13 +379,13 @@ public class NYCTLCIngestPlugin extends
 												pt.setPaymentType(1);
 											else if (pmntType.contains("cas") || pmntType.contains("csh"))
 												pt.setPaymentType(2);
-											else if (pmntType.contains("nocharge"))
+											else if (pmntType.contains("nocharge") || pmntType.equals("no"))
 												pt.setPaymentType(3);
-											else if (pmntType.contains("dispute"))
+											else if (pmntType.contains("dis"))
 												pt.setPaymentType(4);
 											else if (pmntType.contains("unk"))
 												pt.setPaymentType(5);
-											else if (pmntType.contains("nocharge"))
+											else if (pmntType.contains("void"))
 												pt.setPaymentType(6);
 											else {
 												LOGGER.warn("Unknown payment type [" + pmntType + "]");
