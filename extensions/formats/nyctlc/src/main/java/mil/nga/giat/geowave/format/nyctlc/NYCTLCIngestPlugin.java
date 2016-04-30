@@ -381,8 +381,10 @@ public class NYCTLCIngestPlugin extends
 												pt.setPaymentType(2);
 											else if (pmntType.contains("unk"))
 												pt.setPaymentType(5);
-											else
+											else {
+												LOGGER.warn("Unknown payment type [" + pmntType + "]");
 												pt.setPaymentType(0);
+											}
 										}
 										break;
 									case FARE_AMOUNT:
