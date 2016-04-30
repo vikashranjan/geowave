@@ -371,7 +371,11 @@ public class NYCTLCIngestPlugin extends
 										// do nothing
 										break;
 									case PAYMENT_TYPE:
-										String pmntType = vals[fieldIdx].toLowerCase().replace("_", "").replace(" ", "");
+										String pmntType = vals[fieldIdx].toLowerCase().replace(
+												"_",
+												"").replace(
+												" ",
+												"");
 										if (NumberUtils.isNumber(pmntType))
 											pt.setPaymentType(Integer.parseInt(vals[fieldIdx]));
 										else {
@@ -435,14 +439,12 @@ public class NYCTLCIngestPlugin extends
 						else {
 							if (field == null)
 								LOGGER.warn("Unknown field encountered: " + fields[fieldIdx]);
-							else if (fieldIdx >= vals.length && !field.equals(NYCTLCUtils.Field.TRIP_TYPE))
-								LOGGER.warn("Field not present in row: " + fields[fieldIdx]);
+							else if (fieldIdx >= vals.length && !field.equals(NYCTLCUtils.Field.TRIP_TYPE)) LOGGER.warn("Field not present in row: " + fields[fieldIdx]);
 						}
 					}
 					pts.add(pt);
 
-					if (pts.size() % 10000 == 0)
-						LOGGER.warn(pts.size() + " entries serialized to avro.");
+					if (pts.size() % 10000 == 0) LOGGER.warn(pts.size() + " entries serialized to avro from [" + file.getName() + "].");
 				}
 			}
 			catch (final IOException e) {
