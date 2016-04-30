@@ -379,7 +379,7 @@ public class NYCTLCIngestPlugin extends
 												pt.setPaymentType(1);
 											else if (pmntType.contains("cas") || pmntType.contains("csh"))
 												pt.setPaymentType(2);
-											else if (pmntType.contains("nocharge") || pmntType.equals("no"))
+											else if (pmntType.contains("nocharge") || pmntType.equals("no") || pmntType.equals("na") || pmntType.equals("noc"))
 												pt.setPaymentType(3);
 											else if (pmntType.contains("dis"))
 												pt.setPaymentType(4);
@@ -435,7 +435,7 @@ public class NYCTLCIngestPlugin extends
 						else {
 							if (field == null)
 								LOGGER.warn("Unknown field encountered: " + fields[fieldIdx]);
-							else if (fieldIdx >= vals.length)
+							else if (fieldIdx >= vals.length && !field.equals(NYCTLCUtils.Field.TRIP_TYPE))
 								LOGGER.warn("Field not present in row: " + fields[fieldIdx]);
 						}
 					}
