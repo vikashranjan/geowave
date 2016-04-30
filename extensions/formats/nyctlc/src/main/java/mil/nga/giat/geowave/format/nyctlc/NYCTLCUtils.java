@@ -80,7 +80,7 @@ public class NYCTLCUtils
 				Boolean.class,
 				new String[] {
 					"storeandfwdflag",
-					"store_and_forward"
+					"storeandforward"
 				},
 				false,
 				null),
