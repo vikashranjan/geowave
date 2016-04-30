@@ -434,7 +434,7 @@ public class NYCTLCIngestPlugin extends
 					pts.add(pt);
 
 					if (pts.size() % 10000 == 0)
-						LOGGER.info(pts.size() + " entries serialized to avro.");
+						LOGGER.warn(pts.size() + " entries serialized to avro.");
 				}
 			}
 			catch (final IOException e) {
