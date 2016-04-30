@@ -79,7 +79,8 @@ public class NYCTLCUtils
 		STORE_AND_FWD_FLAG(
 				Boolean.class,
 				new String[] {
-					"storeandfwdflag"
+					"storeandfwdflag",
+					"store_and_forward"
 				},
 				false,
 				null),
