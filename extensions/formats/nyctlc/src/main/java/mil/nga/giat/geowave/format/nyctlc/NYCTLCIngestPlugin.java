@@ -16,6 +16,7 @@ import mil.nga.giat.geowave.core.store.adapter.WritableDataAdapter;
 import mil.nga.giat.geowave.core.store.data.field.FieldVisibilityHandler;
 import mil.nga.giat.geowave.core.store.index.CommonIndexValue;
 import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
+import mil.nga.giat.geowave.format.nyctlc.NYCTLCUtils.Field;
 import mil.nga.giat.geowave.format.nyctlc.adapter.NYCTLCDataAdapter;
 import mil.nga.giat.geowave.format.nyctlc.avro.NYCTLCEntry;
 import org.apache.avro.Schema;
@@ -33,7 +34,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -89,155 +92,160 @@ public class NYCTLCIngestPlugin extends
 			indexIds.add(index.getId());
 
 		final List<GeoWaveData<SimpleFeature>> featureData = new ArrayList<GeoWaveData<SimpleFeature>>();
-		String uniqueId = "";
+		// for now ignore the default values because avro has already been
+		// written for them when they are incorrectly parsed
+		if (point.getPickupLatitude() != 0.0 && point.getPickupLongitude() != 0.0 && point.getDropoffLatitude() != 0.0 && point.getDropoffLongitude() != 0.0 && point.getTimeOfDaySec() != 0) {
 
-		for (final NYCTLCUtils.Field field : NYCTLCUtils.Field.values()) {
-			switch (field) {
-				case VENDOR_ID:
-					pointBuilder.set(
-							NYCTLCUtils.Field.VENDOR_ID.getIndexedName(),
-							point.getVendorId());
-					break;
-				case PICKUP_DATETIME:
-					pointBuilder.set(
-							NYCTLCUtils.Field.PICKUP_DATETIME.getIndexedName(),
-							new Date(
-									point.getPickupDatetime()));
-					uniqueId += point.getPickupDatetime() + "_";
-					break;
-				case DROPOFF_DATETIME:
-					pointBuilder.set(
-							NYCTLCUtils.Field.DROPOFF_DATETIME.getIndexedName(),
-							new Date(
-									point.getDropoffDatetime()));
-					uniqueId += point.getPickupDatetime() + "_";
-					break;
-				case PASSENGER_COUNT:
-					pointBuilder.set(
-							NYCTLCUtils.Field.PASSENGER_COUNT.getIndexedName(),
-							point.getPassengerCount());
-					break;
-				case TRIP_DISTANCE:
-					pointBuilder.set(
-							NYCTLCUtils.Field.TRIP_DISTANCE.getIndexedName(),
-							point.getTripDistance());
-					break;
-				case PICKUP_LONGITUDE:
-					pointBuilder.set(
-							NYCTLCUtils.Field.PICKUP_LONGITUDE.getIndexedName(),
-							point.getPickupLongitude());
-					break;
-				case PICKUP_LATITUDE:
-					pointBuilder.set(
-							NYCTLCUtils.Field.PICKUP_LATITUDE.getIndexedName(),
-							point.getPickupLatitude());
-					break;
-				case PICKUP_LOCATION:
-					final Point pickupPoint = mil.nga.giat.geowave.core.geotime.GeometryUtils.GEOMETRY_FACTORY.createPoint(new Coordinate(
-							point.getPickupLongitude(),
-							point.getPickupLatitude()));
-					pointBuilder.set(
-							NYCTLCUtils.Field.PICKUP_LOCATION.getIndexedName(),
-							pickupPoint);
-					uniqueId += pickupPoint.toText() + "_";
-					break;
-				case STORE_AND_FWD_FLAG:
-					pointBuilder.set(
-							NYCTLCUtils.Field.STORE_AND_FWD_FLAG.getIndexedName(),
-							point.getStoreAndFwdFlag());
-					break;
-				case RATE_CODE_ID:
-					pointBuilder.set(
-							NYCTLCUtils.Field.RATE_CODE_ID.getIndexedName(),
-							point.getRateCodeId());
-					break;
-				case DROPOFF_LONGITUDE:
-					pointBuilder.set(
-							NYCTLCUtils.Field.DROPOFF_LONGITUDE.getIndexedName(),
-							point.getDropoffLongitude());
-					break;
-				case DROPOFF_LATITUDE:
-					pointBuilder.set(
-							NYCTLCUtils.Field.DROPOFF_LATITUDE.getIndexedName(),
-							point.getDropoffLatitude());
-					break;
-				case DROPOFF_LOCATION:
-					final Point dropoffPoint = mil.nga.giat.geowave.core.geotime.GeometryUtils.GEOMETRY_FACTORY.createPoint(new Coordinate(
-							point.getDropoffLongitude(),
-							point.getDropoffLatitude()));
-					pointBuilder.set(
-							NYCTLCUtils.Field.DROPOFF_LOCATION.getIndexedName(),
-							dropoffPoint);
-					uniqueId += dropoffPoint.toText() + "_";
-					break;
-				case PAYMENT_TYPE:
-					pointBuilder.set(
-							NYCTLCUtils.Field.PAYMENT_TYPE.getIndexedName(),
-							point.getPaymentType());
-					break;
-				case FARE_AMOUNT:
-					pointBuilder.set(
-							NYCTLCUtils.Field.FARE_AMOUNT.getIndexedName(),
-							point.getFareAmount());
-					break;
-				case EXTRA:
-					pointBuilder.set(
-							NYCTLCUtils.Field.EXTRA.getIndexedName(),
-							point.getExtra());
-					break;
-				case MTA_TAX:
-					pointBuilder.set(
-							NYCTLCUtils.Field.MTA_TAX.getIndexedName(),
-							point.getMtaTax());
-					break;
-				case IMPROVEMENT_SURCHARGE:
-					pointBuilder.set(
-							NYCTLCUtils.Field.IMPROVEMENT_SURCHARGE.getIndexedName(),
-							point.getImprovementSurcharge());
-					break;
-				case TIP_AMOUNT:
-					pointBuilder.set(
-							NYCTLCUtils.Field.TIP_AMOUNT.getIndexedName(),
-							point.getTipAmount());
-					break;
-				case TOLLS_AMOUNT:
-					pointBuilder.set(
-							NYCTLCUtils.Field.TOLLS_AMOUNT.getIndexedName(),
-							point.getTollsAmount());
-					break;
-				case TOTAL_AMOUNT:
-					pointBuilder.set(
-							NYCTLCUtils.Field.TOTAL_AMOUNT.getIndexedName(),
-							point.getTotalAmount());
-					break;
-				case TRIP_TYPE:
-					pointBuilder.set(
-							NYCTLCUtils.Field.TRIP_TYPE.getIndexedName(),
-							point.getTripType());
-					break;
-				case EHAIL_FEE:
-					pointBuilder.set(
-							NYCTLCUtils.Field.EHAIL_FEE.getIndexedName(),
-							point.getEhailFee());
-					break;
-				case TIME_OF_DAY_SEC:
-					pointBuilder.set(
-							NYCTLCUtils.Field.TIME_OF_DAY_SEC.getIndexedName(),
-							point.getTimeOfDaySec());
-					break;
-				case CAB_TYPE:
-					pointBuilder.set(
-							NYCTLCUtils.Field.CAB_TYPE.getIndexedName(),
-							point.getCabType());
-					break;
+			String uniqueId = "";
+
+			for (final NYCTLCUtils.Field field : NYCTLCUtils.Field.values()) {
+				switch (field) {
+					case VENDOR_ID:
+						pointBuilder.set(
+								NYCTLCUtils.Field.VENDOR_ID.getIndexedName(),
+								point.getVendorId());
+						break;
+					case PICKUP_DATETIME:
+						pointBuilder.set(
+								NYCTLCUtils.Field.PICKUP_DATETIME.getIndexedName(),
+								new Date(
+										point.getPickupDatetime()));
+						uniqueId += point.getPickupDatetime() + "_";
+						break;
+					case DROPOFF_DATETIME:
+						pointBuilder.set(
+								NYCTLCUtils.Field.DROPOFF_DATETIME.getIndexedName(),
+								new Date(
+										point.getDropoffDatetime()));
+						uniqueId += point.getPickupDatetime() + "_";
+						break;
+					case PASSENGER_COUNT:
+						pointBuilder.set(
+								NYCTLCUtils.Field.PASSENGER_COUNT.getIndexedName(),
+								point.getPassengerCount());
+						break;
+					case TRIP_DISTANCE:
+						pointBuilder.set(
+								NYCTLCUtils.Field.TRIP_DISTANCE.getIndexedName(),
+								point.getTripDistance());
+						break;
+					case PICKUP_LONGITUDE:
+						pointBuilder.set(
+								NYCTLCUtils.Field.PICKUP_LONGITUDE.getIndexedName(),
+								point.getPickupLongitude());
+						break;
+					case PICKUP_LATITUDE:
+						pointBuilder.set(
+								NYCTLCUtils.Field.PICKUP_LATITUDE.getIndexedName(),
+								point.getPickupLatitude());
+						break;
+					case PICKUP_LOCATION:
+						final Point pickupPoint = mil.nga.giat.geowave.core.geotime.GeometryUtils.GEOMETRY_FACTORY.createPoint(new Coordinate(
+								point.getPickupLongitude(),
+								point.getPickupLatitude()));
+						pointBuilder.set(
+								NYCTLCUtils.Field.PICKUP_LOCATION.getIndexedName(),
+								pickupPoint);
+						uniqueId += pickupPoint.toText() + "_";
+						break;
+					case STORE_AND_FWD_FLAG:
+						pointBuilder.set(
+								NYCTLCUtils.Field.STORE_AND_FWD_FLAG.getIndexedName(),
+								point.getStoreAndFwdFlag());
+						break;
+					case RATE_CODE_ID:
+						pointBuilder.set(
+								NYCTLCUtils.Field.RATE_CODE_ID.getIndexedName(),
+								point.getRateCodeId());
+						break;
+					case DROPOFF_LONGITUDE:
+						pointBuilder.set(
+								NYCTLCUtils.Field.DROPOFF_LONGITUDE.getIndexedName(),
+								point.getDropoffLongitude());
+						break;
+					case DROPOFF_LATITUDE:
+						pointBuilder.set(
+								NYCTLCUtils.Field.DROPOFF_LATITUDE.getIndexedName(),
+								point.getDropoffLatitude());
+						break;
+					case DROPOFF_LOCATION:
+						final Point dropoffPoint = mil.nga.giat.geowave.core.geotime.GeometryUtils.GEOMETRY_FACTORY.createPoint(new Coordinate(
+								point.getDropoffLongitude(),
+								point.getDropoffLatitude()));
+						pointBuilder.set(
+								NYCTLCUtils.Field.DROPOFF_LOCATION.getIndexedName(),
+								dropoffPoint);
+						uniqueId += dropoffPoint.toText() + "_";
+						break;
+					case PAYMENT_TYPE:
+						pointBuilder.set(
+								NYCTLCUtils.Field.PAYMENT_TYPE.getIndexedName(),
+								point.getPaymentType());
+						break;
+					case FARE_AMOUNT:
+						pointBuilder.set(
+								NYCTLCUtils.Field.FARE_AMOUNT.getIndexedName(),
+								point.getFareAmount());
+						break;
+					case EXTRA:
+						pointBuilder.set(
+								NYCTLCUtils.Field.EXTRA.getIndexedName(),
+								point.getExtra());
+						break;
+					case MTA_TAX:
+						pointBuilder.set(
+								NYCTLCUtils.Field.MTA_TAX.getIndexedName(),
+								point.getMtaTax());
+						break;
+					case IMPROVEMENT_SURCHARGE:
+						pointBuilder.set(
+								NYCTLCUtils.Field.IMPROVEMENT_SURCHARGE.getIndexedName(),
+								point.getImprovementSurcharge());
+						break;
+					case TIP_AMOUNT:
+						pointBuilder.set(
+								NYCTLCUtils.Field.TIP_AMOUNT.getIndexedName(),
+								point.getTipAmount());
+						break;
+					case TOLLS_AMOUNT:
+						pointBuilder.set(
+								NYCTLCUtils.Field.TOLLS_AMOUNT.getIndexedName(),
+								point.getTollsAmount());
+						break;
+					case TOTAL_AMOUNT:
+						pointBuilder.set(
+								NYCTLCUtils.Field.TOTAL_AMOUNT.getIndexedName(),
+								point.getTotalAmount());
+						break;
+					case TRIP_TYPE:
+						pointBuilder.set(
+								NYCTLCUtils.Field.TRIP_TYPE.getIndexedName(),
+								point.getTripType());
+						break;
+					case EHAIL_FEE:
+						pointBuilder.set(
+								NYCTLCUtils.Field.EHAIL_FEE.getIndexedName(),
+								point.getEhailFee());
+						break;
+					case TIME_OF_DAY_SEC:
+						pointBuilder.set(
+								NYCTLCUtils.Field.TIME_OF_DAY_SEC.getIndexedName(),
+								point.getTimeOfDaySec());
+						break;
+					case CAB_TYPE:
+						pointBuilder.set(
+								NYCTLCUtils.Field.CAB_TYPE.getIndexedName(),
+								point.getCabType());
+						break;
+				}
 			}
+
+			featureData.add(new GeoWaveData<SimpleFeature>(
+					pointKey,
+					indexIds,
+					pointBuilder.buildFeature(uniqueId)));
+
 		}
-
-		featureData.add(new GeoWaveData<SimpleFeature>(
-				pointKey,
-				indexIds,
-				pointBuilder.buildFeature(uniqueId)));
-
 		return new CloseableIterator.Wrapper<GeoWaveData<SimpleFeature>>(
 				featureData.iterator());
 	}
@@ -292,10 +300,11 @@ public class NYCTLCIngestPlugin extends
 
 					final String[] vals = line.split(",");
 					final NYCTLCEntry pt = new NYCTLCEntry();
-
+					Set<Field> requiredFieldsMissing = new HashSet<Field>(
+							NYCTLCUtils.REQUIRED_FIELDS);
 					for (int fieldIdx = 0; fieldIdx < fields.length; fieldIdx++) {
 						final NYCTLCUtils.Field field = NYCTLCUtils.Field.getField(fields[fieldIdx]);
-
+						boolean success = true;
 						if (field != null && fieldIdx < vals.length) {
 							try {
 								switch (field) {
@@ -304,13 +313,19 @@ public class NYCTLCIngestPlugin extends
 											pt.setVendorId(Integer.parseInt(vals[fieldIdx]));
 										else {
 											if (vals[fieldIdx].toLowerCase().equals(
-													"cmt"))
+													"cmt")) {
 												pt.setVendorId(1);
+												requiredFieldsMissing.remove(field);
+											}
 											else if (vals[fieldIdx].toLowerCase().equals(
-													"vts"))
+													"vts")) {
 												pt.setVendorId(2);
-											else
+												requiredFieldsMissing.remove(field);
+											}
+											else {
+												success = false;
 												pt.setVendorId(0); // unknown
+											}
 										}
 										break;
 									case PICKUP_DATETIME:
@@ -321,8 +336,10 @@ public class NYCTLCIngestPlugin extends
 											final Date pickupDateStart = dateStartFormat.parse(dateStartFormat.format(pickupDate));
 											pt.setTimeOfDaySec(new Long(
 													TimeUnit.MILLISECONDS.toSeconds(pickupDate.getTime() - pickupDateStart.getTime())).longValue());
+
 										}
 										catch (ParseException e) {
+											success = false;
 											Log.warn(
 													"Error parsing pickup datetime: " + vals[fieldIdx],
 													e);
@@ -334,6 +351,7 @@ public class NYCTLCIngestPlugin extends
 													vals[fieldIdx]).getTime());
 										}
 										catch (ParseException e) {
+											success = false;
 											Log.warn(
 													"Error parsing dropoff datetime: " + vals[fieldIdx],
 													e);
@@ -376,8 +394,9 @@ public class NYCTLCIngestPlugin extends
 												"").replace(
 												" ",
 												"");
-										if (NumberUtils.isNumber(pmntType))
+										if (NumberUtils.isNumber(pmntType)) {
 											pt.setPaymentType(Integer.parseInt(vals[fieldIdx]));
+										}
 										else {
 											if (pmntType.contains("crd") || pmntType.contains("cre"))
 												pt.setPaymentType(1);
@@ -392,6 +411,7 @@ public class NYCTLCIngestPlugin extends
 											else if (pmntType.contains("void"))
 												pt.setPaymentType(6);
 											else {
+												success = false;
 												LOGGER.warn("Unknown payment type [" + pmntType + "]");
 												pt.setPaymentType(0);
 											}
@@ -428,6 +448,10 @@ public class NYCTLCIngestPlugin extends
 										pt.setCabType(cabType);
 										break;
 								}
+
+								if (success) {
+									requiredFieldsMissing.remove(field);
+								}
 							}
 							catch (NumberFormatException | NullPointerException e) {
 								if (!vals[fieldIdx].isEmpty())
@@ -442,7 +466,9 @@ public class NYCTLCIngestPlugin extends
 							else if (fieldIdx >= vals.length && !field.equals(NYCTLCUtils.Field.TRIP_TYPE)) LOGGER.warn("Field not present in row: " + fields[fieldIdx]);
 						}
 					}
-					pts.add(pt);
+					if (requiredFieldsMissing.isEmpty()) {
+						pts.add(pt);
+					}
 
 					if (pts.size() % 10000 == 0) LOGGER.warn(pts.size() + " entries serialized to avro from [" + file.getName() + "].");
 				}

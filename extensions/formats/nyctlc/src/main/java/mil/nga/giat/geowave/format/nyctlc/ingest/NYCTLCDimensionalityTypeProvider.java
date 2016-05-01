@@ -1,11 +1,20 @@
 package mil.nga.giat.geowave.format.nyctlc.ingest;
 
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.lang3.StringUtils;
+
 import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+
 import mil.nga.giat.geowave.core.geotime.index.dimension.LatitudeDefinition;
 import mil.nga.giat.geowave.core.geotime.index.dimension.LongitudeDefinition;
-import mil.nga.giat.geowave.core.geotime.store.dimension.*;
+import mil.nga.giat.geowave.core.geotime.store.dimension.GeometryWrapper;
+import mil.nga.giat.geowave.core.geotime.store.dimension.LatitudeField;
+import mil.nga.giat.geowave.core.geotime.store.dimension.LongitudeField;
+import mil.nga.giat.geowave.core.geotime.store.dimension.Time;
+import mil.nga.giat.geowave.core.geotime.store.dimension.TimeField;
 import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.index.ByteArrayUtils;
 import mil.nga.giat.geowave.core.index.dimension.BasicDimensionDefinition;
@@ -22,9 +31,6 @@ import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
 import mil.nga.giat.geowave.core.store.spi.DimensionalityTypeOptions;
 import mil.nga.giat.geowave.core.store.spi.DimensionalityTypeProviderSpi;
 import mil.nga.giat.geowave.format.nyctlc.NYCTLCUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.concurrent.TimeUnit;
 
 public class NYCTLCDimensionalityTypeProvider implements
 		DimensionalityTypeProviderSpi
@@ -253,36 +259,93 @@ public class NYCTLCDimensionalityTypeProvider implements
 	public static class PickupLongitudeDefinition extends
 			LongitudeDefinition
 	{
-		public PickupLongitudeDefinition() {}
+		public PickupLongitudeDefinition() {
+			super();
+			min = MIN_LON;
+			max = MAX_LON;
+		}
+
+		@Override
+		public BinRange[] getNormalizedRanges(
+				final NumericData range ) {
+			return new BinRange[] {
+				new BinRange(
+						// by default clamp to the min and max
+						clamp(range.getMin()),
+						clamp(range.getMax()))
+			};
+		}
 	}
 
 	public static class PickupLatitudeDefinition extends
 			LatitudeDefinition
 	{
-		public PickupLatitudeDefinition() {}
+		public PickupLatitudeDefinition() {
+			super();
+			min = MIN_LAT;
+			max = MAX_LAT;
+		}
 
 		public PickupLatitudeDefinition(
-				boolean useHalfRange ) {
+				final boolean useHalfRange ) {
 			super(
 					useHalfRange);
+			min = MIN_LAT;
+			max = MAX_LAT;
+		}
+
+		@Override
+		protected double clamp(
+				final double x ) {
+			return clamp(
+					x,
+					MIN_LAT,
+					MAX_LAT);
 		}
 	}
 
 	public static class DropoffLongitudeDefinition extends
 			LongitudeDefinition
 	{
-		public DropoffLongitudeDefinition() {}
+		public DropoffLongitudeDefinition() {
+			super();
+			min = MIN_LON;
+			max = MAX_LON;
+		}
+
+		@Override
+		public BinRange[] getNormalizedRanges(
+				final NumericData range ) {
+			return new BinRange[] {
+				new BinRange(
+						// by default clamp to the min and max
+						clamp(range.getMin()),
+						clamp(range.getMax()))
+			};
+		}
 	}
 
 	public static class DropoffLatitudeDefinition extends
 			LatitudeDefinition
 	{
-		public DropoffLatitudeDefinition() {}
+		public DropoffLatitudeDefinition() {
+			min = MIN_LAT;
+			max = MAX_LAT;
+		}
 
 		public DropoffLatitudeDefinition(
-				boolean useHalfRange ) {
+				final boolean useHalfRange ) {
 			super(
 					useHalfRange);
+		}
+
+		@Override
+		protected double clamp(
+				final double x ) {
+			return clamp(
+					x,
+					MIN_LAT,
+					MAX_LAT);
 		}
 	}
 }

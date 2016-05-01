@@ -1,13 +1,19 @@
 package mil.nga.giat.geowave.format.nyctlc;
 
-import com.vividsolutions.jts.geom.Geometry;
-import mil.nga.giat.geowave.format.nyctlc.statistics.NYCTLCStatistics;
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.geotools.feature.AttributeTypeBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.opengis.feature.simple.SimpleFeatureType;
 
-import java.io.File;
-import java.util.Date;
+import com.vividsolutions.jts.geom.Geometry;
+
+import mil.nga.giat.geowave.format.nyctlc.statistics.NYCTLCStatistics;
 
 /**
  * Created by geowave on 4/25/16.
@@ -16,6 +22,15 @@ public class NYCTLCUtils
 {
 
 	public static final String NYCTLC_POINT_FEATURE = "nyctlcpoint";
+
+	public static final Set<Field> REQUIRED_FIELDS = Collections.unmodifiableSet(new HashSet<Field>(
+			Arrays.asList(new Field[] {
+				Field.DROPOFF_LONGITUDE,
+				Field.DROPOFF_LATITUDE,
+				Field.PICKUP_LONGITUDE,
+				Field.PICKUP_LATITUDE,
+				Field.PICKUP_DATETIME
+			})));
 
 	public enum Field {
 		VENDOR_ID(
@@ -237,21 +252,27 @@ public class NYCTLCUtils
 
 		public boolean matches(
 				final String fieldName ) {
-			for (final String variant : variants())
+			for (final String variant : variants()) {
 				if (fieldName.replace(
 						"_",
 						"").replace(
 						" ",
 						"").toLowerCase().contains(
-						variant)) return true;
+						variant)) {
+					return true;
+				}
+			}
 			return false;
 		}
 
 		public static Field getField(
 				final String fieldName ) {
 			final String normalizedFieldName = normalizeFieldName(fieldName);
-			for (final Field field : Field.values())
-				if (field.matches(normalizedFieldName)) return field;
+			for (final Field field : Field.values()) {
+				if (field.matches(normalizedFieldName)) {
+					return field;
+				}
+			}
 			return null;
 		}
 
