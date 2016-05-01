@@ -5,13 +5,14 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import mil.nga.giat.geowave.core.geotime.index.dimension.LatitudeDefinition;
 import mil.nga.giat.geowave.core.geotime.index.dimension.LongitudeDefinition;
-import mil.nga.giat.geowave.core.geotime.index.dimension.TemporalBinningStrategy.Unit;
 import mil.nga.giat.geowave.core.geotime.store.dimension.*;
 import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.index.ByteArrayUtils;
 import mil.nga.giat.geowave.core.index.dimension.BasicDimensionDefinition;
 import mil.nga.giat.geowave.core.index.dimension.NumericDimensionDefinition;
+import mil.nga.giat.geowave.core.index.dimension.bin.BinRange;
 import mil.nga.giat.geowave.core.index.sfc.SFCFactory;
+import mil.nga.giat.geowave.core.index.sfc.data.NumericData;
 import mil.nga.giat.geowave.core.index.sfc.tiered.TieredSFCIndexFactory;
 import mil.nga.giat.geowave.core.store.dimension.NumericDimensionField;
 import mil.nga.giat.geowave.core.store.index.BasicIndexModel;
@@ -29,31 +30,41 @@ public class NYCTLCDimensionalityTypeProvider implements
 		DimensionalityTypeProviderSpi
 {
 	private final NYCTLCOptions options = new NYCTLCOptions();
+	// BBox of NYC is more contrained, but we'll give it a little buffer
+	// North Latitude: 40.915256 South Latitude: 40.496044 East Longitude:
+	// -73.700272 West Longitude: -74.255735
+	private static final double MIN_LAT = 40.3;
+	private static final double MAX_LAT = 41.1;
+	private static final double MIN_LON = -74.375;
+	private static final double MAX_LON = -73.575;
 	private static final String DEFAULT_NYCTLC_ID_STR = "NYCTLC_IDX";
 
 	public final static ByteArrayId PICKUP_GEOMETRY_FIELD_ID = new ByteArrayId(
 			ByteArrayUtils.combineArrays(
-					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(NYCTLCUtils.Field.PICKUP_LOCATION.getIndexedName()),
+					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(
+							NYCTLCUtils.Field.PICKUP_LOCATION.getIndexedName()),
 					new byte[] {
 						0,
 						0
-					}));
+	}));
 
 	public final static ByteArrayId DROPOFF_GEOMETRY_FIELD_ID = new ByteArrayId(
 			ByteArrayUtils.combineArrays(
-					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(NYCTLCUtils.Field.DROPOFF_LOCATION.getIndexedName()),
+					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(
+							NYCTLCUtils.Field.DROPOFF_LOCATION.getIndexedName()),
 					new byte[] {
 						0,
 						0
-					}));
+	}));
 
 	public final static ByteArrayId TIME_OF_DAY_SEC_FIELD_ID = new ByteArrayId(
 			ByteArrayUtils.combineArrays(
-					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(NYCTLCUtils.Field.TIME_OF_DAY_SEC.getIndexedName()),
+					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(
+							NYCTLCUtils.Field.TIME_OF_DAY_SEC.getIndexedName()),
 					new byte[] {
 						0,
 						0
-					}));
+	}));
 
 	public NYCTLCDimensionalityTypeProvider() {}
 
@@ -81,7 +92,8 @@ public class NYCTLCDimensionalityTypeProvider implements
 
 	@Override
 	public PrimaryIndex createPrimaryIndex() {
-		return internalCreatePrimaryIndex(options);
+		return internalCreatePrimaryIndex(
+				options);
 	}
 
 	private static PrimaryIndex internalCreatePrimaryIndex(
@@ -102,7 +114,8 @@ public class NYCTLCDimensionalityTypeProvider implements
 					new BasicDimensionDefinition(
 							0,
 							new Long(
-									TimeUnit.DAYS.toSeconds(1)).doubleValue()),
+									TimeUnit.DAYS.toSeconds(
+											1)).doubleValue()),
 					TIME_OF_DAY_SEC_FIELD_ID)
 		};
 
@@ -116,36 +129,22 @@ public class NYCTLCDimensionalityTypeProvider implements
 			new BasicDimensionDefinition(
 					0,
 					new Long(
-							TimeUnit.DAYS.toSeconds(1)).doubleValue())
+							TimeUnit.DAYS.toSeconds(
+									1)).doubleValue())
 		};
 
 		final String combinedId = DEFAULT_NYCTLC_ID_STR + "_" + options.bias;
 
 		return new CustomIdIndex(
-				TieredSFCIndexFactory.createDefinedPrecisionTieredStrategy(
+				TieredSFCIndexFactory.createSingleTierStrategy(
 						dimensions,
-						new int[][] {
-							new int[] {
-								0,
-								options.bias.getSpatialPrecision()
-							},
-							new int[] {
-								0,
-								options.bias.getSpatialPrecision()
-							},
-							new int[] {
-								0,
-								options.bias.getSpatialPrecision()
-							},
-							new int[] {
-								0,
-								options.bias.getSpatialPrecision()
-							},
-							new int[] {
-								0,
-								options.bias.getTemporalPrecision()
-							}
-						},
+						new int[] {
+							options.bias.getSpatialPrecision(),
+							options.bias.getSpatialPrecision(),
+							options.bias.getSpatialPrecision(),
+							options.bias.getSpatialPrecision(),
+							options.bias.getTemporalPrecision()
+		},
 						SFCFactory.SFCType.HILBERT),
 				new BasicIndexModel(
 						fields),
@@ -191,24 +190,24 @@ public class NYCTLCDimensionalityTypeProvider implements
 		protected int getSpatialPrecision() {
 			switch (this) {
 				case SPATIAL:
-					return 25;
+					return 14;
 				case TEMPORAL:
-					return 10;
+					return 7;
 				case BALANCED:
 				default:
-					return 20;
+					return 12;
 			}
 		}
 
 		protected int getTemporalPrecision() {
 			switch (this) {
 				case SPATIAL:
-					return 10;
+					return 6;
 				case TEMPORAL:
-					return 40;
+					return 34;
 				case BALANCED:
 				default:
-					return 20;
+					return 12;
 			}
 		}
 	}
@@ -219,7 +218,8 @@ public class NYCTLCDimensionalityTypeProvider implements
 		@Override
 		public Bias convert(
 				final String value ) {
-			final Bias convertedValue = Bias.fromString(value);
+			final Bias convertedValue = Bias.fromString(
+					value);
 
 			if (convertedValue == null) {
 				throw new ParameterException(
@@ -230,25 +230,6 @@ public class NYCTLCDimensionalityTypeProvider implements
 			return convertedValue;
 		}
 
-	}
-
-	public static class UnitConverter implements
-			IStringConverter<Unit>
-	{
-
-		@Override
-		public Unit convert(
-				final String value ) {
-			final Unit convertedValue = Unit.fromString(value);
-
-			if (convertedValue == null) {
-				throw new ParameterException(
-						"Value " + value + "can not be converted to Unit. " + "Available values are: " + StringUtils.join(
-								Unit.values(),
-								", ").toLowerCase());
-			}
-			return convertedValue;
-		}
 	}
 
 	public static class NYCTLCIndexBuilder
@@ -272,38 +253,76 @@ public class NYCTLCDimensionalityTypeProvider implements
 		}
 
 		public PrimaryIndex createIndex() {
-			return internalCreatePrimaryIndex(options);
+			return internalCreatePrimaryIndex(
+					options);
 		}
 	}
 
 	public static class PickupLongitudeDefinition extends
 			LongitudeDefinition
 	{
-		public PickupLongitudeDefinition() {}
+		public PickupLongitudeDefinition() {
+			super();
+			min = MIN_LON;
+			max = MAX_LON;
+		}
+		@Override
+		public BinRange[] getNormalizedRanges(
+				NumericData range ) {
+			return new BinRange[] {
+				new BinRange(
+						// by default clamp to the min and max
+						clamp(range.getMin()),
+						clamp(range.getMax()))
+			};
+		}
 	}
 
 	public static class PickupLatitudeDefinition extends
 			LatitudeDefinition
 	{
-		public PickupLatitudeDefinition() {}
+		public PickupLatitudeDefinition() {
+			super();
+			min = MIN_LAT;
+			max = MAX_LAT;
+		}
 
 		public PickupLatitudeDefinition(
 				boolean useHalfRange ) {
 			super(
 					useHalfRange);
+			min = MIN_LAT;
+			max = MAX_LAT;
 		}
 	}
 
 	public static class DropoffLongitudeDefinition extends
 			LongitudeDefinition
 	{
-		public DropoffLongitudeDefinition() {}
+		public DropoffLongitudeDefinition() {
+			super();
+			min = MIN_LON;
+			max = MAX_LON;
+		}
+		@Override
+		public BinRange[] getNormalizedRanges(
+				NumericData range ) {
+			return new BinRange[] {
+				new BinRange(
+						// by default clamp to the min and max
+						clamp(range.getMin()),
+						clamp(range.getMax()))
+			};
+		}
 	}
 
 	public static class DropoffLatitudeDefinition extends
 			LatitudeDefinition
 	{
-		public DropoffLatitudeDefinition() {}
+		public DropoffLatitudeDefinition() {
+			min = MIN_LAT;
+			max = MAX_LAT;
+		}
 
 		public DropoffLatitudeDefinition(
 				boolean useHalfRange ) {
