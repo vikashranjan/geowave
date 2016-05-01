@@ -41,30 +41,27 @@ public class NYCTLCDimensionalityTypeProvider implements
 
 	public final static ByteArrayId PICKUP_GEOMETRY_FIELD_ID = new ByteArrayId(
 			ByteArrayUtils.combineArrays(
-					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(
-							NYCTLCUtils.Field.PICKUP_LOCATION.getIndexedName()),
+					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(NYCTLCUtils.Field.PICKUP_LOCATION.getIndexedName()),
 					new byte[] {
 						0,
 						0
-	}));
+					}));
 
 	public final static ByteArrayId DROPOFF_GEOMETRY_FIELD_ID = new ByteArrayId(
 			ByteArrayUtils.combineArrays(
-					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(
-							NYCTLCUtils.Field.DROPOFF_LOCATION.getIndexedName()),
+					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(NYCTLCUtils.Field.DROPOFF_LOCATION.getIndexedName()),
 					new byte[] {
 						0,
 						0
-	}));
+					}));
 
 	public final static ByteArrayId TIME_OF_DAY_SEC_FIELD_ID = new ByteArrayId(
 			ByteArrayUtils.combineArrays(
-					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(
-							NYCTLCUtils.Field.TIME_OF_DAY_SEC.getIndexedName()),
+					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(NYCTLCUtils.Field.TIME_OF_DAY_SEC.getIndexedName()),
 					new byte[] {
 						0,
 						0
-	}));
+					}));
 
 	public NYCTLCDimensionalityTypeProvider() {}
 
@@ -92,8 +89,7 @@ public class NYCTLCDimensionalityTypeProvider implements
 
 	@Override
 	public PrimaryIndex createPrimaryIndex() {
-		return internalCreatePrimaryIndex(
-				options);
+		return internalCreatePrimaryIndex(options);
 	}
 
 	private static PrimaryIndex internalCreatePrimaryIndex(
@@ -114,8 +110,7 @@ public class NYCTLCDimensionalityTypeProvider implements
 					new BasicDimensionDefinition(
 							0,
 							new Long(
-									TimeUnit.DAYS.toSeconds(
-											1)).doubleValue()),
+									TimeUnit.DAYS.toSeconds(1)).doubleValue()),
 					TIME_OF_DAY_SEC_FIELD_ID)
 		};
 
@@ -129,8 +124,7 @@ public class NYCTLCDimensionalityTypeProvider implements
 			new BasicDimensionDefinition(
 					0,
 					new Long(
-							TimeUnit.DAYS.toSeconds(
-									1)).doubleValue())
+							TimeUnit.DAYS.toSeconds(1)).doubleValue())
 		};
 
 		final String combinedId = DEFAULT_NYCTLC_ID_STR + "_" + options.bias;
@@ -144,7 +138,7 @@ public class NYCTLCDimensionalityTypeProvider implements
 							options.bias.getSpatialPrecision(),
 							options.bias.getSpatialPrecision(),
 							options.bias.getTemporalPrecision()
-		},
+						},
 						SFCFactory.SFCType.HILBERT),
 				new BasicIndexModel(
 						fields),
@@ -218,8 +212,7 @@ public class NYCTLCDimensionalityTypeProvider implements
 		@Override
 		public Bias convert(
 				final String value ) {
-			final Bias convertedValue = Bias.fromString(
-					value);
+			final Bias convertedValue = Bias.fromString(value);
 
 			if (convertedValue == null) {
 				throw new ParameterException(
@@ -253,76 +246,38 @@ public class NYCTLCDimensionalityTypeProvider implements
 		}
 
 		public PrimaryIndex createIndex() {
-			return internalCreatePrimaryIndex(
-					options);
+			return internalCreatePrimaryIndex(options);
 		}
 	}
 
 	public static class PickupLongitudeDefinition extends
 			LongitudeDefinition
 	{
-		public PickupLongitudeDefinition() {
-			super();
-			min = MIN_LON;
-			max = MAX_LON;
-		}
-		@Override
-		public BinRange[] getNormalizedRanges(
-				NumericData range ) {
-			return new BinRange[] {
-				new BinRange(
-						// by default clamp to the min and max
-						clamp(range.getMin()),
-						clamp(range.getMax()))
-			};
-		}
+		public PickupLongitudeDefinition() {}
 	}
 
 	public static class PickupLatitudeDefinition extends
 			LatitudeDefinition
 	{
-		public PickupLatitudeDefinition() {
-			super();
-			min = MIN_LAT;
-			max = MAX_LAT;
-		}
+		public PickupLatitudeDefinition() {}
 
 		public PickupLatitudeDefinition(
 				boolean useHalfRange ) {
 			super(
 					useHalfRange);
-			min = MIN_LAT;
-			max = MAX_LAT;
 		}
 	}
 
 	public static class DropoffLongitudeDefinition extends
 			LongitudeDefinition
 	{
-		public DropoffLongitudeDefinition() {
-			super();
-			min = MIN_LON;
-			max = MAX_LON;
-		}
-		@Override
-		public BinRange[] getNormalizedRanges(
-				NumericData range ) {
-			return new BinRange[] {
-				new BinRange(
-						// by default clamp to the min and max
-						clamp(range.getMin()),
-						clamp(range.getMax()))
-			};
-		}
+		public DropoffLongitudeDefinition() {}
 	}
 
 	public static class DropoffLatitudeDefinition extends
 			LatitudeDefinition
 	{
-		public DropoffLatitudeDefinition() {
-			min = MIN_LAT;
-			max = MAX_LAT;
-		}
+		public DropoffLatitudeDefinition() {}
 
 		public DropoffLatitudeDefinition(
 				boolean useHalfRange ) {
