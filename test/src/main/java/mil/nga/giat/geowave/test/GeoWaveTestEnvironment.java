@@ -203,7 +203,10 @@ abstract public class GeoWaveTestEnvironment
 				accumuloPassword = System.getProperty("password");
 				if (!isSet(zookeeper) || !isSet(accumuloInstance) || !isSet(accumuloUser) || !isSet(accumuloPassword)) {
 					try {
+						if(TEMP_DIR.exists()){
 
+							FileUtils.deleteDirectory(TEMP_DIR);
+						}
 						// TEMP_DIR = Files.createTempDir();
 						if (!TEMP_DIR.exists()) {
 							if (!TEMP_DIR.mkdirs()) {
@@ -211,7 +214,7 @@ abstract public class GeoWaveTestEnvironment
 										"Could not create temporary directory");
 							}
 						}
-						TEMP_DIR.deleteOnExit();
+//						TEMP_DIR.deleteOnExit();
 						final MiniAccumuloConfigImpl config = new MiniAccumuloConfigImpl(
 								TEMP_DIR,
 								DEFAULT_MINI_ACCUMULO_PASSWORD);
@@ -299,21 +302,13 @@ abstract public class GeoWaveTestEnvironment
 					}
 				}
 				if (TEMP_DIR != null) {
-					try {
 						// sleep because mini accumulo processes still have a
 						// hold on the log files and there is no hook to get
 						// notified when it is completely stopped
 
-						Thread.sleep(2000);
-						FileUtils.deleteDirectory(TEMP_DIR);
 
 						TEMP_DIR = null;
-					}
-					catch (final IOException | InterruptedException e) {
-						LOGGER.warn(
-								"Unable to delete mini Accumulo temporary directory",
-								e);
-					}
+					
 				}
 			}
 		}

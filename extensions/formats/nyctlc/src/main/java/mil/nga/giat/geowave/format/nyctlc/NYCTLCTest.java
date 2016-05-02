@@ -8,8 +8,6 @@ import mil.nga.giat.geowave.core.store.CloseableIterator;
 import mil.nga.giat.geowave.core.store.IndexWriter;
 import mil.nga.giat.geowave.core.store.query.Query;
 import mil.nga.giat.geowave.core.store.query.QueryOptions;
-import mil.nga.giat.geowave.core.store.query.aggregate.CountAggregation;
-import mil.nga.giat.geowave.core.store.query.aggregate.CountResult;
 import mil.nga.giat.geowave.datastore.accumulo.AccumuloDataStore;
 import mil.nga.giat.geowave.datastore.accumulo.AccumuloOperations;
 import mil.nga.giat.geowave.datastore.accumulo.BasicAccumuloOperations;
@@ -110,19 +108,21 @@ public class NYCTLCTest
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"),
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
 
-//		queryOptions.setAggregation(new CountAggregation<>(),
-//				new NYCTLCDataAdapter(
-//						new NYCTLCIngestPlugin().getTypes()[0]));
+		queryOptions.setAggregation(
+				new NYCTLCAggregation(),
+				new NYCTLCDataAdapter(
+						new NYCTLCIngestPlugin().getTypes()[0]));
 
 		if (queryOptions.getAggregation() != null) {
-			final CloseableIterator<CountResult> results = dataStore.query(
+			final CloseableIterator<NYCTLCStatistics> results = dataStore.query(
 					queryOptions,
 					query);
 
 			while (results.hasNext()) {
-				final CountResult stats = results.next();
+				final NYCTLCStatistics stats = results.next();
 
-				System.out.println(stats.getCount());
+				System.out.println(stats.toJSONObject().toString(
+						2));
 			}
 			results.close();
 		}
@@ -134,14 +134,14 @@ public class NYCTLCTest
 			while (results.hasNext()) {
 				final SimpleFeature feature = results.next();
 
-//				NYCTLCStatistics stats = new NYCTLCStatistics();
-//				stats.updateStats(feature);
-//				byte[] statsBytes = stats.toBinary();
-//
-//				NYCTLCStatistics statsFromBytes = new NYCTLCStatistics();
-//				statsFromBytes.fromBinary(statsBytes);
-//
-//				System.out.println(stats.equals(statsFromBytes));
+				NYCTLCStatistics stats = new NYCTLCStatistics();
+				stats.updateStats(feature);
+				byte[] statsBytes = stats.toBinary();
+
+				NYCTLCStatistics statsFromBytes = new NYCTLCStatistics();
+				statsFromBytes.fromBinary(statsBytes);
+
+				System.out.println(stats.equals(statsFromBytes));
 
 				System.out.println(feature);
 			}

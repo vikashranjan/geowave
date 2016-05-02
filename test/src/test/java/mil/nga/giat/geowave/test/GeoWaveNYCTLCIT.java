@@ -92,7 +92,9 @@ import mil.nga.giat.geowave.format.nyctlc.NYCTLCIngestPlugin;
 import mil.nga.giat.geowave.format.nyctlc.NYCTLCUtils;
 import mil.nga.giat.geowave.format.nyctlc.adapter.NYCTLCDataAdapter;
 import mil.nga.giat.geowave.format.nyctlc.ingest.NYCTLCDimensionalityTypeProvider;
+import mil.nga.giat.geowave.format.nyctlc.query.NYCTLCAggregation;
 import mil.nga.giat.geowave.format.nyctlc.query.NYCTLCQuery;
+import mil.nga.giat.geowave.format.nyctlc.statistics.NYCTLCStatistics;
 
 public class GeoWaveNYCTLCIT extends
 		GeoWaveTestEnvironment
@@ -117,8 +119,8 @@ public class GeoWaveNYCTLCIT extends
 
 		// Indexes
 		IndexPluginOptions indexOption = new IndexPluginOptions();
-		indexOption.selectPlugin("spatial");
-
+//		indexOption.selectPlugin("spatial");
+		indexOption.selectPlugin("nyctlc_sst");
 		// Create the command and execute.
 		DataStorePluginOptions plugin = getAccumuloStorePluginOptions(TEST_NAMESPACE);
 		LocalToGeowaveCommand localIngester = new LocalToGeowaveCommand();
@@ -142,18 +144,23 @@ public class GeoWaveNYCTLCIT extends
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"),
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
 
-		queryOptions.setAggregation(new CountAggregation<>(),
+		queryOptions.setAggregation(
+				new NYCTLCAggregation(),
 				new NYCTLCDataAdapter(NYCTLCUtils.createPointDataType()));
 
 		if (queryOptions.getAggregation() != null) {
-			final CloseableIterator<CountResult> results = plugin.createDataStore().query(
+			final CloseableIterator<NYCTLCStatistics> results = plugin.createDataStore().query(
 					queryOptions,
 					query);
 
 			while (results.hasNext()) {
-				final CountResult stats = results.next();
+//				final CountResult stats = results.next();
+//
+//				System.out.println(stats.getCount());
+				final NYCTLCStatistics stats = results.next();
 
-				System.out.println(stats.getCount());
+				System.out.println(stats.toJSONObject().toString(
+						2));
 			}
 			results.close();
 		}
