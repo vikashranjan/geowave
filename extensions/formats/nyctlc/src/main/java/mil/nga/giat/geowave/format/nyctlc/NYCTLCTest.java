@@ -11,7 +11,9 @@ import mil.nga.giat.geowave.core.store.query.QueryOptions;
 import mil.nga.giat.geowave.datastore.accumulo.AccumuloDataStore;
 import mil.nga.giat.geowave.datastore.accumulo.AccumuloOperations;
 import mil.nga.giat.geowave.datastore.accumulo.BasicAccumuloOperations;
+import mil.nga.giat.geowave.format.nyctlc.adapter.NYCTLCDataAdapter;
 import mil.nga.giat.geowave.format.nyctlc.ingest.NYCTLCDimensionalityTypeProvider;
+import mil.nga.giat.geowave.format.nyctlc.query.NYCTLCAggregation;
 import mil.nga.giat.geowave.format.nyctlc.query.NYCTLCQuery;
 import mil.nga.giat.geowave.format.nyctlc.statistics.NYCTLCStatistics;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
@@ -87,11 +89,11 @@ public class NYCTLCTest
 			throws Exception {
 
 		final AccumuloOperations operations = new BasicAccumuloOperations(
-				"localhost:2181",
-				"geowave",
-				"root",
-				"geowave",
-				"nyctlc");
+				"10.0.0.55:2181",
+				"accumulo",
+				"foss4g",
+				"foss4g",
+				"foss4g.nyctlc");
 
 		final AccumuloDataStore dataStore = new AccumuloDataStore(
 				operations);
@@ -105,10 +107,10 @@ public class NYCTLCTest
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"),
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
 
-		// queryOptions.setAggregation(
-		// new NYCTLCAggregation(),
-		// new NYCTLCDataAdapter(
-		// new NYCTLCIngestPlugin().getTypes()[0]));
+		 queryOptions.setAggregation(
+		 new NYCTLCAggregation(),
+		 new NYCTLCDataAdapter(
+		 new NYCTLCIngestPlugin().getTypes()[0]));
 
 		if (queryOptions.getAggregation() != null) {
 			final CloseableIterator<NYCTLCStatistics> results = dataStore.query(
