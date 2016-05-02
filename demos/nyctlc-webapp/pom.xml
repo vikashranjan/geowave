@@ -27,6 +27,10 @@
 					<artifactId>hsqldb</artifactId>
 					<groupId>hsqldb</groupId>
 				</exclusion>
+				<exclusion>
+					<artifactId>jsr305</artifactId>
+					<groupId>com.google.code.findbugs</groupId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -46,16 +50,24 @@
 			<groupId>mil.nga.giat</groupId>
 			<artifactId>geowave-datastore-accumulo</artifactId>
 			<version>0.9.1-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>mil.nga.giat</groupId>
-			<artifactId>geowave-datastore-accumulo</artifactId>
-			<version>0.9.1-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jetbrains</groupId>
-			<artifactId>annotations-java5</artifactId>
-			<version>RELEASE</version>
+			<exclusions>
+				<exclusion>
+					<groupId>com.sun.jersey</groupId>
+					<artifactId>jersey-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.sun.jersey</groupId>
+					<artifactId>jersey-server</artifactId>
+				</exclusion>
+				<exclusion>
+					<artifactId>hsqldb</artifactId>
+					<groupId>hsqldb</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jsr305</artifactId>
+					<groupId>com.google.code.findbugs</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 	</dependencies>
 </project>
