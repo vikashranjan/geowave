@@ -5,6 +5,7 @@ import mil.nga.giat.geowave.adapter.vector.FeatureGeometryHandler;
 import mil.nga.giat.geowave.adapter.vector.FeatureTimestampHandler;
 import mil.nga.giat.geowave.adapter.vector.plugin.visibility.VisibilityConfiguration;
 import mil.nga.giat.geowave.adapter.vector.utils.TimeDescriptors;
+import mil.nga.giat.geowave.core.geotime.store.dimension.Time;
 import mil.nga.giat.geowave.core.store.adapter.IndexFieldHandler;
 import mil.nga.giat.geowave.core.store.adapter.PersistentIndexFieldHandler;
 import mil.nga.giat.geowave.core.store.data.field.FieldVisibilityHandler;
@@ -66,6 +67,27 @@ public class NYCTLCDataAdapter extends
 				customIndexHandlers,
 				fieldVisiblityHandler,
 				defaultVisibilityManagement);
+	}
+
+
+	@Override
+	protected IndexFieldHandler<SimpleFeature, Time, Object> getTimeRangeHandler(
+			SimpleFeatureType featureType ) {
+		return null;
+	}
+
+	@Override
+	public boolean hasTemporalConstraints() {
+		return false;
+	}
+
+	@Override
+	public synchronized TimeDescriptors getTimeDescriptors() {
+		return new TimeDescriptors();
+	}
+
+	@Override
+	public synchronized void resetTimeDescriptors() {
 	}
 
 	@Override
