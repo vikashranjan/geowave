@@ -17,6 +17,8 @@ import mil.nga.giat.geowave.core.store.filter.DistributableFilterList;
 import mil.nga.giat.geowave.core.store.filter.DistributableQueryFilter;
 import mil.nga.giat.geowave.core.store.query.BasicQuery;
 import mil.nga.giat.geowave.format.nyctlc.ingest.NYCTLCDimensionalityTypeProvider;
+import mil.nga.giat.geowave.format.nyctlc.ingest.NYCTLCDimensionalityTypeProvider.TimeOfDayDefinition;
+
 import org.apache.log4j.Logger;
 
 import java.nio.ByteBuffer;
@@ -115,7 +117,7 @@ public class NYCTLCQuery extends
 
 		final ConstraintSet cs1 = new ConstraintSet();
 		cs1.addConstraint(
-				BasicDimensionDefinition.class,
+				TimeOfDayDefinition.class,
 				constraintData);
 
 		final Constraints geoConstraints = basicConstraintsFromGeometry(
