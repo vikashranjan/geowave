@@ -235,10 +235,8 @@ public class NYCTLCService
 		if (startGeom != null && destGeom != null) {
 			// run a query using combo of geom & time
 			final Query query = new NYCTLCQuery(
-					new Date(
-							startTimeSec),
-					new Date(
-							endTimeSec),
+							new Long(startTimeSec).intValue(),
+							new Long(endTimeSec).intValue(),
 					startGeom,
 					destGeom);
 

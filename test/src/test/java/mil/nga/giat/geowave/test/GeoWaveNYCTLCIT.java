@@ -26,6 +26,7 @@ import org.geotools.feature.AttributeTypeBuilder;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.filter.text.cql2.CQLException;
+import org.geotools.geometry.jts.GeometryBuilder;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -134,15 +135,50 @@ public class GeoWaveNYCTLCIT extends
 		localIngester.setThreads(nthreads);
 		localIngester.execute(new ManualOperationParams());
 
-		final QueryOptions queryOptions = new QueryOptions();
+		 QueryOptions queryOptions = new QueryOptions();
 
 		queryOptions.setIndex(new NYCTLCDimensionalityTypeProvider().createPrimaryIndex());
 //		final Query query = new SpatialQuery(new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
-		final Query query = new NYCTLCQuery(
+		 Query query = new NYCTLCQuery(
 				0,
 				(int)TimeUnit.DAYS.toSeconds(1),
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"),
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
+
+		queryOptions.setAggregation(
+				new NYCTLCAggregation(),
+				new NYCTLCDataAdapter(NYCTLCUtils.createPointDataType()));
+
+		if (queryOptions.getAggregation() != null) {
+			final CloseableIterator<NYCTLCStatistics> results = plugin.createDataStore().query(
+					queryOptions,
+					query);
+
+			while (results.hasNext()) {
+//				final CountResult stats = results.next();
+//
+//				System.out.println(stats.getCount());
+				final NYCTLCStatistics stats = results.next();
+
+				System.out.println(stats.toJSONObject().toString(
+						2));
+			}
+			results.close();
+		}
+		
+		queryOptions = new QueryOptions();
+
+		queryOptions.setIndex(new NYCTLCDimensionalityTypeProvider().createPrimaryIndex());
+//		final Query query = new SpatialQuery(new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
+
+		GeometryBuilder bdr = new GeometryBuilder();
+		Geometry startGeom = bdr.circle(-73.954818725585937, 40.820701599121094, 0.05, 20);
+		
+		bdr = new GeometryBuilder();
+		Geometry destGeom =bdr.circle(-73.998832702636719, 40.729896545410156, 0.05, 20);
+		query = new NYCTLCQuery(
+				0,50000,startGeom,destGeom
+			);
 
 		queryOptions.setAggregation(
 				new NYCTLCAggregation(),
