@@ -110,9 +110,9 @@ public class NYCTLCTest
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"),
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
 
-		queryOptions.setAggregation(new CountAggregation<>(),
-				new NYCTLCDataAdapter(
-						new NYCTLCIngestPlugin().getTypes()[0]));
+//		queryOptions.setAggregation(new CountAggregation<>(),
+//				new NYCTLCDataAdapter(
+//						new NYCTLCIngestPlugin().getTypes()[0]));
 
 		if (queryOptions.getAggregation() != null) {
 			final CloseableIterator<CountResult> results = dataStore.query(
@@ -134,14 +134,14 @@ public class NYCTLCTest
 			while (results.hasNext()) {
 				final SimpleFeature feature = results.next();
 
-				NYCTLCStatistics stats = new NYCTLCStatistics();
-				stats.updateStats(feature);
-				byte[] statsBytes = stats.toBinary();
-
-				NYCTLCStatistics statsFromBytes = new NYCTLCStatistics();
-				statsFromBytes.fromBinary(statsBytes);
-
-				System.out.println(stats.equals(statsFromBytes));
+//				NYCTLCStatistics stats = new NYCTLCStatistics();
+//				stats.updateStats(feature);
+//				byte[] statsBytes = stats.toBinary();
+//
+//				NYCTLCStatistics statsFromBytes = new NYCTLCStatistics();
+//				statsFromBytes.fromBinary(statsBytes);
+//
+//				System.out.println(stats.equals(statsFromBytes));
 
 				System.out.println(feature);
 			}
