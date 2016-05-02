@@ -488,17 +488,7 @@ public class FeatureDataAdapter extends
 					typeName,
 					new VisibilityConfiguration(
 							myType));
-			try {
-				userDataConfiguration.fromJsonString(
-						StringUtils.stringFromBinary(attrBytes),
-						myType);
 
-			}
-			catch (final IOException e) {
-				LOGGER.error(
-						"Failure to decode simple feature user data configuration",
-						e);
-			}
 			setFeatureType(myType);
 
 			// advertise the reprojected type externally
