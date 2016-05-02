@@ -6,8 +6,6 @@ import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKBReader;
 import com.vividsolutions.jts.io.WKBWriter;
 import mil.nga.giat.geowave.core.geotime.store.filter.SpatialQueryFilter;
-import mil.nga.giat.geowave.core.geotime.store.query.TemporalConstraints;
-import mil.nga.giat.geowave.core.geotime.store.query.TemporalRange;
 import mil.nga.giat.geowave.core.index.dimension.BasicDimensionDefinition;
 import mil.nga.giat.geowave.core.index.dimension.NumericDimensionDefinition;
 import mil.nga.giat.geowave.core.index.sfc.data.BasicNumericDataset;
@@ -18,7 +16,6 @@ import mil.nga.giat.geowave.core.store.dimension.NumericDimensionField;
 import mil.nga.giat.geowave.core.store.filter.DistributableFilterList;
 import mil.nga.giat.geowave.core.store.filter.DistributableQueryFilter;
 import mil.nga.giat.geowave.core.store.query.BasicQuery;
-import mil.nga.giat.geowave.format.nyctlc.NYCTLCUtils;
 import mil.nga.giat.geowave.format.nyctlc.ingest.NYCTLCDimensionalityTypeProvider;
 import org.apache.log4j.Logger;
 
@@ -32,7 +29,8 @@ public class NYCTLCQuery extends
 		BasicQuery
 {
 
-	private final static Logger LOGGER = Logger.getLogger(NYCTLCQuery.class);
+	private final static Logger LOGGER = Logger.getLogger(
+			NYCTLCQuery.class);
 	private Geometry pickupGeometry;
 	private Geometry dropoffGeometry;
 	SpatialQueryFilter.CompareOperation compareOp = SpatialQueryFilter.CompareOperation.OVERLAPS;
@@ -40,31 +38,15 @@ public class NYCTLCQuery extends
 	protected NYCTLCQuery() {}
 
 	public NYCTLCQuery(
-			final Date startTime,
-			final Date endTime,
+			final int startTime,
+			final int endTime,
 			final Geometry pickupGeometry,
 			final Geometry dropoffGeometry ) {
 		super(
 				createNYCTLCConstraints(
-						new TemporalConstraints(
-								new TemporalRange(
-										startTime,
-										endTime),
-								NYCTLCUtils.Field.TIME_OF_DAY_SEC.getIndexedName()),
+						new ConstraintData(new NumericRange(startTime, endTime), false),
 						pickupGeometry,
 						dropoffGeometry));
-		this.pickupGeometry = pickupGeometry;
-		this.dropoffGeometry = dropoffGeometry;
-	}
-
-	public NYCTLCQuery(
-			final TemporalConstraints constraints,
-			final Geometry pickupGeometry,
-			final Geometry dropoffGeometry ) {
-		createNYCTLCConstraints(
-				constraints,
-				pickupGeometry,
-				dropoffGeometry);
 		this.pickupGeometry = pickupGeometry;
 		this.dropoffGeometry = dropoffGeometry;
 	}
@@ -89,42 +71,59 @@ public class NYCTLCQuery extends
 		for (int dim = 0; dim < constraints.getDimensionCount() && dim < dimensionFields.length; dim++) {
 			if (!dimensionFields[dim].getFieldId().equals(
 					NYCTLCDimensionalityTypeProvider.DROPOFF_GEOMETRY_FIELD_ID)) {
-				pickupConstraints.add(constraints.getDataPerDimension()[dim]);
-				pickupDimFields.add(dimensionFields[dim]);
+				pickupConstraints.add(
+						constraints.getDataPerDimension()[dim]);
+				pickupDimFields.add(
+						dimensionFields[dim]);
 			}
 			else if (!dimensionFields[dim].getFieldId().equals(
 					NYCTLCDimensionalityTypeProvider.PICKUP_GEOMETRY_FIELD_ID)) {
-				dropoffConstraints.add(constraints.getDataPerDimension()[dim]);
-				dropoffDimFields.add(dimensionFields[dim]);
+				dropoffConstraints.add(
+						constraints.getDataPerDimension()[dim]);
+				dropoffDimFields.add(
+						dimensionFields[dim]);
 			}
 		}
 
 		return new DistributableFilterList(
 				true,
-				Arrays.asList(new DistributableQueryFilter[] {
-					new SpatialQueryFilter(
-							new BasicNumericDataset(
-									pickupConstraints.toArray(new NumericData[pickupConstraints.size()])),
-							pickupDimFields.toArray(new NumericDimensionField[pickupDimFields.size()]),
-							pickupGeometry,
-							compareOp),
-					new SpatialQueryFilter(
-							new BasicNumericDataset(
-									dropoffConstraints.toArray(new NumericData[dropoffConstraints.size()])),
-							dropoffDimFields.toArray(new NumericDimensionField[dropoffDimFields.size()]),
-							dropoffGeometry,
-							compareOp)
-				}));
+				Arrays.asList(
+						new DistributableQueryFilter[] {
+							new SpatialQueryFilter(
+									new BasicNumericDataset(
+											pickupConstraints.toArray(
+													new NumericData[pickupConstraints.size()])),
+									pickupDimFields.toArray(
+											new NumericDimensionField[pickupDimFields.size()]),
+									pickupGeometry,
+									compareOp),
+							new SpatialQueryFilter(
+									new BasicNumericDataset(
+											dropoffConstraints.toArray(
+													new NumericData[dropoffConstraints.size()])),
+									dropoffDimFields.toArray(
+											new NumericDimensionField[dropoffDimFields.size()]),
+									dropoffGeometry,
+									compareOp)
+		}));
 	}
 
 	private static Constraints createNYCTLCConstraints(
-			final TemporalConstraints constraints,
+			final ConstraintData constraintData,
 			final Geometry pickupGeometry,
 			final Geometry dropoffGeometry ) {
+
+		final ConstraintSet cs1 = new ConstraintSet();
+		cs1.addConstraint(
+				BasicDimensionDefinition.class,
+				constraintData);
+
 		final Constraints geoConstraints = basicConstraintsFromGeometry(
 				pickupGeometry,
 				dropoffGeometry);
-		return geoConstraints.merge(createTemporalConstraints(constraints));
+		return geoConstraints.merge(
+				new Constraints(
+						cs1));
 	}
 
 	public static BasicQuery.Constraints basicConstraintsFromGeometry(
@@ -144,8 +143,9 @@ public class NYCTLCQuery extends
 				NYCTLCDimensionalityTypeProvider.DropoffLongitudeDefinition.class,
 				NYCTLCDimensionalityTypeProvider.DropoffLatitudeDefinition.class);
 		return new BasicQuery.Constraints(
-				pickupSet).merge(new BasicQuery.Constraints(
-				dropoffSet));
+				pickupSet).merge(
+						new BasicQuery.Constraints(
+								dropoffSet));
 	}
 
 	private static void constructListOfConstraintSetsFromGeometry(
@@ -159,7 +159,8 @@ public class NYCTLCQuery extends
 		if (n > 1) {
 			for (int gi = 0; gi < n; gi++) {
 				constructListOfConstraintSetsFromGeometry(
-						geometry.getGeometryN(gi),
+						geometry.getGeometryN(
+								gi),
 						destinationListOfSets,
 						lonClass,
 						latClass);
@@ -167,10 +168,11 @@ public class NYCTLCQuery extends
 		}
 		else {
 			final Envelope env = geometry.getEnvelopeInternal();
-			destinationListOfSets.add(constraintSetFromEnvelope(
-					env,
-					lonClass,
-					latClass));
+			destinationListOfSets.add(
+					constraintSetFromEnvelope(
+							env,
+							lonClass,
+							latClass));
 		}
 	}
 
@@ -206,37 +208,29 @@ public class NYCTLCQuery extends
 				constraintsPerDimension);
 	}
 
-	public static BasicQuery.Constraints createTemporalConstraints(
-			final TemporalConstraints temporalConstraints ) {
-		final List<BasicQuery.ConstraintSet> constraints = new ArrayList<BasicQuery.ConstraintSet>();
-		for (final TemporalRange range : temporalConstraints.getRanges()) {
-			constraints.add(new BasicQuery.ConstraintSet(
-					BasicDimensionDefinition.class,
-					new BasicQuery.ConstraintData(
-							new NumericRange(
-									range.getStartTime().getTime(),
-									range.getEndTime().getTime()),
-							false)));
-			final BasicQuery.Constraints pickupTimeConstraints = new BasicQuery.Constraints(
-					constraints);
-		}
-		return new BasicQuery.Constraints(
-				constraints);
-	}
-
 	@Override
 	public byte[] toBinary() {
 		final byte[] superBinary = super.toBinary();
-		final byte[] pickupGeometryBinary = new WKBWriter().write(pickupGeometry);
-		final byte[] dropoffGeometryBinary = new WKBWriter().write(dropoffGeometry);
-		final ByteBuffer buf = ByteBuffer.allocate(superBinary.length + pickupGeometryBinary.length + dropoffGeometryBinary.length + 16);
-		buf.putInt(compareOp.ordinal());
-		buf.putInt(superBinary.length);
-		buf.put(superBinary);
-		buf.putInt(pickupGeometryBinary.length);
-		buf.put(pickupGeometryBinary);
-		buf.putInt(dropoffGeometryBinary.length);
-		buf.put(dropoffGeometryBinary);
+		final byte[] pickupGeometryBinary = new WKBWriter().write(
+				pickupGeometry);
+		final byte[] dropoffGeometryBinary = new WKBWriter().write(
+				dropoffGeometry);
+		final ByteBuffer buf = ByteBuffer.allocate(
+				superBinary.length + pickupGeometryBinary.length + dropoffGeometryBinary.length + 16);
+		buf.putInt(
+				compareOp.ordinal());
+		buf.putInt(
+				superBinary.length);
+		buf.put(
+				superBinary);
+		buf.putInt(
+				pickupGeometryBinary.length);
+		buf.put(
+				pickupGeometryBinary);
+		buf.putInt(
+				dropoffGeometryBinary.length);
+		buf.put(
+				dropoffGeometryBinary);
 
 		return buf.array();
 	}
@@ -244,17 +238,22 @@ public class NYCTLCQuery extends
 	@Override
 	public void fromBinary(
 			final byte[] bytes ) {
-		final ByteBuffer buf = ByteBuffer.wrap(bytes);
+		final ByteBuffer buf = ByteBuffer.wrap(
+				bytes);
 		compareOp = SpatialQueryFilter.CompareOperation.values()[buf.getInt()];
 		final int superLength = buf.getInt();
 		final byte[] superBinary = new byte[superLength];
-		buf.get(superBinary);
-		super.fromBinary(superBinary);
+		buf.get(
+				superBinary);
+		super.fromBinary(
+				superBinary);
 		final int pickupGeomLength = buf.getInt();
 		final byte[] pickupGeometryBinary = new byte[pickupGeomLength];
-		buf.get(pickupGeometryBinary);
+		buf.get(
+				pickupGeometryBinary);
 		try {
-			pickupGeometry = new WKBReader().read(pickupGeometryBinary);
+			pickupGeometry = new WKBReader().read(
+					pickupGeometryBinary);
 		}
 		catch (final ParseException e) {
 			LOGGER.warn(
@@ -263,9 +262,11 @@ public class NYCTLCQuery extends
 		}
 		final int dropoffGeomLength = buf.getInt();
 		final byte[] dropoffGeometryBinary = new byte[dropoffGeomLength];
-		buf.get(dropoffGeometryBinary);
+		buf.get(
+				dropoffGeometryBinary);
 		try {
-			dropoffGeometry = new WKBReader().read(dropoffGeometryBinary);
+			dropoffGeometry = new WKBReader().read(
+					dropoffGeometryBinary);
 		}
 		catch (final ParseException e) {
 			LOGGER.warn(

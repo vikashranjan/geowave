@@ -101,10 +101,7 @@ public class NYCTLCTest
 		queryOptions.setIndex(new NYCTLCDimensionalityTypeProvider().createPrimaryIndex());
 
 		final Query query = new NYCTLCQuery(
-				new Date(
-						0),
-				new Date(
-						100),
+						0,						100,
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"),
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
 

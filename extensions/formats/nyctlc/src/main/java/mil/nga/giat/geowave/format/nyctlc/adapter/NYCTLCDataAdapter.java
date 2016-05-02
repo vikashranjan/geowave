@@ -103,20 +103,13 @@ public class NYCTLCDataAdapter extends
 								fieldVisiblityHandler,
 								config.getAttributeName())));
 
-		// Set Time Descriptor
-		final TimeDescriptors.TimeDescriptorConfiguration timeDescConf = new TimeDescriptors.TimeDescriptorConfiguration();
-		timeDescConf.setTimeName(NYCTLCUtils.Field.TIME_OF_DAY_SEC.getIndexedName());
 
-		final TimeDescriptors timeDescriptors = new TimeDescriptors(
-				type,
-				timeDescConf);
-
+		final AttributeDescriptor timeOfDayDescriptor = type.getDescriptor(NYCTLCUtils.Field.TIME_OF_DAY_SEC.getIndexedName());
 		dimensionMatchingFieldHandlers.put(
 				NYCTLCDimensionalityTypeProvider.TIME_OF_DAY_SEC_FIELD_ID,
-				new FeatureTimestampHandler(
-						timeDescriptors.getTime(),
+				new TimeOfDayHandler(timeOfDayDescriptor,
 						config.getManager().createVisibilityHandler(
-								timeDescriptors.getTime().getLocalName(),
+								timeOfDayDescriptor.getLocalName(),
 								fieldVisiblityHandler,
 								config.getAttributeName())));
 	}
