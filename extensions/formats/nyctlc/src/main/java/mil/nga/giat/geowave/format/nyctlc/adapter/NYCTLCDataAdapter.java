@@ -103,11 +103,11 @@ public class NYCTLCDataAdapter extends
 								fieldVisiblityHandler,
 								config.getAttributeName())));
 
-
 		final AttributeDescriptor timeOfDayDescriptor = type.getDescriptor(NYCTLCUtils.Field.TIME_OF_DAY_SEC.getIndexedName());
 		dimensionMatchingFieldHandlers.put(
 				NYCTLCDimensionalityTypeProvider.TIME_OF_DAY_SEC_FIELD_ID,
-				new TimeOfDayHandler(timeOfDayDescriptor,
+				new TimeOfDayHandler(
+						timeOfDayDescriptor,
 						config.getManager().createVisibilityHandler(
 								timeOfDayDescriptor.getLocalName(),
 								fieldVisiblityHandler,

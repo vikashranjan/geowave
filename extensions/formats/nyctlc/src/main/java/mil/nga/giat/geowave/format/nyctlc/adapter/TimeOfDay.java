@@ -53,18 +53,15 @@ public class TimeOfDay implements
 
 	@Override
 	public byte[] toBinary() {
-		final ByteBuffer bytes = ByteBuffer.allocate(
-				4);
-		bytes.putInt(
-				timeSeconds);
+		final ByteBuffer bytes = ByteBuffer.allocate(4);
+		bytes.putInt(timeSeconds);
 		return bytes.array();
 	}
 
 	@Override
 	public void fromBinary(
 			final byte[] bytes ) {
-		final ByteBuffer buf = ByteBuffer.wrap(
-				bytes);
+		final ByteBuffer buf = ByteBuffer.wrap(bytes);
 		timeSeconds = buf.getInt();
 	}
 
@@ -72,10 +69,7 @@ public class TimeOfDay implements
 	public boolean overlaps(
 			final NumericDimensionField[] field,
 			final NumericData[] rangeData ) {
-		return (int) Math.floor(
-				rangeData[0].getMin()) <= this.timeSeconds
-				&& (int) Math.ceil(
-						rangeData[0].getMax()) >= this.timeSeconds;
+		return (int) Math.floor(rangeData[0].getMin()) <= this.timeSeconds && (int) Math.ceil(rangeData[0].getMax()) >= this.timeSeconds;
 	}
 
 }

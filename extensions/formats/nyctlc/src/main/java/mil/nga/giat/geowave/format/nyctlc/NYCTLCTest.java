@@ -103,14 +103,15 @@ public class NYCTLCTest
 		queryOptions.setIndex(new NYCTLCDimensionalityTypeProvider().createPrimaryIndex());
 
 		final Query query = new NYCTLCQuery(
-						0,						100,
+				0,
+				100,
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"),
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
 
-		 queryOptions.setAggregation(
-		 new NYCTLCAggregation(),
-		 new NYCTLCDataAdapter(
-		 new NYCTLCIngestPlugin().getTypes()[0]));
+		queryOptions.setAggregation(
+				new NYCTLCAggregation(),
+				new NYCTLCDataAdapter(
+						new NYCTLCIngestPlugin().getTypes()[0]));
 
 		if (queryOptions.getAggregation() != null) {
 			final CloseableIterator<NYCTLCStatistics> results = dataStore.query(

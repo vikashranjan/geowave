@@ -45,8 +45,7 @@ public class TimeOfDayHandler implements
 	@Override
 	public TimeOfDay toIndexValue(
 			final SimpleFeature row ) {
-		final Object object = nativeTimestampHandler.getFieldValue(
-				row);
+		final Object object = nativeTimestampHandler.getFieldValue(row);
 		byte[] visibility;
 		if (visibilityHandler != null) {
 			visibility = visibilityHandler.getVisibility(
@@ -57,7 +56,8 @@ public class TimeOfDayHandler implements
 		else {
 			visibility = new byte[] {};
 		}
-		return new TimeOfDay(((Number) object).intValue(),
+		return new TimeOfDay(
+				((Number) object).intValue(),
 				visibility);
 	}
 
@@ -68,7 +68,8 @@ public class TimeOfDayHandler implements
 		return new PersistentValue[] {
 			new PersistentValue<Object>(
 					nativeTimestampHandler.getFieldId(),
-					new Integer(indexValue.getTimeSeconds()))
+					new Integer(
+							indexValue.getTimeSeconds()))
 		};
 	}
 }

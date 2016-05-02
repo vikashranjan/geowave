@@ -54,30 +54,27 @@ public class NYCTLCDimensionalityTypeProvider implements
 
 	public final static ByteArrayId PICKUP_GEOMETRY_FIELD_ID = new ByteArrayId(
 			ByteArrayUtils.combineArrays(
-					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(
-							NYCTLCUtils.Field.PICKUP_LOCATION.getIndexedName()),
+					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(NYCTLCUtils.Field.PICKUP_LOCATION.getIndexedName()),
 					new byte[] {
 						0,
 						0
-	}));
+					}));
 
 	public final static ByteArrayId DROPOFF_GEOMETRY_FIELD_ID = new ByteArrayId(
 			ByteArrayUtils.combineArrays(
-					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(
-							NYCTLCUtils.Field.DROPOFF_LOCATION.getIndexedName()),
+					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(NYCTLCUtils.Field.DROPOFF_LOCATION.getIndexedName()),
 					new byte[] {
 						0,
 						0
-	}));
+					}));
 
 	public final static ByteArrayId TIME_OF_DAY_SEC_FIELD_ID = new ByteArrayId(
 			ByteArrayUtils.combineArrays(
-					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(
-							NYCTLCUtils.Field.TIME_OF_DAY_SEC.getIndexedName()),
+					mil.nga.giat.geowave.core.index.StringUtils.stringToBinary(NYCTLCUtils.Field.TIME_OF_DAY_SEC.getIndexedName()),
 					new byte[] {
 						0,
 						0
-	}));
+					}));
 
 	public NYCTLCDimensionalityTypeProvider() {}
 
@@ -105,8 +102,7 @@ public class NYCTLCDimensionalityTypeProvider implements
 
 	@Override
 	public PrimaryIndex createPrimaryIndex() {
-		return internalCreatePrimaryIndex(
-				options);
+		return internalCreatePrimaryIndex(options);
 	}
 
 	private static PrimaryIndex internalCreatePrimaryIndex(
@@ -124,8 +120,7 @@ public class NYCTLCDimensionalityTypeProvider implements
 					true,
 					DROPOFF_GEOMETRY_FIELD_ID),
 			new TimeOfDayField(
-					new TimeOfDayDefinition(
-							),
+					new TimeOfDayDefinition(),
 					TIME_OF_DAY_SEC_FIELD_ID)
 		};
 
@@ -139,8 +134,7 @@ public class NYCTLCDimensionalityTypeProvider implements
 			new BasicDimensionDefinition(
 					0,
 					new Long(
-							TimeUnit.DAYS.toSeconds(
-									1)).doubleValue())
+							TimeUnit.DAYS.toSeconds(1)).doubleValue())
 		};
 
 		final String combinedId = DEFAULT_NYCTLC_ID_STR + "_" + options.bias;
@@ -154,7 +148,7 @@ public class NYCTLCDimensionalityTypeProvider implements
 							options.bias.getSpatialPrecision(),
 							options.bias.getSpatialPrecision(),
 							options.bias.getTemporalPrecision()
-		},
+						},
 						SFCFactory.SFCType.HILBERT),
 				new BasicIndexModel(
 						fields),
@@ -228,8 +222,7 @@ public class NYCTLCDimensionalityTypeProvider implements
 		@Override
 		public Bias convert(
 				final String value ) {
-			final Bias convertedValue = Bias.fromString(
-					value);
+			final Bias convertedValue = Bias.fromString(value);
 
 			if (convertedValue == null) {
 				throw new ParameterException(
@@ -263,8 +256,7 @@ public class NYCTLCDimensionalityTypeProvider implements
 		}
 
 		public PrimaryIndex createIndex() {
-			return internalCreatePrimaryIndex(
-					options);
+			return internalCreatePrimaryIndex(options);
 		}
 	}
 
@@ -283,10 +275,8 @@ public class NYCTLCDimensionalityTypeProvider implements
 			return new BinRange[] {
 				new BinRange(
 						// by default clamp to the min and max
-						clamp(
-								range.getMin()),
-						clamp(
-								range.getMax()))
+						clamp(range.getMin()),
+						clamp(range.getMax()))
 			};
 		}
 	}
@@ -333,10 +323,8 @@ public class NYCTLCDimensionalityTypeProvider implements
 			return new BinRange[] {
 				new BinRange(
 						// by default clamp to the min and max
-						clamp(
-								range.getMin()),
-						clamp(
-								range.getMax()))
+						clamp(range.getMin()),
+						clamp(range.getMax()))
 			};
 		}
 	}
@@ -364,10 +352,13 @@ public class NYCTLCDimensionalityTypeProvider implements
 					MAX_LAT);
 		}
 	}
+
 	public static class TimeOfDayField implements
-		NumericDimensionField<TimeOfDay>{
+			NumericDimensionField<TimeOfDay>
+	{
 		private TimeOfDayDefinition base;
 		private ByteArrayId fieldId;
+
 		public TimeOfDayField(
 				TimeOfDayDefinition base,
 				ByteArrayId fieldId ) {
@@ -382,14 +373,12 @@ public class NYCTLCDimensionalityTypeProvider implements
 
 		public double normalize(
 				double value ) {
-			return base.normalize(
-					value);
+			return base.normalize(value);
 		}
 
 		public BinRange[] getNormalizedRanges(
 				NumericData range ) {
-			return base.getNormalizedRanges(
-					range);
+			return base.getNormalizedRanges(range);
 		}
 
 		public NumericData getFullRange() {
@@ -398,14 +387,12 @@ public class NYCTLCDimensionalityTypeProvider implements
 
 		public double denormalize(
 				double value ) {
-			return base.denormalize(
-					value);
+			return base.denormalize(value);
 		}
 
 		public NumericRange getDenormalizedRange(
 				BinRange range ) {
-			return base.getDenormalizedRange(
-					range);
+			return base.getDenormalizedRange(range);
 		}
 
 		public int getFixedBinIdSize() {
@@ -419,6 +406,7 @@ public class NYCTLCDimensionalityTypeProvider implements
 		public NumericRange getBounds() {
 			return base.getBounds();
 		}
+
 		@Override
 		public byte[] toBinary() {
 			final byte[] dimensionBinary = PersistenceUtils.toBinary(base);
@@ -490,7 +478,8 @@ public class NYCTLCDimensionalityTypeProvider implements
 		@Override
 		public NumericData getNumericData(
 				TimeOfDay dataElement ) {
-			return new NumericValue(dataElement.getTimeSeconds());
+			return new NumericValue(
+					dataElement.getTimeSeconds());
 		}
 
 		@Override
@@ -511,7 +500,8 @@ public class NYCTLCDimensionalityTypeProvider implements
 					ByteBuffer buf = ByteBuffer.allocate(4);
 					buf.putInt(fieldValue.getTimeSeconds());
 					return buf.array();
-				}};
+				}
+			};
 		}
 
 		@Override
@@ -522,24 +512,28 @@ public class NYCTLCDimensionalityTypeProvider implements
 				public TimeOfDay readField(
 						byte[] fieldData ) {
 					ByteBuffer buf = ByteBuffer.wrap(fieldData);
-					return new TimeOfDay(buf.getInt(), new byte[]{});
+					return new TimeOfDay(
+							buf.getInt(),
+							new byte[] {});
 
-				}};
+				}
+			};
 		}
 
 		@Override
 		public NumericDimensionDefinition getBaseDefinition() {
 			return base;
-		}		
+		}
 	}
+
 	public static class TimeOfDayDefinition extends
 			BasicDimensionDefinition
 	{
 		public TimeOfDayDefinition() {
-			super (0,
+			super(
+					0,
 					new Long(
-							TimeUnit.DAYS.toSeconds(
-									1)).doubleValue());
+							TimeUnit.DAYS.toSeconds(1)).doubleValue());
 		}
 	}
 }
