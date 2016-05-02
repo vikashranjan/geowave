@@ -359,6 +359,10 @@ public class NYCTLCDimensionalityTypeProvider implements
 		private TimeOfDayDefinition base;
 		private ByteArrayId fieldId;
 
+		public TimeOfDayField() {
+			super();
+		}
+
 		public TimeOfDayField(
 				TimeOfDayDefinition base,
 				ByteArrayId fieldId ) {
