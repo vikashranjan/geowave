@@ -8,6 +8,8 @@ import mil.nga.giat.geowave.core.store.CloseableIterator;
 import mil.nga.giat.geowave.core.store.IndexWriter;
 import mil.nga.giat.geowave.core.store.query.Query;
 import mil.nga.giat.geowave.core.store.query.QueryOptions;
+import mil.nga.giat.geowave.core.store.query.aggregate.CountAggregation;
+import mil.nga.giat.geowave.core.store.query.aggregate.CountResult;
 import mil.nga.giat.geowave.datastore.accumulo.AccumuloDataStore;
 import mil.nga.giat.geowave.datastore.accumulo.AccumuloOperations;
 import mil.nga.giat.geowave.datastore.accumulo.BasicAccumuloOperations;
@@ -108,21 +110,19 @@ public class NYCTLCTest
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"),
 				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
 
-		queryOptions.setAggregation(
-				new NYCTLCAggregation(),
+		queryOptions.setAggregation(new CountAggregation<>(),
 				new NYCTLCDataAdapter(
 						new NYCTLCIngestPlugin().getTypes()[0]));
 
 		if (queryOptions.getAggregation() != null) {
-			final CloseableIterator<NYCTLCStatistics> results = dataStore.query(
+			final CloseableIterator<CountResult> results = dataStore.query(
 					queryOptions,
 					query);
 
 			while (results.hasNext()) {
-				final NYCTLCStatistics stats = results.next();
+				final CountResult stats = results.next();
 
-				System.out.println(stats.toJSONObject().toString(
-						2));
+				System.out.println(stats.getCount());
 			}
 			results.close();
 		}
