@@ -64,12 +64,12 @@ public class NYCTLCService
 	private String boroughs;
 	private String neighborhoods;
 
-	private double bufDeg = 0.0082;
+	private double bufDeg = 0.0041;
 	private int numSides = 20;
 	private GeometryBuilder geomBuilder = new GeometryBuilder();
 
 	private int DEFAULT_TIME_RANGE = new Long(
-			TimeUnit.MINUTES.toSeconds(30)).intValue();
+			TimeUnit.MINUTES.toSeconds(10)).intValue();
 	private final static String DATE_START_FORMAT = "yyyyMMdd";
 
 	// mapping of addresses/lat,lon pairs to google geocoding address info
@@ -188,22 +188,11 @@ public class NYCTLCService
 			@QueryParam("startTime")
 			String startTime )
 			throws com.vividsolutions.jts.io.ParseException {
+		int currentBufMinutes = this.DEFAULT_TIME_RANGE;
 
+		double currentBufDeg = bufDeg;
 		Geometry startGeom = null, destGeom = null;
-
-		// if lat/lon query, do this
-		if (startLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLon != Double.MIN_VALUE) {
-			startGeom = geomBuilder.box(
-					startLon - bufDeg,
-					startLat - bufDeg,
-					startLon + bufDeg,
-					startLat + bufDeg);
-			destGeom = geomBuilder.box(
-					destLon - bufDeg,
-					destLat - bufDeg,
-					destLon + bufDeg,
-					destLat + bufDeg);
-		}
+		int iterations = 0;
 
 		int startTimeSec = -1;
 
@@ -227,12 +216,27 @@ public class NYCTLCService
 		catch (ParseException e1) {
 			log.error("Unable to parse start time: " + startTime);
 		}
+		while (iterations < 5){
+		// if lat/lon query, do this
+		if (startLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLon != Double.MIN_VALUE) {
+			startGeom = geomBuilder.box(
+					startLon - currentBufDeg,
+					startLat - currentBufDeg,
+					startLon + currentBufDeg,
+					startLat + currentBufDeg);
+			destGeom = geomBuilder.box(
+					destLon - currentBufDeg,
+					destLat - currentBufDeg,
+					destLon + currentBufDeg,
+					destLat + currentBufDeg);
+		}
+
 
 		if (startGeom != null && destGeom != null && startTimeSec >= 0) {
 			// run a query using combo of geom & time
 			final Query query = new NYCTLCQuery(
-					startTimeSec,
-					startTimeSec + DEFAULT_TIME_RANGE,
+					startTimeSec - currentBufMinutes,
+					startTimeSec + currentBufMinutes,
 					startGeom,
 					destGeom);
 
@@ -268,6 +272,10 @@ public class NYCTLCService
 				return Response.ok(
 						durations.toString(defaultIndentation)).build();
 			}
+			iterations++;
+			currentBufDeg *=2;
+			currentBufMinutes*=2;
+		}
 		}
 		return Response.ok("[[" + dateString + ", 0]]").build();
 	}
@@ -292,9 +300,6 @@ public class NYCTLCService
 			@QueryParam("startTime")
 			String startTime,
 			@DefaultValue("")
-			@QueryParam("endTime")
-			String endTime,
-			@DefaultValue("")
 			@QueryParam("startAddress")
 			String startAddress,
 			@DefaultValue("")
@@ -303,37 +308,10 @@ public class NYCTLCService
 
 		Geometry startGeom = null, destGeom = null;
 		JSONObject startAddrInfo = null, destAddrInfo = null;
-
-		// if lat/lon query, do this
-		if (startLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLon != Double.MIN_VALUE) {
-			startAddrInfo = getAddressInfo(
-					startLon,
-					startLat);
-			destAddrInfo = getAddressInfo(
-					destLon,
-					destLat);
-
-			startGeom = geomBuilder.box(
-					startLon - bufDeg,
-					startLat - bufDeg,
-					startLon + bufDeg,
-					startLat + bufDeg);
-			destGeom = geomBuilder.box(
-					destLon - bufDeg,
-					destLat - bufDeg,
-					destLon + bufDeg,
-					destLat + bufDeg);
-		}
-		// if address query, do this
-		else if (!startAddress.isEmpty() && !destAddress.isEmpty()) {
-			startAddrInfo = getAddressInfo(startAddress);
-			destAddrInfo = getAddressInfo(destAddress);
-
-			startGeom = geometryFromAddrInfo(startAddrInfo);
-			destGeom = geometryFromAddrInfo(destAddrInfo);
-		}
-
-		int startTimeSec = -1, endTimeSec = -1;
+		int currentBufMinutes = this.DEFAULT_TIME_RANGE;
+		double currentBufDeg = bufDeg;
+		int iterations = 0;
+		int startTimeSec = -1;
 
 		DateFormat df = new SimpleDateFormat(
 				"yyyy-MM-dd'T'HH:mm:ss");
@@ -348,9 +326,6 @@ public class NYCTLCService
 			startTimeSec = (!startTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(startTime.substring(
 					0,
 					19))) : dateToTimeOfDaySec(new Date());
-			endTimeSec = (!endTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(endTime.substring(
-					0,
-					19))) : dateToTimeOfDaySec(new Date());
 			dateString = dfOut.format(df.parse(startTime.substring(
 					0,
 					19)));
@@ -358,12 +333,43 @@ public class NYCTLCService
 		catch (ParseException e1) {
 			log.error("Unable to parse start time: " + startTime);
 		}
+		while(iterations < 5){
+		// if lat/lon query, do this
+		if (startLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLon != Double.MIN_VALUE) {
+			startAddrInfo = getAddressInfo(
+					startLon,
+					startLat);
+			destAddrInfo = getAddressInfo(
+					destLon,
+					destLat);
+
+			startGeom = geomBuilder.box(
+					startLon - currentBufDeg,
+					startLat - currentBufDeg,
+					startLon + currentBufDeg,
+					startLat + currentBufDeg);
+			destGeom = geomBuilder.box(
+					destLon - currentBufDeg,
+					destLat - currentBufDeg,
+					destLon + currentBufDeg,
+					destLat + currentBufDeg);
+		}
+		// if address query, do this
+		else if (!startAddress.isEmpty() && !destAddress.isEmpty()) {
+			startAddrInfo = getAddressInfo(startAddress);
+			destAddrInfo = getAddressInfo(destAddress);
+
+			startGeom = geometryFromAddrInfo(startAddrInfo);
+			destGeom = geometryFromAddrInfo(destAddrInfo);
+		}
+
+
 
 		if (startGeom != null && destGeom != null) {
 			// run a query using combo of geom & time
 			final Query query = new NYCTLCQuery(
-					startTimeSec,
-					endTimeSec,
+					startTimeSec-currentBufMinutes,
+					startTimeSec+currentBufMinutes,
 					startGeom,
 					destGeom);
 
@@ -421,6 +427,10 @@ public class NYCTLCService
 				return Response.ok(
 						result.toString(defaultIndentation)).build();
 			}
+			iterations++;
+			currentBufDeg*=2;
+			currentBufMinutes*=2;
+		}
 		}
 		return Response.ok("[[" + dateString + ", 0]]").build();
 	}
