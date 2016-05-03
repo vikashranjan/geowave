@@ -182,8 +182,8 @@ public class NYCTLCService
 		if (startLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLon != Double.MIN_VALUE) {
 			//startGeom = geomBuilder.box(startLon-bufDeg, startLat-bufDeg, startLon+bufDeg, startLat+bufDeg);
 			//destGeom = geomBuilder.box(destLon-bufDeg, destLat-bufDeg, destLon+bufDeg, destLat+bufDeg);
-			startGeom = new WKTReader().read("POINT((" + startLon + "," + startLat + "))");
-			destGeom = new WKTReader().read("POINT((" + destLon + "," + destLat + "))");
+			startGeom = new WKTReader().read("POINT(" + startLon + "," + startLat + ")");
+			destGeom = new WKTReader().read("POINT(" + destLon + "," + destLat + ")");
 		}
 		
 		int startTimeSec = -1;
