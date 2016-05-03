@@ -3,11 +3,14 @@ package mil.nga.giat.geowave.format.nyctlc.statistics;
 import mil.nga.giat.geowave.core.index.Mergeable;
 import mil.nga.giat.geowave.format.nyctlc.NYCTLCUtils;
 import net.sf.json.JSONObject;
+
 import org.opengis.feature.simple.SimpleFeature;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by geowave on 4/28/16.
@@ -20,6 +23,8 @@ public class NYCTLCStatistics implements
 
 	private List<BaseStat> statsList = new ArrayList<BaseStat>();
 
+	private MinMaxTotStat durationStat = new MinMaxTotStat();
+	
 	public NYCTLCStatistics() {
 		for (NYCTLCUtils.Field field : NYCTLCUtils.Field.values()) {
 			if (field.getStatBuilder() != null) {
@@ -45,6 +50,16 @@ public class NYCTLCStatistics implements
 				statIdx++;
 			}
 		}
+		
+		if (entry.getAttribute(NYCTLCUtils.Field.DROPOFF_DATETIME.getIndexedName()) != null && entry.getAttribute(NYCTLCUtils.Field.PICKUP_DATETIME.getIndexedName()) != null){
+			Date dropoffDate = (Date)entry.getAttribute(NYCTLCUtils.Field.DROPOFF_DATETIME.getIndexedName());
+			Date pickupDate = (Date)entry.getAttribute(NYCTLCUtils.Field.PICKUP_DATETIME.getIndexedName());
+			durationStat.updateStat(TimeUnit.MILLISECONDS.toSeconds(dropoffDate.getTime()) - TimeUnit.MILLISECONDS.toSeconds(pickupDate.getTime()));
+		}
+	}
+
+	public MinMaxTotStat getDurationStat() {
+		return durationStat;
 	}
 
 	@Override
@@ -59,26 +74,32 @@ public class NYCTLCStatistics implements
 						statIdx).merge(
 						stats.statsList.get(statIdx));
 			}
+			
+			durationStat.merge(stats.durationStat);
 		}
 	}
 
 	@Override
 	public byte[] toBinary() {
 
-		byte[][] statsBytes = new byte[statsList.size()][];
+		byte[][] statsBytes = new byte[statsList.size()+1][];
 		int byteLen = 0;
 		for (int statIdx = 0; statIdx < statsList.size(); statIdx++) {
 			statsBytes[statIdx] = statsList.get(
 					statIdx).toBinary();
 			byteLen += statsBytes[statIdx].length + 4;
 		}
-
+		statsBytes[statsList.size()] = durationStat.toBinary();
+		byteLen += statsBytes[statsList.size()].length + 4;
+		
 		final ByteBuffer buffer = ByteBuffer.allocate(8 + byteLen);
 		buffer.putLong(numEntries);
-		for (int statIdx = 0; statIdx < statsList.size(); statIdx++) {
+		for (int statIdx = 0; statIdx < statsList.size()+1; statIdx++) {
 			buffer.putInt(statsBytes[statIdx].length);
 			buffer.put(statsBytes[statIdx]);
 		}
+		
+		
 		return buffer.array();
 	}
 
@@ -98,6 +119,13 @@ public class NYCTLCStatistics implements
 				statsList.add(stat);
 			}
 		}
+		
+		int statLen = buffer.getInt();
+		byte[] statBytes = new byte[statLen];
+		buffer.get(statBytes);
+		
+		durationStat = new MinMaxTotStat();
+		durationStat.fromBinary(statBytes);
 	}
 
 	public JSONObject toJSONObject() {
@@ -117,6 +145,8 @@ public class NYCTLCStatistics implements
 								statIdx++).toJSONObject());
 			}
 		}
+		
+		statsJson.put("duration", durationStat.toJSONObject());
 
 		return statsJson;
 	}
@@ -136,7 +166,7 @@ public class NYCTLCStatistics implements
 			public abstract BaseStat build();
 		}
 	}
-
+	
 	public static class MinMaxTotStat extends
 			BaseStat<Number>
 	{
@@ -219,6 +249,26 @@ public class NYCTLCStatistics implements
 			public MinMaxTotStat build() {
 				return new MinMaxTotStat();
 			}
+		}
+
+		public double getMinValue() {
+			return minValue;
+		}
+
+		public double getMaxValue() {
+			return maxValue;
+		}
+
+		public double getTotalValue() {
+			return totalValue;
+		}
+
+		public long getNumValues() {
+			return numValues;
+		}
+		
+		public double getAvgValue() {
+			return totalValue / (double)numValues;
 		}
 	}
 

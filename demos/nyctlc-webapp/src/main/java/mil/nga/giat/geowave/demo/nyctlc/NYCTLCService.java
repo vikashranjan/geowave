@@ -1,6 +1,8 @@
 package mil.nga.giat.geowave.demo.nyctlc;
 
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.io.WKTReader;
+
 import mil.nga.giat.geowave.core.store.CloseableIterator;
 import mil.nga.giat.geowave.core.store.query.Query;
 import mil.nga.giat.geowave.core.store.query.QueryOptions;
@@ -16,6 +18,7 @@ import mil.nga.giat.geowave.format.nyctlc.statistics.NYCTLCStatistics;
 import mil.nga.giat.geowave.service.ServiceUtils;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.geotools.geometry.jts.GeometryBuilder;
@@ -29,7 +32,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+
 import java.io.IOException;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -59,7 +64,7 @@ public class NYCTLCService
 	private int numSides = 20;
 	private GeometryBuilder geomBuilder = new GeometryBuilder();
 
-	private long DEFAULT_TIME_RANGE = TimeUnit.MINUTES.toSeconds(10);
+	private int DEFAULT_TIME_RANGE = new Long(30).intValue();
 	private final static String DATE_START_FORMAT = "yyyyMMdd";
 
 	// mapping of addresses/lat,lon pairs to google geocoding address info
@@ -167,12 +172,95 @@ public class NYCTLCService
 			@DefaultValue("" + Double.MIN_VALUE)
 			@QueryParam("destLon")
 			double destLon,
-			@DefaultValue("" + Long.MIN_VALUE)
+			@DefaultValue("")
 			@QueryParam("startTime")
-			long startTime,
-			@DefaultValue("" + Long.MIN_VALUE)
+			String startTime) throws com.vividsolutions.jts.io.ParseException{
+		
+		Geometry startGeom = null, destGeom = null;
+
+		// if lat/lon query, do this
+		if (startLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLon != Double.MIN_VALUE) {
+			//startGeom = geomBuilder.box(startLon-bufDeg, startLat-bufDeg, startLon+bufDeg, startLat+bufDeg);
+			//destGeom = geomBuilder.box(destLon-bufDeg, destLat-bufDeg, destLon+bufDeg, destLat+bufDeg);
+			startGeom = new WKTReader().read("POINT(" + startLon + "," + startLat + ")");
+			destGeom = new WKTReader().read("POINT(" + destLon + "," + destLat + ")");
+		}
+		
+		int startTimeSec = -1;
+
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.Z");
+		
+		try {
+			startTimeSec = (!startTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(startTime)) : dateToTimeOfDaySec(new Date());
+		}
+		catch (ParseException e1) {
+			log.error("Unable to parse start time: " + startTime);
+		}
+
+		if (startGeom != null && destGeom != null && startTimeSec >= 0) {
+			// run a query using combo of geom & time
+			final Query query = new NYCTLCQuery(
+					startTimeSec,
+					startTimeSec + DEFAULT_TIME_RANGE,
+					startGeom,
+					destGeom);
+
+			final QueryOptions queryOptions = new QueryOptions();
+			queryOptions.setIndex(new NYCTLCDimensionalityTypeProvider().createPrimaryIndex());
+			queryOptions.setAggregation(
+					new NYCTLCAggregation(),
+					new NYCTLCDataAdapter(
+							NYCTLCUtils.createPointDataType()));
+
+			final CloseableIterator<NYCTLCStatistics> results = dataStore.query(
+					queryOptions,
+					query);
+
+			final NYCTLCStatistics stats = (results.hasNext()) ? results.next() : null;
+
+			try {
+				results.close();
+			}
+			catch (IOException e) {
+				log.error(
+						"Unable to close CloseableIterator.",
+						e);
+			}
+
+			if (stats != null) {
+				final JSONObject result = new JSONObject();
+				JSONArray durations = new JSONArray();
+				durations.add(stats.getDurationStat().getAvgValue());
+				result.put("durations", durations);
+				return Response.ok(
+						result.toString(defaultIndentation)).build();
+			}
+		}
+		return Response.noContent().build();
+	}
+	
+	@GET
+	@Path("/tripInfoExtra")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response tripInfoExtra(
+			@DefaultValue("" + Double.MIN_VALUE)
+			@QueryParam("startLat")
+			double startLat,
+			@DefaultValue("" + Double.MIN_VALUE)
+			@QueryParam("startLon")
+			double startLon,
+			@DefaultValue("" + Double.MIN_VALUE)
+			@QueryParam("destLat")
+			double destLat,
+			@DefaultValue("" + Double.MIN_VALUE)
+			@QueryParam("destLon")
+			double destLon,
+			@DefaultValue("")
+			@QueryParam("startTime")
+			String startTime,
+			@DefaultValue("")
 			@QueryParam("endTime")
-			long endTime,
+			String endTime,
 			@DefaultValue("")
 			@QueryParam("startAddress")
 			String startAddress,
@@ -211,32 +299,23 @@ public class NYCTLCService
 			destGeom = geometryFromAddrInfo(destAddrInfo);
 		}
 
-		long startTimeSec, endTimeSec;
+		int startTimeSec = -1, endTimeSec = -1;
 
-		// setup time range
-		// if (startTime != Long.MIN_VALUE) {
-		// startTimeSec = dateToTimeOfDaySec(new Date(
-		// startTime));
-		// if (endTime != Long.MIN_VALUE) {
-		// endTimeSec = dateToTimeOfDaySec(new Date(
-		// endTime));
-		// }
-		// else {
-		// endTimeSec = startTimeSec + DEFAULT_TIME_RANGE;
-		// }
-		// }
-		// else {
-		// startTimeSec = dateToTimeOfDaySec(new Date());
-		// endTimeSec = startTimeSec + DEFAULT_TIME_RANGE;
-		// }
-		startTimeSec = startTime;
-		endTimeSec = endTime;
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.Z");
+		
+		try {
+			startTimeSec = (!startTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(startTime)) : dateToTimeOfDaySec(new Date());
+			endTimeSec = (!endTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(endTime)) : dateToTimeOfDaySec(new Date());
+		}
+		catch (ParseException e1) {
+			log.error("Unable to parse start time: " + startTime);
+		}
 
 		if (startGeom != null && destGeom != null) {
 			// run a query using combo of geom & time
 			final Query query = new NYCTLCQuery(
-							new Long(startTimeSec).intValue(),
-							new Long(endTimeSec).intValue(),
+					startTimeSec,
+					endTimeSec,
 					startGeom,
 					destGeom);
 
@@ -421,7 +500,7 @@ public class NYCTLCService
 		return null;
 	}
 
-	private long dateToTimeOfDaySec(
+	private int dateToTimeOfDaySec(
 			final Date date ) {
 		final SimpleDateFormat dateStartFormat = new SimpleDateFormat(
 				DATE_START_FORMAT);
@@ -435,7 +514,7 @@ public class NYCTLCService
 					e);
 		}
 		return new Long(
-				TimeUnit.MILLISECONDS.toSeconds(date.getTime() - dateStart.getTime())).longValue();
+				TimeUnit.MILLISECONDS.toSeconds(date.getTime() - dateStart.getTime())).intValue();
 	}
 
 	@GET
@@ -487,15 +566,15 @@ public class NYCTLCService
 		// "5615 Roundtree Lane, Columbia, MD",
 		// "43008 Center St., South Riding, VA");
 
-		resp = service.tripInfo(
-				Double.MIN_VALUE,
-				Double.MIN_VALUE,
-				Double.MIN_VALUE,
-				Double.MIN_VALUE,
-				0,
-				15,
-				"Roundtree Lane, Columbia, MD",
-				"Center St., South Riding, VA");
+//		resp = service.tripInfo(
+//				Double.MIN_VALUE,
+//				Double.MIN_VALUE,
+//				Double.MIN_VALUE,
+//				Double.MIN_VALUE,
+//				0,
+//				15,
+//				"Roundtree Lane, Columbia, MD",
+//				"Center St., South Riding, VA");
 
 		System.out.println("done!");
 	}
