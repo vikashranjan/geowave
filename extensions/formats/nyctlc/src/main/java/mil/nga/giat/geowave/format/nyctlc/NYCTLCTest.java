@@ -1,5 +1,6 @@
 package mil.nga.giat.geowave.format.nyctlc;
 
+import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.WKTReader;
 import mil.nga.giat.geowave.adapter.vector.FeatureDataAdapter;
 import mil.nga.giat.geowave.core.geotime.ingest.SpatialTemporalDimensionalityTypeProvider;
@@ -17,6 +18,7 @@ import mil.nga.giat.geowave.format.nyctlc.query.NYCTLCAggregation;
 import mil.nga.giat.geowave.format.nyctlc.query.NYCTLCQuery;
 import mil.nga.giat.geowave.format.nyctlc.statistics.NYCTLCStatistics;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.geometry.jts.GeometryBuilder;
 import org.opengis.feature.simple.SimpleFeature;
 
 import java.util.Date;
@@ -91,9 +93,9 @@ public class NYCTLCTest
 		final AccumuloOperations operations = new BasicAccumuloOperations(
 				"10.0.0.55:2181",
 				"accumulo",
-				"foss4g",
-				"foss4g",
-				"foss4g.nyctlc");
+				"demo",
+				"demo",
+				"demo.nyctlc");
 
 		final AccumuloDataStore dataStore = new AccumuloDataStore(
 				operations);
@@ -102,12 +104,14 @@ public class NYCTLCTest
 
 		queryOptions.setIndex(new NYCTLCDimensionalityTypeProvider().createPrimaryIndex());
 
-		final Query query = new NYCTLCQuery(
-				0,
-				100,
-				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"),
-				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
-
+		GeometryBuilder bdr = new GeometryBuilder();
+		Geometry startGeom = bdr.circle(-73.954818725585937, 40.820701599121094, 0.005, 20);
+		
+		bdr = new GeometryBuilder();
+		Geometry destGeom =bdr.circle(-73.998832702636719, 40.729896545410156, 0.005, 20);
+		NYCTLCQuery query = new NYCTLCQuery(
+				1,500,startGeom,destGeom
+			);
 		queryOptions.setAggregation(
 				new NYCTLCAggregation(),
 				new NYCTLCDataAdapter(

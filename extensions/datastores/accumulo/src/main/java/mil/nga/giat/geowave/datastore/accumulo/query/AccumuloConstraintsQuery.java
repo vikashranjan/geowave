@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.TreeSet;
 
 import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.ScannerBase;
 import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.commons.lang3.tuple.Pair;
@@ -31,6 +33,7 @@ import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
 import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
 import mil.nga.giat.geowave.core.store.query.Query;
 import mil.nga.giat.geowave.core.store.query.aggregate.Aggregation;
+import mil.nga.giat.geowave.datastore.accumulo.util.AccumuloUtils;
 
 /**
  * This class represents basic numeric contraints applied to an Accumulo Query
@@ -39,7 +42,7 @@ import mil.nga.giat.geowave.core.store.query.aggregate.Aggregation;
 public class AccumuloConstraintsQuery extends
 		AccumuloFilteredIndexQuery
 {
-	protected static final int MAX_RANGE_DECOMPOSITION = 5000;
+	protected static final int MAX_RANGE_DECOMPOSITION = 1000;
 	protected final List<MultiDimensionalNumericData> constraints;
 	protected final List<DistributableQueryFilter> distributableFilters;
 	protected boolean queryFiltersEnabled;
@@ -145,10 +148,8 @@ public class AccumuloConstraintsQuery extends
 						aggr.getClass().getName());
 				iteratorSettings.addOption(
 						AggregationIterator.CONSTRAINTS_OPTION_NAME,
-						ByteArrayUtils.byteArrayToString((PersistenceUtils.toBinary((List) constraints))));
-				iteratorSettings.addOption(
-						AggregationIterator.INDEX_STRATEGY_OPTION_NAME,
-						ByteArrayUtils.byteArrayToString(PersistenceUtils.toBinary(index.getIndexStrategy())));
+						ByteArrayUtils.byteArrayToString((PersistenceUtils.toBinary(new ByteArrayRangesPersistable(getRanges())))));
+				
 				// don't bother setting max decomposition because it is just the
 				// default anyways
 			}

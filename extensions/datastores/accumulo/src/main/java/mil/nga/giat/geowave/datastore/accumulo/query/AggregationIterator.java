@@ -201,31 +201,31 @@ public class AggregationIterator extends
 			// now go from index strategy, constraints, and max decomp to a set
 			// of accumulo ranges
 
-			final String indexStrategyStr = options.get(INDEX_STRATEGY_OPTION_NAME);
-			final byte[] indexStrategyBytes = ByteArrayUtils.byteArrayFromString(indexStrategyStr);
-			final NumericIndexStrategy strategy = PersistenceUtils.fromBinary(
-					indexStrategyBytes,
-					NumericIndexStrategy.class);
-
+//			final String indexStrategyStr = options.get(INDEX_STRATEGY_OPTION_NAME);
+//			final byte[] indexStrategyBytes = ByteArrayUtils.byteArrayFromString(indexStrategyStr);
+//			final NumericIndexStrategy strategy = PersistenceUtils.fromBinary(
+//					indexStrategyBytes,
+//					NumericIndexStrategy.class);
+//
+//			final String contraintsStr = options.get(CONSTRAINTS_OPTION_NAME);
+//			final byte[] constraintsBytes = ByteArrayUtils.byteArrayFromString(contraintsStr);
+//			final List constraints = PersistenceUtils.fromBinary(constraintsBytes);
+//			final String maxDecomp = options.get(MAX_DECOMPOSITION_OPTION_NAME);
+//			Integer maxDecompInt = AccumuloConstraintsQuery.MAX_RANGE_DECOMPOSITION;
+//			if (maxDecomp != null) {
+//				try {
+//					maxDecompInt = Integer.parseInt(maxDecomp);
+//				}
+//				catch (final Exception e) {
+//					LOGGER.warn(
+//							"Unable to parse '" + MAX_DECOMPOSITION_OPTION_NAME + "' as integer",
+//							e);
+//				}
+//			}
 			final String contraintsStr = options.get(CONSTRAINTS_OPTION_NAME);
 			final byte[] constraintsBytes = ByteArrayUtils.byteArrayFromString(contraintsStr);
-			final List constraints = PersistenceUtils.fromBinary(constraintsBytes);
-			final String maxDecomp = options.get(MAX_DECOMPOSITION_OPTION_NAME);
-			Integer maxDecompInt = AccumuloConstraintsQuery.MAX_RANGE_DECOMPOSITION;
-			if (maxDecomp != null) {
-				try {
-					maxDecompInt = Integer.parseInt(maxDecomp);
-				}
-				catch (final Exception e) {
-					LOGGER.warn(
-							"Unable to parse '" + MAX_DECOMPOSITION_OPTION_NAME + "' as integer",
-							e);
-				}
-			}
-			ranges = AccumuloUtils.byteArrayRangesToAccumuloRanges(DataStoreUtils.constraintsToByteArrayRanges(
-					constraints,
-					strategy,
-					maxDecompInt));
+			final ByteArrayRangesPersistable constraints = PersistenceUtils.fromBinary(constraintsBytes, ByteArrayRangesPersistable.class);
+			ranges = AccumuloUtils.byteArrayRangesToAccumuloRanges(constraints.getRanges());
 			super.init(
 					source,
 					options,
