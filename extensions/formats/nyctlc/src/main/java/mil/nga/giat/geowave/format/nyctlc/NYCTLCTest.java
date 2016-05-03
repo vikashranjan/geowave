@@ -106,13 +106,23 @@ public class NYCTLCTest
 		queryOptions.setIndex(new NYCTLCDimensionalityTypeProvider().createPrimaryIndex());
 
 		GeometryBuilder bdr = new GeometryBuilder();
-		Geometry startGeom = bdr.circle(-73.954818725585937, 40.820701599121094, 0.005, 20);
-		
+		Geometry startGeom = bdr.circle(
+				-73.954818725585937,
+				40.820701599121094,
+				0.005,
+				20);
+
 		bdr = new GeometryBuilder();
-		Geometry destGeom =bdr.circle(-73.998832702636719, 40.729896545410156, 0.005, 20);
+		Geometry destGeom = bdr.circle(
+				-73.998832702636719,
+				40.729896545410156,
+				0.005,
+				20);
 		NYCTLCQuery query = new NYCTLCQuery(
-				1,500,startGeom,destGeom
-			);
+				1,
+				500,
+				startGeom,
+				destGeom);
 		queryOptions.setAggregation(
 				new NYCTLCAggregation(),
 				new NYCTLCDataAdapter(
@@ -140,7 +150,9 @@ public class NYCTLCTest
 				final SimpleFeature feature = results.next();
 
 				NYCTLCStatistics stats = new NYCTLCStatistics();
-				stats.updateStats(feature, new NYCTLCParameters());
+				stats.updateStats(
+						feature,
+						new NYCTLCParameters());
 				byte[] statsBytes = stats.toBinary();
 
 				NYCTLCStatistics statsFromBytes = new NYCTLCStatistics();

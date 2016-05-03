@@ -140,11 +140,26 @@ public class NYCTLCDimensionalityTypeProvider implements
 				TieredSFCIndexFactory.createDefinedPrecisionTieredStrategy(
 						dimensions,
 						new int[][] {
-							new int[]{0,options.bias.getSpatialPrecision()},
-							new int[]{0,options.bias.getSpatialPrecision()},
-								new int[]{0,options.bias.getSpatialPrecision()},
-									new int[]{0,options.bias.getSpatialPrecision()},
-										new int[]{0,options.bias.getTemporalPrecision()}
+							new int[] {
+								0,
+								options.bias.getSpatialPrecision()
+							},
+							new int[] {
+								0,
+								options.bias.getSpatialPrecision()
+							},
+							new int[] {
+								0,
+								options.bias.getSpatialPrecision()
+							},
+							new int[] {
+								0,
+								options.bias.getSpatialPrecision()
+							},
+							new int[] {
+								0,
+								options.bias.getTemporalPrecision()
+							}
 						},
 						SFCFactory.SFCType.HILBERT),
 				new BasicIndexModel(

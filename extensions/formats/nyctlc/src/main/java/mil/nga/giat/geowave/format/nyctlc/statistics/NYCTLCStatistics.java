@@ -25,15 +25,15 @@ public class NYCTLCStatistics implements
 
 	private long numEntries = 0;
 
-	private Map<Integer, BaseStat> statsList = new HashMap<Integer,BaseStat>();
+	private Map<Integer, BaseStat> statsList = new HashMap<Integer, BaseStat>();
 
 	private MinMaxTotStat durationStat = new MinMaxTotStat();
-	
-	public NYCTLCStatistics() {
-	}
+
+	public NYCTLCStatistics() {}
 
 	public void updateStats(
-			final SimpleFeature entry, NYCTLCParameters parameters ) {
+			final SimpleFeature entry,
+			NYCTLCParameters parameters ) {
 		numEntries++;
 
 		// update all of our desired stats as defined in the field enum
@@ -42,21 +42,21 @@ public class NYCTLCStatistics implements
 		for (int fieldIdx : ordinals) {
 			if (fields[fieldIdx].getStatBuilder() != null) {
 				if (entry.getAttribute(fields[fieldIdx].getIndexedName()) != null) {
-					BaseStat stat = statsList.get(
-							fieldIdx);
-					if (stat == null){
-						 stat = fields[fieldIdx].getStatBuilder().build();
-						statsList.put(fieldIdx, stat);
+					BaseStat stat = statsList.get(fieldIdx);
+					if (stat == null) {
+						stat = fields[fieldIdx].getStatBuilder().build();
+						statsList.put(
+								fieldIdx,
+								stat);
 					}
-					stat.updateStat(
-							entry.getAttribute(fields[fieldIdx].getIndexedName()));
+					stat.updateStat(entry.getAttribute(fields[fieldIdx].getIndexedName()));
 				}
 			}
 		}
-		
-		if (entry.getAttribute(NYCTLCUtils.Field.DROPOFF_DATETIME.getIndexedName()) != null && entry.getAttribute(NYCTLCUtils.Field.PICKUP_DATETIME.getIndexedName()) != null){
-			Date dropoffDate = (Date)entry.getAttribute(NYCTLCUtils.Field.DROPOFF_DATETIME.getIndexedName());
-			Date pickupDate = (Date)entry.getAttribute(NYCTLCUtils.Field.PICKUP_DATETIME.getIndexedName());
+
+		if (entry.getAttribute(NYCTLCUtils.Field.DROPOFF_DATETIME.getIndexedName()) != null && entry.getAttribute(NYCTLCUtils.Field.PICKUP_DATETIME.getIndexedName()) != null) {
+			Date dropoffDate = (Date) entry.getAttribute(NYCTLCUtils.Field.DROPOFF_DATETIME.getIndexedName());
+			Date pickupDate = (Date) entry.getAttribute(NYCTLCUtils.Field.PICKUP_DATETIME.getIndexedName());
 			durationStat.updateStat(TimeUnit.MILLISECONDS.toSeconds(dropoffDate.getTime()) - TimeUnit.MILLISECONDS.toSeconds(pickupDate.getTime()));
 		}
 	}
@@ -75,7 +75,7 @@ public class NYCTLCStatistics implements
 				fieldIdx.getValue().merge(
 						stats.statsList.get(fieldIdx.getKey()));
 			}
-			
+
 			durationStat.merge(stats.durationStat);
 		}
 	}
@@ -83,7 +83,7 @@ public class NYCTLCStatistics implements
 	@Override
 	public byte[] toBinary() {
 
-		byte[][] statsBytes = new byte[statsList.size()+1][];
+		byte[][] statsBytes = new byte[statsList.size() + 1][];
 		int[] statsOrdinals = new int[statsList.size()];
 		int byteLen = 0;
 		int statIdx = 0;
@@ -95,19 +95,18 @@ public class NYCTLCStatistics implements
 		}
 		statsBytes[statsList.size()] = durationStat.toBinary();
 		byteLen += statsBytes[statsList.size()].length + 4;
-		
+
 		final ByteBuffer buffer = ByteBuffer.allocate(12 + byteLen);
 		buffer.putInt(statsList.size());
 		buffer.putLong(numEntries);
-		for (int i = 0; i < statsList.size()+1; i++) {
-			if (i < statsOrdinals.length){
+		for (int i = 0; i < statsList.size() + 1; i++) {
+			if (i < statsOrdinals.length) {
 				buffer.putInt(statsOrdinals[i]);
 			}
 			buffer.putInt(statsBytes[i].length);
 			buffer.put(statsBytes[i]);
 		}
-		
-		
+
 		return buffer.array();
 	}
 
@@ -119,19 +118,21 @@ public class NYCTLCStatistics implements
 		numEntries = buffer.getLong();
 		statsList.clear();
 		Field[] fields = Field.values();
-		for (int i = 0; i < statsSize-1; i++) {
+		for (int i = 0; i < statsSize - 1; i++) {
 			int ordinal = buffer.getInt();
-				int statLen = buffer.getInt();
-				BaseStat stat = fields[ordinal].getStatBuilder().build();
-				byte[] statBytes = new byte[statLen];
-				buffer.get(statBytes);
-				stat.fromBinary(statBytes);
-				statsList.put(ordinal,stat);
-			}
+			int statLen = buffer.getInt();
+			BaseStat stat = fields[ordinal].getStatBuilder().build();
+			byte[] statBytes = new byte[statLen];
+			buffer.get(statBytes);
+			stat.fromBinary(statBytes);
+			statsList.put(
+					ordinal,
+					stat);
+		}
 		int statLen = buffer.getInt();
 		byte[] statBytes = new byte[statLen];
 		buffer.get(statBytes);
-		
+
 		durationStat = new MinMaxTotStat();
 		durationStat.fromBinary(statBytes);
 	}
@@ -143,18 +144,16 @@ public class NYCTLCStatistics implements
 				"count",
 				numEntries);
 
-		int statIdx = 0;
 		final NYCTLCUtils.Field[] fields = NYCTLCUtils.Field.values();
-		for (int fieldIdx = 0; fieldIdx < fields.length; fieldIdx++) {
-			if (fields[fieldIdx].getStatBuilder() != null) {
+		for (Entry<Integer, BaseStat> fieldIdx : statsList.entrySet()) {
 				statsJson.put(
-						fields[fieldIdx].getIndexedName(),
-						statsList.get(
-								statIdx++).toJSONObject());
-			}
+						fields[fieldIdx.getKey()].getIndexedName(),
+						fieldIdx.getValue().toJSONObject());			
 		}
-		
-		statsJson.put("duration", durationStat.toJSONObject());
+
+		statsJson.put(
+				"duration",
+				durationStat.toJSONObject());
 
 		return statsJson;
 	}
@@ -174,7 +173,7 @@ public class NYCTLCStatistics implements
 			public abstract BaseStat build();
 		}
 	}
-	
+
 	public static class MinMaxTotStat extends
 			BaseStat<Number>
 	{
@@ -274,9 +273,9 @@ public class NYCTLCStatistics implements
 		public long getNumValues() {
 			return numValues;
 		}
-		
+
 		public double getAvgValue() {
-			return totalValue / (double)numValues;
+			return totalValue / (double) numValues;
 		}
 	}
 

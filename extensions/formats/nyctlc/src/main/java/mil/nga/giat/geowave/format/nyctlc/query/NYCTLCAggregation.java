@@ -15,8 +15,7 @@ public class NYCTLCAggregation implements
 
 	private NYCTLCParameters internalParams = new NYCTLCParameters();
 
-	public NYCTLCAggregation() {
-	}
+	public NYCTLCAggregation() {}
 
 	@Override
 	public NYCTLCParameters getParameters() {
@@ -42,6 +41,8 @@ public class NYCTLCAggregation implements
 	@Override
 	public void aggregate(
 			SimpleFeature entry ) {
-		internalStats.updateStats(entry, internalParams);
+		internalStats.updateStats(
+				entry,
+				internalParams);
 	}
 }

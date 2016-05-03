@@ -69,7 +69,6 @@ public class NYCTLCDataAdapter extends
 				defaultVisibilityManagement);
 	}
 
-
 	@Override
 	protected IndexFieldHandler<SimpleFeature, Time, Object> getTimeRangeHandler(
 			SimpleFeatureType featureType ) {
@@ -87,8 +86,7 @@ public class NYCTLCDataAdapter extends
 	}
 
 	@Override
-	public synchronized void resetTimeDescriptors() {
-	}
+	public synchronized void resetTimeDescriptors() {}
 
 	@Override
 	protected void init(
