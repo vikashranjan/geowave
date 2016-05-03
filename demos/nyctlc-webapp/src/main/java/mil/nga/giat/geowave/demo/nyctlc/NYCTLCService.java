@@ -10,10 +10,12 @@ import mil.nga.giat.geowave.datastore.accumulo.AccumuloDataStore;
 import mil.nga.giat.geowave.datastore.accumulo.AccumuloOperations;
 import mil.nga.giat.geowave.datastore.accumulo.BasicAccumuloOperations;
 import mil.nga.giat.geowave.format.nyctlc.NYCTLCUtils;
+import mil.nga.giat.geowave.format.nyctlc.NYCTLCUtils.Field;
 import mil.nga.giat.geowave.format.nyctlc.adapter.NYCTLCDataAdapter;
 import mil.nga.giat.geowave.format.nyctlc.ingest.NYCTLCDimensionalityTypeProvider;
 import mil.nga.giat.geowave.format.nyctlc.query.NYCTLCAggregation;
 import mil.nga.giat.geowave.format.nyctlc.query.NYCTLCQuery;
+import mil.nga.giat.geowave.format.nyctlc.statistics.NYCTLCParameters;
 import mil.nga.giat.geowave.format.nyctlc.statistics.NYCTLCStatistics;
 import mil.nga.giat.geowave.service.ServiceUtils;
 import net.sf.json.JSONArray;
@@ -55,6 +57,7 @@ public class NYCTLCService
 	private String userName;
 	private String password;
 	private String tableNamespace;
+	private NYCTLCParameters allParams;
 
 	// Approximately 2MB in total in memory
 	private String boroughs;
@@ -78,6 +81,13 @@ public class NYCTLCService
 			final ServletConfig servletConfig ) {
 		final Properties props = ServiceUtils.loadProperties(servletConfig.getServletContext().getResourceAsStream(
 				servletConfig.getInitParameter("config.properties")));
+		allParams = new NYCTLCParameters();
+		allParams.addField(Field.PASSENGER_COUNT);
+		allParams.addField(Field.TRIP_DISTANCE);
+		allParams.addField(Field.FARE_AMOUNT);
+		allParams.addField(Field.TIP_AMOUNT);
+		allParams.addField(Field.TOLLS_AMOUNT);
+		allParams.addField(Field.TOTAL_AMOUNT);
 		init(
 				ServiceUtils.getProperty(
 						props,
@@ -207,6 +217,7 @@ public class NYCTLCService
 
 			final QueryOptions queryOptions = new QueryOptions();
 			queryOptions.setIndex(new NYCTLCDimensionalityTypeProvider().createPrimaryIndex());
+
 			queryOptions.setAggregation(
 					new NYCTLCAggregation(),
 					new NYCTLCDataAdapter(
@@ -301,7 +312,7 @@ public class NYCTLCService
 
 		int startTimeSec = -1, endTimeSec = -1;
 
-		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.Z");
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 		
 		try {
 			startTimeSec = (!startTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(startTime)) : dateToTimeOfDaySec(new Date());
@@ -321,8 +332,9 @@ public class NYCTLCService
 
 			final QueryOptions queryOptions = new QueryOptions();
 			queryOptions.setIndex(new NYCTLCDimensionalityTypeProvider().createPrimaryIndex());
-			queryOptions.setAggregation(
-					new NYCTLCAggregation(),
+			NYCTLCAggregation aggr = new NYCTLCAggregation();
+			aggr.setParameters(allParams);
+			queryOptions.setAggregation(aggr,
 					new NYCTLCDataAdapter(
 							NYCTLCUtils.createPointDataType()));
 
