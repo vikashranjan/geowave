@@ -1,6 +1,7 @@
 package mil.nga.giat.geowave.demo.nyctlc;
 
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.io.WKTReader;
 
 import mil.nga.giat.geowave.core.store.CloseableIterator;
 import mil.nga.giat.geowave.core.store.query.Query;
@@ -63,7 +64,7 @@ public class NYCTLCService
 	private int numSides = 20;
 	private GeometryBuilder geomBuilder = new GeometryBuilder();
 
-	private int DEFAULT_TIME_RANGE = new Long(TimeUnit.MINUTES.toSeconds(5)).intValue();
+	private int DEFAULT_TIME_RANGE = new Long(30).intValue();
 	private final static String DATE_START_FORMAT = "yyyyMMdd";
 
 	// mapping of addresses/lat,lon pairs to google geocoding address info
@@ -173,14 +174,16 @@ public class NYCTLCService
 			double destLon,
 			@DefaultValue("")
 			@QueryParam("startTime")
-			String startTime){
+			String startTime) throws com.vividsolutions.jts.io.ParseException{
 		
 		Geometry startGeom = null, destGeom = null;
 
 		// if lat/lon query, do this
 		if (startLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLon != Double.MIN_VALUE) {
-			startGeom = geomBuilder.box(startLon-bufDeg, startLat-bufDeg, startLon+bufDeg, startLat+bufDeg);
-			destGeom = geomBuilder.box(destLon-bufDeg, destLat-bufDeg, destLon+bufDeg, destLat+bufDeg);
+			//startGeom = geomBuilder.box(startLon-bufDeg, startLat-bufDeg, startLon+bufDeg, startLat+bufDeg);
+			//destGeom = geomBuilder.box(destLon-bufDeg, destLat-bufDeg, destLon+bufDeg, destLat+bufDeg);
+			startGeom = new WKTReader().read("POINT((" + startLon + "," + startLat + "))");
+			destGeom = new WKTReader().read("POINT((" + destLon + "," + destLat + "))");
 		}
 		
 		int startTimeSec = -1;
