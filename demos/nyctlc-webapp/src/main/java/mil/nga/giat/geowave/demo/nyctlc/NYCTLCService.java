@@ -563,15 +563,15 @@ public class NYCTLCService
 		// "5615 Roundtree Lane, Columbia, MD",
 		// "43008 Center St., South Riding, VA");
 
-		resp = service.tripInfo(
-				Double.MIN_VALUE,
-				Double.MIN_VALUE,
-				Double.MIN_VALUE,
-				Double.MIN_VALUE,
-				0,
-				15,
-				"Roundtree Lane, Columbia, MD",
-				"Center St., South Riding, VA");
+//		resp = service.tripInfo(
+//				Double.MIN_VALUE,
+//				Double.MIN_VALUE,
+//				Double.MIN_VALUE,
+//				Double.MIN_VALUE,
+//				0,
+//				15,
+//				"Roundtree Lane, Columbia, MD",
+//				"Center St., South Riding, VA");
 
 		System.out.println("done!");
 	}
