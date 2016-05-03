@@ -63,11 +63,12 @@ public class NYCTLCService
 	private String boroughs;
 	private String neighborhoods;
 
-	private double bufDeg = 0.001;
+	private double bufDeg = 0.00416666666;
 	private int numSides = 20;
 	private GeometryBuilder geomBuilder = new GeometryBuilder();
 
-	private int DEFAULT_TIME_RANGE = new Long(30).intValue();
+	private int DEFAULT_TIME_RANGE = new Long(
+			TimeUnit.MINUTES.toSeconds(15)).intValue();
 	private final static String DATE_START_FORMAT = "yyyyMMdd";
 
 	// mapping of addresses/lat,lon pairs to google geocoding address info
@@ -184,24 +185,32 @@ public class NYCTLCService
 			double destLon,
 			@DefaultValue("")
 			@QueryParam("startTime")
-			String startTime) throws com.vividsolutions.jts.io.ParseException{
-		
+			String startTime )
+			throws com.vividsolutions.jts.io.ParseException {
+
 		Geometry startGeom = null, destGeom = null;
 
 		// if lat/lon query, do this
 		if (startLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLat != Double.MIN_VALUE && destLon != Double.MIN_VALUE) {
-			//startGeom = geomBuilder.box(startLon-bufDeg, startLat-bufDeg, startLon+bufDeg, startLat+bufDeg);
-			//destGeom = geomBuilder.box(destLon-bufDeg, destLat-bufDeg, destLon+bufDeg, destLat+bufDeg);
-			startGeom = new WKTReader().read("POINT(" + startLon + "," + startLat + ")");
-			destGeom = new WKTReader().read("POINT(" + destLon + "," + destLat + ")");
+			startGeom = geomBuilder.box(
+					startLon - bufDeg,
+					startLat - bufDeg,
+					startLon + bufDeg,
+					startLat + bufDeg);
+			destGeom = geomBuilder.box(
+					destLon - bufDeg,
+					destLat - bufDeg,
+					destLon + bufDeg,
+					destLat + bufDeg);
 		}
-		
+
 		int startTimeSec = -1;
 
-		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.Z");
-		
+		DateFormat df = new SimpleDateFormat(
+				"yyyy-MM-dd'T'HH:mm:ss");
+
 		try {
-			startTimeSec = (!startTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(startTime)) : dateToTimeOfDaySec(new Date());
+			startTimeSec = (!startTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(startTime.substring(0, 19))) : dateToTimeOfDaySec(new Date());
 		}
 		catch (ParseException e1) {
 			log.error("Unable to parse start time: " + startTime);
@@ -242,14 +251,16 @@ public class NYCTLCService
 				final JSONObject result = new JSONObject();
 				JSONArray durations = new JSONArray();
 				durations.add(stats.getDurationStat().getAvgValue());
-				result.put("durations", durations);
+				result.put(
+						"durations",
+						durations);
 				return Response.ok(
 						result.toString(defaultIndentation)).build();
 			}
 		}
 		return Response.noContent().build();
 	}
-	
+
 	@GET
 	@Path("/tripInfoExtra")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -312,11 +323,12 @@ public class NYCTLCService
 
 		int startTimeSec = -1, endTimeSec = -1;
 
-		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-		
+		DateFormat df = new SimpleDateFormat(
+				"yyyy-MM-dd'T'HH:mm:ss");
+
 		try {
-			startTimeSec = (!startTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(startTime)) : dateToTimeOfDaySec(new Date());
-			endTimeSec = (!endTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(endTime)) : dateToTimeOfDaySec(new Date());
+			startTimeSec = (!startTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(startTime.substring(0, 19))) : dateToTimeOfDaySec(new Date());
+			endTimeSec = (!endTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(endTime.substring(0, 19))) : dateToTimeOfDaySec(new Date());
 		}
 		catch (ParseException e1) {
 			log.error("Unable to parse start time: " + startTime);
@@ -578,15 +590,15 @@ public class NYCTLCService
 		// "5615 Roundtree Lane, Columbia, MD",
 		// "43008 Center St., South Riding, VA");
 
-//		resp = service.tripInfo(
-//				Double.MIN_VALUE,
-//				Double.MIN_VALUE,
-//				Double.MIN_VALUE,
-//				Double.MIN_VALUE,
-//				0,
-//				15,
-//				"Roundtree Lane, Columbia, MD",
-//				"Center St., South Riding, VA");
+		// resp = service.tripInfo(
+		// Double.MIN_VALUE,
+		// Double.MIN_VALUE,
+		// Double.MIN_VALUE,
+		// Double.MIN_VALUE,
+		// 0,
+		// 15,
+		// "Roundtree Lane, Columbia, MD",
+		// "Center St., South Riding, VA");
 
 		System.out.println("done!");
 	}
