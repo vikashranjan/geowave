@@ -16,6 +16,7 @@ import mil.nga.giat.geowave.format.nyctlc.adapter.NYCTLCDataAdapter;
 import mil.nga.giat.geowave.format.nyctlc.ingest.NYCTLCDimensionalityTypeProvider;
 import mil.nga.giat.geowave.format.nyctlc.query.NYCTLCAggregation;
 import mil.nga.giat.geowave.format.nyctlc.query.NYCTLCQuery;
+import mil.nga.giat.geowave.format.nyctlc.statistics.NYCTLCParameters;
 import mil.nga.giat.geowave.format.nyctlc.statistics.NYCTLCStatistics;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.geometry.jts.GeometryBuilder;
@@ -139,7 +140,7 @@ public class NYCTLCTest
 				final SimpleFeature feature = results.next();
 
 				NYCTLCStatistics stats = new NYCTLCStatistics();
-				stats.updateStats(feature);
+				stats.updateStats(feature, new NYCTLCParameters());
 				byte[] statsBytes = stats.toBinary();
 
 				NYCTLCStatistics statsFromBytes = new NYCTLCStatistics();

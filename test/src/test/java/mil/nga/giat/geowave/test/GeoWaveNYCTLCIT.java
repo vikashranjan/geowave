@@ -76,6 +76,7 @@ import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
 import mil.nga.giat.geowave.core.store.memory.MemoryAdapterStore;
 import mil.nga.giat.geowave.core.store.operations.remote.options.DataStorePluginOptions;
 import mil.nga.giat.geowave.core.store.operations.remote.options.IndexPluginOptions;
+import mil.nga.giat.geowave.core.store.operations.remote.options.IndexPluginOptions.PartitionStrategy;
 import mil.nga.giat.geowave.core.store.query.DataIdQuery;
 import mil.nga.giat.geowave.core.store.query.DistributableQuery;
 import mil.nga.giat.geowave.core.store.query.Query;
@@ -122,6 +123,8 @@ public class GeoWaveNYCTLCIT extends
 		IndexPluginOptions indexOption = new IndexPluginOptions();
 //		indexOption.selectPlugin("spatial");
 		indexOption.selectPlugin("nyctlc_sst");
+		indexOption.numPartitions = 20;
+		indexOption.partitionStrategy = PartitionStrategy.ROUND_ROBIN;
 		// Create the command and execute.
 		DataStorePluginOptions plugin = getAccumuloStorePluginOptions(TEST_NAMESPACE);
 		LocalToGeowaveCommand localIngester = new LocalToGeowaveCommand();
@@ -135,40 +138,40 @@ public class GeoWaveNYCTLCIT extends
 		localIngester.setThreads(nthreads);
 		localIngester.execute(new ManualOperationParams());
 
-		 QueryOptions queryOptions = new QueryOptions();
-
-		queryOptions.setIndex(new NYCTLCDimensionalityTypeProvider().createPrimaryIndex());
-//		final Query query = new SpatialQuery(new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
-		 Query query = new NYCTLCQuery(
-				0,
-				(int)TimeUnit.DAYS.toSeconds(1),
-				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"),
-				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
-
-		queryOptions.setAggregation(
-				new NYCTLCAggregation(),
-				new NYCTLCDataAdapter(NYCTLCUtils.createPointDataType()));
-
-		if (queryOptions.getAggregation() != null) {
-			final CloseableIterator<NYCTLCStatistics> results = plugin.createDataStore().query(
-					queryOptions,
-					query);
-
-			while (results.hasNext()) {
-//				final CountResult stats = results.next();
+//		 QueryOptions queryOptions = new QueryOptions();
 //
-//				System.out.println(stats.getCount());
-				final NYCTLCStatistics stats = results.next();
-
-				System.out.println(stats.toJSONObject().toString(
-						2));
-			}
-			results.close();
-		}
+//		queryOptions.setIndex(new NYCTLCDimensionalityTypeProvider().createPrimaryIndex());
+////		final Query query = new SpatialQuery(new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
+//		 Query query = new NYCTLCQuery(
+//				0,
+//				(int)TimeUnit.DAYS.toSeconds(1),
+//				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"),
+//				new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
+//
+//		queryOptions.setAggregation(
+//				new NYCTLCAggregation(),
+//				new NYCTLCDataAdapter(NYCTLCUtils.createPointDataType()));
+//
+//		if (queryOptions.getAggregation() != null) {
+//			final CloseableIterator<NYCTLCStatistics> results = plugin.createDataStore().query(
+//					queryOptions,
+//					query);
+//
+//			while (results.hasNext()) {
+////				final CountResult stats = results.next();
+////
+////				System.out.println(stats.getCount());
+//				final NYCTLCStatistics stats = results.next();
+//
+//				System.out.println(stats.toJSONObject().toString(
+//						2));
+//			}
+//			results.close();
+//		}
 		
-		queryOptions = new QueryOptions();
+		QueryOptions queryOptions = new QueryOptions();
 
-		queryOptions.setIndex(new NYCTLCDimensionalityTypeProvider().createPrimaryIndex());
+		queryOptions.setIndex((PrimaryIndex) plugin.createIndexStore().getIndices().next());
 //		final Query query = new SpatialQuery(new WKTReader().read("POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))"));
 
 		GeometryBuilder bdr = new GeometryBuilder();
@@ -176,10 +179,11 @@ public class GeoWaveNYCTLCIT extends
 		
 		bdr = new GeometryBuilder();
 		Geometry destGeom =bdr.circle(-73.998832702636719, 40.729896545410156, 0.05, 20);
-		query = new NYCTLCQuery(
-				0,50000,startGeom,destGeom
+		NYCTLCQuery query = new NYCTLCQuery(
+				1,50000,startGeom,destGeom
 			);
 
+//		SpatialQuery query = new SpatialQuery(destGeom);
 		queryOptions.setAggregation(
 				new NYCTLCAggregation(),
 				new NYCTLCDataAdapter(NYCTLCUtils.createPointDataType()));

@@ -2,6 +2,7 @@ package mil.nga.giat.geowave.format.nyctlc.statistics;
 
 import mil.nga.giat.geowave.core.index.Mergeable;
 import mil.nga.giat.geowave.format.nyctlc.NYCTLCUtils;
+import mil.nga.giat.geowave.format.nyctlc.NYCTLCUtils.Field;
 import net.sf.json.JSONObject;
 
 import org.opengis.feature.simple.SimpleFeature;
@@ -9,7 +10,10 @@ import org.opengis.feature.simple.SimpleFeature;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -21,33 +25,32 @@ public class NYCTLCStatistics implements
 
 	private long numEntries = 0;
 
-	private List<BaseStat> statsList = new ArrayList<BaseStat>();
+	private Map<Integer, BaseStat> statsList = new HashMap<Integer,BaseStat>();
 
 	private MinMaxTotStat durationStat = new MinMaxTotStat();
 	
 	public NYCTLCStatistics() {
-		for (NYCTLCUtils.Field field : NYCTLCUtils.Field.values()) {
-			if (field.getStatBuilder() != null) {
-				statsList.add(field.getStatBuilder().build());
-			}
-		}
 	}
 
 	public void updateStats(
-			final SimpleFeature entry ) {
+			final SimpleFeature entry, NYCTLCParameters parameters ) {
 		numEntries++;
 
-		int statIdx = 0;
 		// update all of our desired stats as defined in the field enum
 		final NYCTLCUtils.Field[] fields = NYCTLCUtils.Field.values();
-		for (int fieldIdx = 0; fieldIdx < fields.length; fieldIdx++) {
+		List<Integer> ordinals = parameters.getOrdinals();
+		for (int fieldIdx : ordinals) {
 			if (fields[fieldIdx].getStatBuilder() != null) {
 				if (entry.getAttribute(fields[fieldIdx].getIndexedName()) != null) {
-					statsList.get(
-							statIdx).updateStat(
+					BaseStat stat = statsList.get(
+							fieldIdx);
+					if (stat == null){
+						 stat = fields[fieldIdx].getStatBuilder().build();
+						statsList.put(fieldIdx, stat);
+					}
+					stat.updateStat(
 							entry.getAttribute(fields[fieldIdx].getIndexedName()));
 				}
-				statIdx++;
 			}
 		}
 		
@@ -68,11 +71,9 @@ public class NYCTLCStatistics implements
 		if ((merge != null) && (merge instanceof NYCTLCStatistics)) {
 			NYCTLCStatistics stats = (NYCTLCStatistics) merge;
 			numEntries += stats.numEntries;
-
-			for (int statIdx = 0; statIdx < statsList.size(); statIdx++) {
-				statsList.get(
-						statIdx).merge(
-						stats.statsList.get(statIdx));
+			for (Entry<Integer, BaseStat> fieldIdx : statsList.entrySet()) {
+				fieldIdx.getValue().merge(
+						stats.statsList.get(fieldIdx.getKey()));
 			}
 			
 			durationStat.merge(stats.durationStat);
@@ -83,20 +84,27 @@ public class NYCTLCStatistics implements
 	public byte[] toBinary() {
 
 		byte[][] statsBytes = new byte[statsList.size()+1][];
+		int[] statsOrdinals = new int[statsList.size()];
 		int byteLen = 0;
-		for (int statIdx = 0; statIdx < statsList.size(); statIdx++) {
-			statsBytes[statIdx] = statsList.get(
-					statIdx).toBinary();
-			byteLen += statsBytes[statIdx].length + 4;
+		int statIdx = 0;
+		for (Entry<Integer, BaseStat> fieldIdx : statsList.entrySet()) {
+			statsOrdinals[statIdx] = fieldIdx.getKey();
+			statsBytes[statIdx] = fieldIdx.getValue().toBinary();
+			byteLen += statsBytes[statIdx].length + 8;
+			statIdx++;
 		}
 		statsBytes[statsList.size()] = durationStat.toBinary();
 		byteLen += statsBytes[statsList.size()].length + 4;
 		
-		final ByteBuffer buffer = ByteBuffer.allocate(8 + byteLen);
+		final ByteBuffer buffer = ByteBuffer.allocate(12 + byteLen);
+		buffer.putInt(statsList.size());
 		buffer.putLong(numEntries);
-		for (int statIdx = 0; statIdx < statsList.size()+1; statIdx++) {
-			buffer.putInt(statsBytes[statIdx].length);
-			buffer.put(statsBytes[statIdx]);
+		for (int i = 0; i < statsList.size()+1; i++) {
+			if (i < statsOrdinals.length){
+				buffer.putInt(statsOrdinals[i]);
+			}
+			buffer.putInt(statsBytes[i].length);
+			buffer.put(statsBytes[i]);
 		}
 		
 		
@@ -107,19 +115,19 @@ public class NYCTLCStatistics implements
 	public void fromBinary(
 			final byte[] bytes ) {
 		final ByteBuffer buffer = ByteBuffer.wrap(bytes);
+		int statsSize = buffer.getInt();
 		numEntries = buffer.getLong();
 		statsList.clear();
-		for (NYCTLCUtils.Field field : NYCTLCUtils.Field.values()) {
-			if (field.getStatBuilder() != null) {
+		Field[] fields = Field.values();
+		for (int i = 0; i < statsSize-1; i++) {
+			int ordinal = buffer.getInt();
 				int statLen = buffer.getInt();
-				BaseStat stat = field.getStatBuilder().build();
+				BaseStat stat = fields[ordinal].getStatBuilder().build();
 				byte[] statBytes = new byte[statLen];
 				buffer.get(statBytes);
 				stat.fromBinary(statBytes);
-				statsList.add(stat);
+				statsList.put(ordinal,stat);
 			}
-		}
-		
 		int statLen = buffer.getInt();
 		byte[] statBytes = new byte[statLen];
 		buffer.get(statBytes);

@@ -1,6 +1,7 @@
 package mil.nga.giat.geowave.format.nyctlc.query;
 
 import mil.nga.giat.geowave.core.store.query.aggregate.Aggregation;
+import mil.nga.giat.geowave.format.nyctlc.statistics.NYCTLCParameters;
 import mil.nga.giat.geowave.format.nyctlc.statistics.NYCTLCStatistics;
 import org.opengis.feature.simple.SimpleFeature;
 
@@ -8,19 +9,24 @@ import org.opengis.feature.simple.SimpleFeature;
  * Created by geowave on 4/28/16.
  */
 public class NYCTLCAggregation implements
-		Aggregation<NYCTLCStatistics, NYCTLCStatistics, SimpleFeature>
+		Aggregation<NYCTLCParameters, NYCTLCStatistics, SimpleFeature>
 {
 	private NYCTLCStatistics internalStats = new NYCTLCStatistics();
 
+	private NYCTLCParameters internalParams = new NYCTLCParameters();
+
+	public NYCTLCAggregation() {
+	}
+
 	@Override
-	public NYCTLCStatistics getParameters() {
-		return internalStats;
+	public NYCTLCParameters getParameters() {
+		return internalParams;
 	}
 
 	@Override
 	public void setParameters(
-			NYCTLCStatistics parameters ) {
-		internalStats = parameters;
+			NYCTLCParameters parameters ) {
+		internalParams = parameters;
 	}
 
 	@Override
@@ -36,6 +42,6 @@ public class NYCTLCAggregation implements
 	@Override
 	public void aggregate(
 			SimpleFeature entry ) {
-		internalStats.updateStats(entry);
+		internalStats.updateStats(entry, internalParams);
 	}
 }
