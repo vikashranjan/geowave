@@ -38,10 +38,7 @@ public class NYCTLCUtils
 				new String[] {
 					"vendor"
 				},
-				false,
-				new NYCTLCStatistics.IntHistStat.IntHistStatBuilder(
-						0,
-						2)),
+				false,null),
 		PICKUP_DATETIME(
 				Date.class,
 				new String[] {
@@ -61,15 +58,13 @@ public class NYCTLCUtils
 				new String[] {
 					"passengercount"
 				},
-				false,
-				new NYCTLCStatistics.MinMaxTotStat.MinMaxTotStatBuilder()),
+				false,null),
 		TRIP_DISTANCE(
 				Double.class,
 				new String[] {
 					"tripdistance"
 				},
-				false,
-				new NYCTLCStatistics.MinMaxTotStat.MinMaxTotStatBuilder()),
+				false,null),
 		PICKUP_LONGITUDE(
 				Double.class,
 				new String[] {
@@ -104,10 +99,7 @@ public class NYCTLCUtils
 				new String[] {
 					"ratecode"
 				},
-				false,
-				new NYCTLCStatistics.IntHistStat.IntHistStatBuilder(
-						1,
-						6)),
+				false,null),
 		DROPOFF_LONGITUDE(
 				Double.class,
 				new String[] {
@@ -134,17 +126,13 @@ public class NYCTLCUtils
 				new String[] {
 					"paymenttype"
 				},
-				false,
-				new NYCTLCStatistics.IntHistStat.IntHistStatBuilder(
-						0,
-						6)),
+				false,null),
 		FARE_AMOUNT(
 				Double.class,
 				new String[] {
 					"fare"
 				},
-				false,
-				new NYCTLCStatistics.MinMaxTotStat.MinMaxTotStatBuilder()),
+				false,null),
 		EXTRA(
 				Double.class,
 				new String[] {
@@ -171,22 +159,19 @@ public class NYCTLCUtils
 				new String[] {
 					"tip"
 				},
-				false,
-				new NYCTLCStatistics.MinMaxTotStat.MinMaxTotStatBuilder()),
+				false,null),
 		TOLLS_AMOUNT(
 				Double.class,
 				new String[] {
 					"tolls"
 				},
-				false,
-				new NYCTLCStatistics.MinMaxTotStat.MinMaxTotStatBuilder()),
+				false,null),
 		TOTAL_AMOUNT(
 				Double.class,
 				new String[] {
 					"total"
 				},
-				false,
-				new NYCTLCStatistics.MinMaxTotStat.MinMaxTotStatBuilder()),
+				false,null),
 		TRIP_TYPE(
 				Integer.class,
 				new String[] {
@@ -209,10 +194,7 @@ public class NYCTLCUtils
 		CAB_TYPE(
 				Integer.class,
 				new String[] {},
-				false,
-				new NYCTLCStatistics.IntHistStat.IntHistStatBuilder(
-						0,
-						2)); // derived field
+				false,null); // derived field
 
 		private final Class clazz;
 		private final String[] variants;
