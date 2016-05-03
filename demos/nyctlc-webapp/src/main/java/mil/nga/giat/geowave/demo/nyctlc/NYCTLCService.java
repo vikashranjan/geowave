@@ -40,6 +40,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -63,12 +64,12 @@ public class NYCTLCService
 	private String boroughs;
 	private String neighborhoods;
 
-	private double bufDeg = 0.00416666666;
+	private double bufDeg = 0.0082;
 	private int numSides = 20;
 	private GeometryBuilder geomBuilder = new GeometryBuilder();
 
 	private int DEFAULT_TIME_RANGE = new Long(
-			TimeUnit.MINUTES.toSeconds(15)).intValue();
+			TimeUnit.MINUTES.toSeconds(30)).intValue();
 	private final static String DATE_START_FORMAT = "yyyyMMdd";
 
 	// mapping of addresses/lat,lon pairs to google geocoding address info
@@ -209,8 +210,19 @@ public class NYCTLCService
 		DateFormat df = new SimpleDateFormat(
 				"yyyy-MM-dd'T'HH:mm:ss");
 
+		DateFormat dfOut = new SimpleDateFormat(
+				"yyyy-MM-dd'T'HH:mm:ss'Z'",
+				Locale.US);
+
+		String dateString = null;
+
 		try {
-			startTimeSec = (!startTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(startTime.substring(0, 19))) : dateToTimeOfDaySec(new Date());
+			startTimeSec = (!startTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(startTime.substring(
+					0,
+					19))) : dateToTimeOfDaySec(new Date());
+			dateString = dfOut.format(df.parse(startTime.substring(
+					0,
+					19)));
 		}
 		catch (ParseException e1) {
 			log.error("Unable to parse start time: " + startTime);
@@ -248,17 +260,16 @@ public class NYCTLCService
 			}
 
 			if (stats != null) {
-				final JSONObject result = new JSONObject();
 				JSONArray durations = new JSONArray();
-				durations.add(stats.getDurationStat().getAvgValue());
-				result.put(
-						"durations",
-						durations);
+				JSONArray duration = new JSONArray();
+				duration.add(dateString);
+				duration.add(stats.getDurationStat().getAvgValue());
+				durations.add(duration);
 				return Response.ok(
-						result.toString(defaultIndentation)).build();
+						durations.toString(defaultIndentation)).build();
 			}
 		}
-		return Response.noContent().build();
+		return Response.ok("[[" + dateString + ", 0]]").build();
 	}
 
 	@GET
@@ -301,16 +312,17 @@ public class NYCTLCService
 			destAddrInfo = getAddressInfo(
 					destLon,
 					destLat);
-			startGeom = geomBuilder.circle(
-					startLon,
-					startLat,
-					bufDeg,
-					numSides);
-			destGeom = geomBuilder.circle(
-					destLon,
-					destLat,
-					bufDeg,
-					numSides);
+
+			startGeom = geomBuilder.box(
+					startLon - bufDeg,
+					startLat - bufDeg,
+					startLon + bufDeg,
+					startLat + bufDeg);
+			destGeom = geomBuilder.box(
+					destLon - bufDeg,
+					destLat - bufDeg,
+					destLon + bufDeg,
+					destLat + bufDeg);
 		}
 		// if address query, do this
 		else if (!startAddress.isEmpty() && !destAddress.isEmpty()) {
@@ -326,9 +338,22 @@ public class NYCTLCService
 		DateFormat df = new SimpleDateFormat(
 				"yyyy-MM-dd'T'HH:mm:ss");
 
+		DateFormat dfOut = new SimpleDateFormat(
+				"yyyy-MM-dd'T'HH:mm:ss'Z'",
+				Locale.US);
+
+		String dateString = null;
+
 		try {
-			startTimeSec = (!startTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(startTime.substring(0, 19))) : dateToTimeOfDaySec(new Date());
-			endTimeSec = (!endTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(endTime.substring(0, 19))) : dateToTimeOfDaySec(new Date());
+			startTimeSec = (!startTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(startTime.substring(
+					0,
+					19))) : dateToTimeOfDaySec(new Date());
+			endTimeSec = (!endTime.isEmpty()) ? dateToTimeOfDaySec(df.parse(endTime.substring(
+					0,
+					19))) : dateToTimeOfDaySec(new Date());
+			dateString = dfOut.format(df.parse(startTime.substring(
+					0,
+					19)));
 		}
 		catch (ParseException e1) {
 			log.error("Unable to parse start time: " + startTime);
@@ -346,7 +371,8 @@ public class NYCTLCService
 			queryOptions.setIndex(new NYCTLCDimensionalityTypeProvider().createPrimaryIndex());
 			NYCTLCAggregation aggr = new NYCTLCAggregation();
 			aggr.setParameters(allParams);
-			queryOptions.setAggregation(aggr,
+			queryOptions.setAggregation(
+					aggr,
 					new NYCTLCDataAdapter(
 							NYCTLCUtils.createPointDataType()));
 
@@ -367,6 +393,16 @@ public class NYCTLCService
 
 			if (stats != null) {
 				final JSONObject result = new JSONObject();
+
+				JSONArray durations = new JSONArray();
+				JSONArray duration = new JSONArray();
+				duration.add(dateString);
+				duration.add(stats.getDurationStat().getAvgValue());
+				durations.add(duration);
+
+				result.put(
+						"durations",
+						durations);
 				result.put(
 						"stats",
 						stats.toJSONObject());
@@ -386,7 +422,7 @@ public class NYCTLCService
 						result.toString(defaultIndentation)).build();
 			}
 		}
-		return Response.noContent().build();
+		return Response.ok("[[" + dateString + ", 0]]").build();
 	}
 
 	private JSONObject getAddressInfo(
