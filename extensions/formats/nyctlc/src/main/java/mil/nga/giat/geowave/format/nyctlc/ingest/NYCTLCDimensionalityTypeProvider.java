@@ -131,23 +131,20 @@ public class NYCTLCDimensionalityTypeProvider implements
 			new DropoffLongitudeDefinition(),
 			new DropoffLatitudeDefinition(
 					true),
-			new BasicDimensionDefinition(
-					0,
-					new Long(
-							TimeUnit.DAYS.toSeconds(1)).doubleValue())
+			new TimeOfDayDefinition()
 		};
 
 		final String combinedId = DEFAULT_NYCTLC_ID_STR + "_" + options.bias;
 
 		return new CustomIdIndex(
-				TieredSFCIndexFactory.createSingleTierStrategy(
+				TieredSFCIndexFactory.createDefinedPrecisionTieredStrategy(
 						dimensions,
-						new int[] {
-							options.bias.getSpatialPrecision(),
-							options.bias.getSpatialPrecision(),
-							options.bias.getSpatialPrecision(),
-							options.bias.getSpatialPrecision(),
-							options.bias.getTemporalPrecision()
+						new int[][] {
+							new int[]{0,options.bias.getSpatialPrecision()},
+							new int[]{0,options.bias.getSpatialPrecision()},
+								new int[]{0,options.bias.getSpatialPrecision()},
+									new int[]{0,options.bias.getSpatialPrecision()},
+										new int[]{0,options.bias.getTemporalPrecision()}
 						},
 						SFCFactory.SFCType.HILBERT),
 				new BasicIndexModel(
@@ -341,6 +338,8 @@ public class NYCTLCDimensionalityTypeProvider implements
 				final boolean useHalfRange ) {
 			super(
 					useHalfRange);
+			min = MIN_LAT;
+			max = MAX_LAT;
 		}
 
 		@Override
