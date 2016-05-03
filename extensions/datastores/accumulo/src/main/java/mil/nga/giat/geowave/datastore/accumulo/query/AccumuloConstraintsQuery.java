@@ -148,7 +148,10 @@ public class AccumuloConstraintsQuery extends
 						aggr.getClass().getName());
 				iteratorSettings.addOption(
 						AggregationIterator.CONSTRAINTS_OPTION_NAME,
-						ByteArrayUtils.byteArrayToString((PersistenceUtils.toBinary(new ByteArrayRangesPersistable(getRanges())))));
+						ByteArrayUtils.byteArrayToString((PersistenceUtils.toBinary(new ByteArrayRangesPersistable(DataStoreUtils.constraintsToByteArrayRanges(
+								constraints,
+								index.getIndexStrategy(),
+								MAX_RANGE_DECOMPOSITION))))));
 				
 				// don't bother setting max decomposition because it is just the
 				// default anyways
