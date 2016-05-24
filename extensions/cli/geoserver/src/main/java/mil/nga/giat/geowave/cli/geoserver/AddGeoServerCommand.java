@@ -3,17 +3,17 @@ package mil.nga.giat.geowave.cli.geoserver;
 import java.io.File;
 import java.util.Properties;
 
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.ConfigSection;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
 
 @GeowaveOperation(name = "addgeoserver", parentOperation = ConfigSection.class)
 @Parameters(commandDescription = "Create a local configuration for GeoServer")
@@ -23,7 +23,7 @@ public class AddGeoServerCommand implements
 	private final static Logger LOGGER = LoggerFactory.getLogger(AddGeoServerCommand.class);
 
 	public static final String GEOSERVER_URL = "GEOWAVE_GEOSERVER_URL";
-
+	
 	@Parameter(names = {
 			"-u",
 			"--url"
