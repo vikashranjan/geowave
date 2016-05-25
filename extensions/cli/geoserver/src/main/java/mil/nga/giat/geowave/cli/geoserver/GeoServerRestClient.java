@@ -114,6 +114,23 @@ public class GeoServerRestClient
 						"{'workspace':{'name':'" + workspace + "'}}",
 						MediaType.APPLICATION_JSON));
 
+		return response.getStatus() == 201;
+	}
+
+	public boolean deleteWorkspace(
+			final String workspace ) {
+
+		final Client client = ClientBuilder.newClient().register(
+				HttpAuthenticationFeature.basic(
+						geoserverUser,
+						geoserverPass));
+		final WebTarget target = client.target(geoserverUrl);
+
+		Response response = target.path(
+				"geoserver/rest/workspaces/" + workspace).queryParam(
+				"recurse",
+				"true").request().delete();
+
 		return response.getStatus() == 200;
 	}
 
@@ -175,5 +192,11 @@ public class GeoServerRestClient
 		}
 
 		System.out.println("---\n");
+		
+		boolean success = geoserverClient.addWorkspace("DeleteMe");
+		System.out.println("Add workspace 'DeleteMe' to GeoServer: " + (success ? "OK" : "Failed"));
+		
+		success = geoserverClient.deleteWorkspace("DeleteMe");
+		System.out.println("Delete workspace 'DeleteMe' from GeoServer: " + (success ? "OK" : "Failed"));
 	}
 }
