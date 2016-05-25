@@ -5,7 +5,9 @@ import java.util.List;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
@@ -15,10 +17,11 @@ import net.sf.json.JSONObject;
 import org.apache.log4j.Logger;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 
-public class GeoServerRestClient {
+public class GeoServerRestClient
+{
 	private final static Logger logger = Logger.getLogger(GeoServerRestClient.class);
 	private final static int defaultIndentation = 2;
-	
+
 	private static final String DEFAULT_URL = "http://localhost:8080";
 	private static final String DEFAULT_USER = "admin";
 	private static final String DEFAULT_PASS = "geoserver";
@@ -28,11 +31,12 @@ public class GeoServerRestClient {
 	private final String geoserverUser;
 	private final String geoserverPass;
 	private final String geoserverWorkspace;
-	
-	public GeoServerRestClient(String geoserverUrl,
+
+	public GeoServerRestClient(
+			String geoserverUrl,
 			String geoserverUser,
 			String geoserverPass,
-			String geoserverWorkspace) {
+			String geoserverWorkspace ) {
 		if (geoserverUrl != null) {
 			this.geoserverUrl = geoserverUrl;
 		}
@@ -82,15 +86,35 @@ public class GeoServerRestClient {
 					"workspace");
 
 			List<String> workspaceList = new ArrayList<String>();
-			
+
 			for (int i = 0; i < workspaceArray.size(); i++) {
-				workspaceList.add(workspaceArray.getJSONObject(i).getString("name"));
+				workspaceList.add(workspaceArray.getJSONObject(
+						i).getString(
+						"name"));
 			}
 
 			return workspaceList;
 		}
 
 		return null;
+	}
+
+	public boolean addWorkspace(
+			final String workspace ) {
+
+		final Client client = ClientBuilder.newClient().register(
+				HttpAuthenticationFeature.basic(
+						geoserverUser,
+						geoserverPass));
+		final WebTarget target = client.target(geoserverUrl);
+
+		Response response = target.path(
+				"geoserver/rest/workspaces").request().post(
+				Entity.entity(
+						"{'workspace':{'name':'" + workspace + "'}}",
+						MediaType.APPLICATION_JSON));
+
+		return response.getStatus() == 200;
 	}
 
 	protected JSONArray getArrayEntryNames(
@@ -133,19 +157,23 @@ public class GeoServerRestClient {
 		}
 		return entryArray;
 	}
-	
+
 	public static void main(
 			final String[] args ) {
-		GeoServerRestClient geoserverClient = new GeoServerRestClient("http://localhost:8080", null, null, null);
-		
+		GeoServerRestClient geoserverClient = new GeoServerRestClient(
+				"http://localhost:8080",
+				null,
+				null,
+				null);
+
 		List<String> workspaceList = geoserverClient.getWorkspaces();
-		
+
 		System.out.println("\nList of GeoServer workspaces:");
-		
+
 		for (String ws : workspaceList) {
 			System.out.println("  > " + ws);
 		}
-		
+
 		System.out.println("---\n");
 	}
 }

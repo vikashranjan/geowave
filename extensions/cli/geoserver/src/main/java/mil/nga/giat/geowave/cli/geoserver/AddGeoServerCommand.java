@@ -23,12 +23,12 @@ public class AddGeoServerCommand implements
 	private final static Logger LOGGER = LoggerFactory.getLogger(AddGeoServerCommand.class);
 
 	public static final String GEOSERVER_URL = "GEOWAVE_GEOSERVER_URL";
-	
+
 	@Parameter(names = {
-			"-u",
-			"--url"
-		}, required = true, description = "GeoServer URL")
-		private String url;
+		"-u",
+		"--url"
+	}, required = true, description = "GeoServer URL")
+	private String url;
 
 	@Override
 	public boolean prepare(
@@ -61,7 +61,8 @@ public class AddGeoServerCommand implements
 		return url;
 	}
 
-	public void setUrl(String url) {
+	public void setUrl(
+			String url ) {
 		this.url = url;
 	}
 
