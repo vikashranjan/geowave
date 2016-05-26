@@ -1,5 +1,8 @@
 package mil.nga.giat.geowave.cli.geoserver;
 
+import java.io.IOException;
+import java.util.Iterator;
+
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -122,6 +125,66 @@ public class GeoServerRestClient
 				"recurse",
 				"true").request().delete();
 	}
+	
+	public Response getDatastore(
+			final String workspaceName,
+			String datastoreName ) {
+		final Client client = ClientBuilder.newClient().register(
+				HttpAuthenticationFeature.basic(
+						geoserverUser,
+						geoserverPass));
+		final WebTarget target = client.target(geoserverUrl);
+
+		final Response resp = target
+				.path(
+						"geoserver/rest/workspaces/" + workspaceName + "/datastores/" + datastoreName + ".json")
+				.request()
+				.get();
+
+		if (resp.getStatus() == Status.OK.getStatusCode()) {
+			resp.bufferEntity();
+
+			JSONObject datastore = JSONObject.fromObject(resp.readEntity(String.class));
+
+			if (datastore != null) {
+				return Response.ok(
+						datastore.toString(defaultIndentation)).build();
+			}
+		}
+
+		return resp;
+	}
+	
+	public Response getDatastores(String workspaceName) {
+		final Client client = ClientBuilder.newClient().register(
+				HttpAuthenticationFeature.basic(
+						geoserverUser,
+						geoserverPass));
+		final WebTarget target = client.target(geoserverUrl);
+
+		final Response resp = target.path(
+				"geoserver/rest/workspaces/" + workspaceName + "/datastores.json").request().get();
+
+		if (resp.getStatus() == Status.OK.getStatusCode()) {
+			resp.bufferEntity();
+
+			// get the datastore names
+			final JSONArray datastoreArray = getArrayEntryNames(
+					JSONObject.fromObject(resp.readEntity(String.class)),
+					"dataStores",
+					"dataStore");
+
+			final JSONObject dsObj = new JSONObject();
+			dsObj.put(
+					"dataStores",
+					datastoreArray);
+
+			return Response.ok(
+					dsObj.toString(defaultIndentation)).build();
+		}
+
+		return resp;
+	}
 
 	protected JSONArray getArrayEntryNames(
 			JSONObject jsonObj,
@@ -134,7 +197,13 @@ public class GeoServerRestClient
 		else if (jsonObj.get(firstKey) instanceof JSONArray) {
 			final JSONArray tempArray = jsonObj.getJSONArray(firstKey);
 			if (tempArray.size() > 0) {
-				jsonObj = tempArray.getJSONObject(0);
+				if (tempArray.get(0) instanceof JSONObject) {
+					jsonObj = tempArray.getJSONObject(0);
+				}
+				else {
+					// empty list!
+					return new JSONArray();
+				}
 			}
 		}
 
@@ -213,5 +282,34 @@ public class GeoServerRestClient
 		else {
 			System.err.println("Error deleting workspace 'DeleteMe' from GeoServer; code = " + deleteWorkspaceResponse.getStatus());
 		}
+		
+		// test store list
+		Response listStoresResponse = geoserverClient.getDatastores("topp");
+
+		if (listStoresResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer stores list for 'topp':");
+
+			JSONObject jsonResponse = JSONObject.fromObject(listStoresResponse.getEntity());
+			JSONArray datastores = jsonResponse.getJSONArray("dataStores");
+			System.out.println(datastores.toString(2));
+		}
+		else {
+			System.err.println("Error getting GeoServer stores list for 'topp'; code = " + listStoresResponse.getStatus());
+		}
+		
+		// test get store
+		Response getStoreResponse = geoserverClient.getDatastore("topp", "taz_shapes");
+
+		if (getStoreResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer store info for 'topp/taz_shapes':");
+
+			JSONObject jsonResponse = JSONObject.fromObject(getStoreResponse.getEntity());
+			JSONObject datastore = jsonResponse.getJSONObject("dataStore");
+			System.out.println(datastore.toString(2));
+		}
+		else {
+			System.err.println("Error getting GeoServer store info for 'topp/taz_shapes'; code = " + getStoreResponse.getStatus());
+		}
+
 	}
 }
