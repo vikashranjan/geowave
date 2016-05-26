@@ -1,8 +1,5 @@
 package mil.nga.giat.geowave.cli.geoserver;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -66,7 +63,7 @@ public class GeoServerRestClient
 		}
 	}
 
-	public List<String> getWorkspaces() {
+	public Response getWorkspaces() {
 		final Client client = ClientBuilder.newClient().register(
 				HttpAuthenticationFeature.basic(
 						geoserverUser,
@@ -85,53 +82,45 @@ public class GeoServerRestClient
 					"workspaces",
 					"workspace");
 
-			List<String> workspaceList = new ArrayList<String>();
+			final JSONObject workspacesObj = new JSONObject();
+			workspacesObj.put(
+					"workspaces",
+					workspaceArray);
 
-			for (int i = 0; i < workspaceArray.size(); i++) {
-				workspaceList.add(workspaceArray.getJSONObject(
-						i).getString(
-						"name"));
-			}
-
-			return workspaceList;
+			return Response.ok(
+					workspacesObj.toString(defaultIndentation)).build();
 		}
 
-		return null;
+		return resp;
 	}
 
-	public boolean addWorkspace(
+	public Response addWorkspace(
 			final String workspace ) {
-
 		final Client client = ClientBuilder.newClient().register(
 				HttpAuthenticationFeature.basic(
 						geoserverUser,
 						geoserverPass));
 		final WebTarget target = client.target(geoserverUrl);
 
-		Response response = target.path(
+		return target.path(
 				"geoserver/rest/workspaces").request().post(
 				Entity.entity(
 						"{'workspace':{'name':'" + workspace + "'}}",
 						MediaType.APPLICATION_JSON));
-
-		return response.getStatus() == 201;
 	}
 
-	public boolean deleteWorkspace(
+	public Response deleteWorkspace(
 			final String workspace ) {
-
 		final Client client = ClientBuilder.newClient().register(
 				HttpAuthenticationFeature.basic(
 						geoserverUser,
 						geoserverPass));
 		final WebTarget target = client.target(geoserverUrl);
 
-		Response response = target.path(
+		return target.path(
 				"geoserver/rest/workspaces/" + workspace).queryParam(
 				"recurse",
 				"true").request().delete();
-
-		return response.getStatus() == 200;
 	}
 
 	protected JSONArray getArrayEntryNames(
@@ -175,28 +164,54 @@ public class GeoServerRestClient
 		return entryArray;
 	}
 
+	// Example use of geoserver rest client
 	public static void main(
 			final String[] args ) {
+		// create the client
 		GeoServerRestClient geoserverClient = new GeoServerRestClient(
 				"http://localhost:8080",
 				null,
 				null,
 				null);
 
-		List<String> workspaceList = geoserverClient.getWorkspaces();
+		// test getWorkspaces
+		Response getWorkspacesResponse = geoserverClient.getWorkspaces();
 
-		System.out.println("\nList of GeoServer workspaces:");
+		if (getWorkspacesResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nList of GeoServer workspaces:");
 
-		for (String ws : workspaceList) {
-			System.out.println("  > " + ws);
+			JSONObject jsonResponse = JSONObject.fromObject(getWorkspacesResponse.getEntity());
+
+			final JSONArray workspaces = jsonResponse.getJSONArray("workspaces");
+			for (int i = 0; i < workspaces.size(); i++) {
+				String wsName = workspaces.getJSONObject(
+						i).getString(
+						"name");
+				System.out.println("  > " + wsName);
+			}
+
+			System.out.println("---\n");
+		}
+		else {
+			System.err.println("Error getting GeoServer workspace list; code = " + getWorkspacesResponse.getStatus());
 		}
 
-		System.out.println("---\n");
-		
-		boolean success = geoserverClient.addWorkspace("DeleteMe");
-		System.out.println("Add workspace 'DeleteMe' to GeoServer: " + (success ? "OK" : "Failed"));
-		
-		success = geoserverClient.deleteWorkspace("DeleteMe");
-		System.out.println("Delete workspace 'DeleteMe' from GeoServer: " + (success ? "OK" : "Failed"));
+		// test addWorkspace
+		Response addWorkspaceResponse = geoserverClient.addWorkspace("DeleteMe");
+		if (addWorkspaceResponse.getStatus() == Status.CREATED.getStatusCode()) {
+			System.out.println("Add workspace 'DeleteMe' to GeoServer: OK");
+		}
+		else {
+			System.err.println("Error adding workspace 'DeleteMe' to GeoServer; code = " + addWorkspaceResponse.getStatus());
+		}
+
+		// test deleteWorkspace
+		Response deleteWorkspaceResponse = geoserverClient.deleteWorkspace("DeleteMe");
+		if (deleteWorkspaceResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("Delete workspace 'DeleteMe' from GeoServer: OK");
+		}
+		else {
+			System.err.println("Error deleting workspace 'DeleteMe' from GeoServer; code = " + deleteWorkspaceResponse.getStatus());
+		}
 	}
 }

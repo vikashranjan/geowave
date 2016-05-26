@@ -8,9 +8,7 @@ public class GeoServerOperationProvider implements
 	private static final Class<?>[] OPERATIONS = new Class<?>[] {
 		GeoServerSection.class,
 		AddGeoServerCommand.class,
-		GeoServerGetWorkspacesCommand.class,
-		GeoServerAddWorkspaceCommand.class,
-		GeoServerDeleteWorkspaceCommand.class,
+		GeoServerWorkspaceCommand.class,
 	};
 
 	@Override
