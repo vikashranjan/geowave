@@ -10,6 +10,7 @@ import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import com.beust.jcommander.Parameter;
@@ -80,17 +81,8 @@ public class GeoServerStoreCommand implements
 				null, // default pass
 				workspace); // null is ok - uses default
 
-		if (workspace == null || workspace.isEmpty()) { // retrieve and store it
+		if (workspace == null || workspace.isEmpty()) { // retrieve it
 			workspace = geoserverClient.getGeoserverWorkspace();
-
-			gsConfig.setProperty(
-					"geoserver.workspace",
-					workspace);
-
-			// Write properties file
-			ConfigOptions.writeProperties(
-					propFile,
-					gsConfig);
 		}
 
 		// Successfully prepared
@@ -132,7 +124,20 @@ public class GeoServerStoreCommand implements
 		}
 	}
 
-	private void listStores() {}
+	private void listStores() {
+		Response listStoresResponse = geoserverClient.getDatastores(workspace);
+
+		if (listStoresResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer stores list for '" + workspace + "':");
+
+			JSONObject jsonResponse = JSONObject.fromObject(listStoresResponse.getEntity());
+			JSONArray datastores = jsonResponse.getJSONArray("dataStores");
+			System.out.println(datastores.toString(2));
+		}
+		else {
+			System.err.println("Error getting GeoServer stores list for '" + workspace + "'; code = " + listStoresResponse.getStatus());
+		}
+	}
 
 	private void addStore() {}
 
