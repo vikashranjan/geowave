@@ -26,13 +26,13 @@ public class GeoServerWorkspaceCommand implements
 	@Parameter(names = {
 		"-n",
 		"--name"
-	}, required = true, description = "Workspace Name")
+	}, required = false, description = "Workspace Name")
 	private String name;
 
 	@Parameter(names = {
 		"-a",
 		"--action"
-	}, required = true, description = "Workspace Action (add, delete or list)")
+	}, required = false, description = "Workspace Action (add, delete or list)")
 	private String action;
 
 	@Override
@@ -41,15 +41,11 @@ public class GeoServerWorkspaceCommand implements
 		// validate requested action:
 		boolean valid = false;
 
-		if (action.equals("add")) {
-			if (name != null && !name.isEmpty()) {
-				valid = true;
-			}
-			else {
-				System.err.println("You must supply a workspace name!");
-			}
+		if (action == null || action.isEmpty()) {
+			action = "list";
+			valid = true;
 		}
-		else if (action.startsWith("del")) {
+		else if (action.equals("add") || action.startsWith("del")) {
 			if (name != null && !name.isEmpty()) {
 				valid = true;
 			}
@@ -77,7 +73,7 @@ public class GeoServerWorkspaceCommand implements
 				gsConfig.getProperty("geoserver.url"),
 				null,
 				null,
-				null);
+				name);
 
 		// Successfully prepared
 		return true;

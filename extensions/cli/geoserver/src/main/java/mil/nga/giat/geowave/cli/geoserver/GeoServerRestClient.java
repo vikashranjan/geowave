@@ -1,8 +1,5 @@
 package mil.nga.giat.geowave.cli.geoserver;
 
-import java.io.IOException;
-import java.util.Iterator;
-
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -311,5 +308,21 @@ public class GeoServerRestClient
 			System.err.println("Error getting GeoServer store info for 'topp/taz_shapes'; code = " + getStoreResponse.getStatus());
 		}
 
+	}
+
+	public String getGeoserverUrl() {
+		return geoserverUrl;
+	}
+
+	public String getGeoserverUser() {
+		return geoserverUser;
+	}
+
+	public String getGeoserverPass() {
+		return geoserverPass;
+	}
+
+	public String getGeoserverWorkspace() {
+		return geoserverWorkspace;
 	}
 }

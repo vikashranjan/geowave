@@ -1,18 +1,16 @@
 package mil.nga.giat.geowave.cli.geoserver;
 
 import java.io.File;
-import java.util.Iterator;
 import java.util.Properties;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
 import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
+import net.sf.json.JSONObject;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
@@ -27,19 +25,19 @@ public class GeoServerStoreCommand implements
 	@Parameter(names = {
 		"-ws",
 		"--workspace"
-	}, required = true, description = "Workspace Name")
+	}, required = false, description = "Workspace Name")
 	private String workspace;
 
 	@Parameter(names = {
 		"-n",
 		"--name"
-	}, required = true, description = "Store Name")
+	}, required = false, description = "Store Name")
 	private String name;
 
 	@Parameter(names = {
 		"-a",
 		"--action"
-	}, required = true, description = "Store Action (get, add, delete or list)")
+	}, required = false, description = "Store Action (get, add, delete or list)")
 	private String action;
 
 	@Override
@@ -48,9 +46,11 @@ public class GeoServerStoreCommand implements
 		// validate requested action:
 		boolean valid = false;
 
-		if (action.equals("get") || 
-				action.startsWith("add") ||
-				action.startsWith("del")) {
+		if (action == null || action.isEmpty()) {
+			action = "list";
+			valid = true;
+		}
+		else if (action.equals("get") || action.startsWith("add") || action.startsWith("del")) {
 			if (name != null && !name.isEmpty()) {
 				valid = true;
 			}
@@ -78,7 +78,20 @@ public class GeoServerStoreCommand implements
 				gsConfig.getProperty("geoserver.url"),
 				null, // default user
 				null, // default pass
-				workspace);
+				workspace); // null is ok - uses default
+
+		if (workspace == null || workspace.isEmpty()) { // retrieve and store it
+			workspace = geoserverClient.getGeoserverWorkspace();
+
+			gsConfig.setProperty(
+					"geoserver.workspace",
+					workspace);
+
+			// Write properties file
+			ConfigOptions.writeProperties(
+					propFile,
+					gsConfig);
+		}
 
 		// Successfully prepared
 		return true;
@@ -103,7 +116,9 @@ public class GeoServerStoreCommand implements
 	}
 
 	private void getStore() {
-		Response getStoreResponse = geoserverClient.getDatastore(workspace, name);
+		Response getStoreResponse = geoserverClient.getDatastore(
+				workspace,
+				name);
 
 		if (getStoreResponse.getStatus() == Status.OK.getStatusCode()) {
 			System.out.println("\nGeoServer store info for '" + name + "':");
@@ -117,14 +132,11 @@ public class GeoServerStoreCommand implements
 		}
 	}
 
-	private void listStores() {
-	}
+	private void listStores() {}
 
-	private void addStore() {
-	}
+	private void addStore() {}
 
-	private void deleteStore() {
-	}
+	private void deleteStore() {}
 
 	public String getWorkspace() {
 		return workspace;
