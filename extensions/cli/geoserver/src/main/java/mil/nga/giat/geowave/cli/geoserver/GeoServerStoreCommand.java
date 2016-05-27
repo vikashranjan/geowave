@@ -23,6 +23,8 @@ public class GeoServerStoreCommand implements
 		Command
 {
 	private GeoServerRestClient geoserverClient;
+	private File propFile;
+	private Properties gsConfig;
 
 	@Parameter(names = {
 		"-ws",
@@ -31,16 +33,40 @@ public class GeoServerStoreCommand implements
 	private String workspace;
 
 	@Parameter(names = {
-		"-n",
-		"--name"
-	}, required = false, description = "Store Name")
-	private String name;
+		"-ds",
+		"--datastore"
+	}, required = false, description = "Datastore Name")
+	private String datastore;
 
 	@Parameter(names = {
 		"-a",
 		"--action"
-	}, required = false, description = "Store Action (get, add, delete or list)")
+	}, required = false, description = "Datastore Action (get, add, delete, config or list)")
 	private String action;
+
+	@Parameter(names = {
+		"-u",
+		"--user"
+	}, required = false, description = "Datastore Config:User")
+	private String storeUser;
+
+	@Parameter(names = {
+		"-p",
+		"--password"
+	}, required = false, description = "Datastore Config:Password")
+	private String storePassword;
+
+	@Parameter(names = {
+		"-z",
+		"--zookeeper"
+	}, required = false, description = "Datastore Config:Zookeeper")
+	private String storeZookeeper;
+
+	@Parameter(names = {
+		"-i",
+		"--instance"
+	}, required = false, description = "Datastore Config:Instance")
+	private String storeInstance;
 
 	@Override
 	public boolean prepare(
@@ -52,15 +78,18 @@ public class GeoServerStoreCommand implements
 			action = "list";
 			valid = true;
 		}
-		else if (action.equals("get") || action.startsWith("add") || action.startsWith("del")) {
-			if (name != null && !name.isEmpty()) {
+		else if (action.equals("get") || action.equals("add") || action.equals("delete")) {
+			if (datastore != null && !datastore.isEmpty()) {
 				valid = true;
 			}
 			else {
 				System.err.println("You must supply a store name!");
 			}
 		}
-		else if (action.startsWith("lis")) {
+		else if (action.equals("list")) {
+			valid = true;
+		}
+		else if (action.equals("config")) {
 			valid = true;
 		}
 
@@ -69,17 +98,17 @@ public class GeoServerStoreCommand implements
 		}
 
 		// Get the local config for GeoServer
-		File propFile = (File) params.getContext().get(
+		propFile = (File) params.getContext().get(
 				ConfigOptions.PROPERTIES_FILE_CONTEXT);
-		Properties gsConfig = ConfigOptions.loadProperties(
+		gsConfig = ConfigOptions.loadProperties(
 				propFile,
 				null);
 
 		// Create a rest client
 		geoserverClient = new GeoServerRestClient(
 				gsConfig.getProperty("geoserver.url"),
-				null, // default user
-				null, // default pass
+				gsConfig.getProperty("geoserver.user", null),
+				gsConfig.getProperty("geoserver.password", null),
 				workspace); // null is ok - uses default
 
 		if (workspace == null || workspace.isEmpty()) { // retrieve it
@@ -100,8 +129,11 @@ public class GeoServerStoreCommand implements
 		else if (action.equals("add")) {
 			addStore();
 		}
-		else if (action.startsWith("del")) {
+		else if (action.equals("delete")) {
 			deleteStore();
+		}
+		else if (action.equals("config")) {
+			configStore();
 		}
 		else {
 			listStores();
@@ -111,17 +143,17 @@ public class GeoServerStoreCommand implements
 	private void getStore() {
 		Response getStoreResponse = geoserverClient.getDatastore(
 				workspace,
-				name);
+				datastore);
 
 		if (getStoreResponse.getStatus() == Status.OK.getStatusCode()) {
-			System.out.println("\nGeoServer store info for '" + name + "':");
+			System.out.println("\nGeoServer store info for '" + datastore + "':");
 
 			JSONObject jsonResponse = JSONObject.fromObject(getStoreResponse.getEntity());
 			JSONObject datastore = jsonResponse.getJSONObject("dataStore");
 			System.out.println(datastore.toString(2));
 		}
 		else {
-			System.err.println("Error getting GeoServer store info for '" + name + "'; code = " + getStoreResponse.getStatus());
+			System.err.println("Error getting GeoServer store info for '" + datastore + "'; code = " + getStoreResponse.getStatus());
 		}
 	}
 
@@ -141,39 +173,96 @@ public class GeoServerStoreCommand implements
 	}
 
 	private void addStore() {
-		// TODO: Obviously, this all needs to come from config
-		HashMap<String, String> geowaveStoreConfig = new HashMap<String, String>();
-		geowaveStoreConfig.put("user", "root");
-		geowaveStoreConfig.put("password", "password");
-		geowaveStoreConfig.put("gwNamespace", name);
-		geowaveStoreConfig.put("zookeeper", "localhost:2181");
-		geowaveStoreConfig.put("instance", "geowave");
-		
+		HashMap<String, String> geowaveStoreConfig = loadStoreConfig();
+
 		Response addStoreResponse = geoserverClient.addDatastore(
 				workspace,
-				name,
+				datastore,
 				"accumulo",
 				geowaveStoreConfig);
 
 		if (addStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() == Status.CREATED.getStatusCode()) {
-			System.out.println("Add store '" + name + "' to workspace '" + workspace + "' on GeoServer: OK");
+			System.out.println("Add store '" + datastore + "' to workspace '" + workspace + "' on GeoServer: OK");
 		}
 		else {
-			System.err.println("Error adding store '" + name + "' to workspace '" + workspace + "' on GeoServer; code = " + addStoreResponse.getStatus());
+			System.err.println("Error adding store '" + datastore + "' to workspace '" + workspace + "' on GeoServer; code = " + addStoreResponse.getStatus());
 		}
 	}
 
 	private void deleteStore() {
 		Response deleteStoreResponse = geoserverClient.deleteDatastore(
 				workspace,
-				name);
+				datastore);
 
 		if (deleteStoreResponse.getStatus() == Status.OK.getStatusCode()) {
-			System.out.println("Delete store '" + name + "' from workspace '" + workspace + "' on GeoServer: OK");
+			System.out.println("Delete store '" + datastore + "' from workspace '" + workspace + "' on GeoServer: OK");
 		}
 		else {
-			System.err.println("Error deleting store '" + name + "' from workspace '" + workspace + "' on GeoServer; code = " + deleteStoreResponse.getStatus());
+			System.err.println("Error deleting store '" + datastore + "' from workspace '" + workspace + "' on GeoServer; code = " + deleteStoreResponse.getStatus());
 		}
+	}
+	
+	public void configStore() {
+		if (storeUser != null && !storeUser.isEmpty()) {
+			gsConfig.setProperty("geoserver.store.user", storeUser);
+			System.out.println("GeoServer Store Config: User = " + storeUser);
+		}
+		
+		if (storePassword != null && !storePassword.isEmpty()) {
+			gsConfig.setProperty("geoserver.store.password", storePassword);
+			System.out.println("GeoServer Store Config: Password = " + storePassword);
+		}
+		
+		if (storeZookeeper != null && !storeZookeeper.isEmpty()) {
+			gsConfig.setProperty("geoserver.store.zookeeper", storeZookeeper);
+			System.out.println("GeoServer Store Config: Zookeeper = " + storeZookeeper);
+		}
+		
+		if (storeInstance != null && !storeInstance.isEmpty()) {
+			gsConfig.setProperty("geoserver.store.instance", storeInstance);
+			System.out.println("GeoServer Store Config: Instance = " + storeInstance);
+		}
+		
+		ConfigOptions.writeProperties(
+				propFile,
+				gsConfig);
+		
+		System.out.println("GeoServer Store Config Saved");
+	}
+
+	protected HashMap<String, String> loadStoreConfig() {
+		HashMap<String, String> geowaveStoreConfig = new HashMap<String, String>();
+
+		String sUser = gsConfig.getProperty(
+				"geoserver.store.user",
+				"root");
+		String sPassword = gsConfig.getProperty(
+				"geoserver.store.password",
+				"password");
+		String sZookeeper = gsConfig.getProperty(
+				"geoserver.store.zookeeper",
+				"localhost:2181");
+		String sInstance = gsConfig.getProperty(
+				"geoserver.store.instance",
+				"geowave");
+
+		geowaveStoreConfig.put(
+				"user",
+				sUser);
+		geowaveStoreConfig.put(
+				"password",
+				sPassword);
+		geowaveStoreConfig.put(
+				"gwNamespace",
+				datastore);
+		geowaveStoreConfig.put(
+				"zookeeper",
+				sZookeeper);
+		geowaveStoreConfig.put(
+				"instance",
+				sInstance);
+
+		return geowaveStoreConfig;
 	}
 
 	public String getWorkspace() {
@@ -185,13 +274,13 @@ public class GeoServerStoreCommand implements
 		this.workspace = workspace;
 	}
 
-	public String getName() {
-		return name;
+	public String getDatastore() {
+		return datastore;
 	}
 
-	public void setName(
-			String workspace ) {
-		this.name = workspace;
+	public void setDatastore(
+			String datastore ) {
+		this.datastore = datastore;
 	}
 
 	public String getAction() {

@@ -22,7 +22,7 @@ public class AddGeoServerCommand implements
 {
 	private final static Logger LOGGER = LoggerFactory.getLogger(AddGeoServerCommand.class);
 
-	public static final String GEOSERVER_URL = "GEOWAVE_GEOSERVER_URL";
+	public static final String GEOSERVER_URL = "geoserver.url";
 
 	@Parameter(names = {
 		"-u",
