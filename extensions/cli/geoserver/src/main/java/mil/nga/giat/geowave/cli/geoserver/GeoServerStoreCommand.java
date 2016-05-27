@@ -107,8 +107,12 @@ public class GeoServerStoreCommand implements
 		// Create a rest client
 		geoserverClient = new GeoServerRestClient(
 				gsConfig.getProperty("geoserver.url"),
-				gsConfig.getProperty("geoserver.user", null),
-				gsConfig.getProperty("geoserver.password", null),
+				gsConfig.getProperty(
+						"geoserver.user",
+						null),
+				gsConfig.getProperty(
+						"geoserver.password",
+						null),
 				workspace); // null is ok - uses default
 
 		if (workspace == null || workspace.isEmpty()) { // retrieve it
@@ -201,33 +205,53 @@ public class GeoServerStoreCommand implements
 			System.err.println("Error deleting store '" + datastore + "' from workspace '" + workspace + "' on GeoServer; code = " + deleteStoreResponse.getStatus());
 		}
 	}
-	
+
 	public void configStore() {
+		boolean update = false;
+
 		if (storeUser != null && !storeUser.isEmpty()) {
-			gsConfig.setProperty("geoserver.store.user", storeUser);
+			gsConfig.setProperty(
+					"geoserver.store.user",
+					storeUser);
 			System.out.println("GeoServer Store Config: User = " + storeUser);
+			update = true;
 		}
-		
+
 		if (storePassword != null && !storePassword.isEmpty()) {
-			gsConfig.setProperty("geoserver.store.password", storePassword);
+			gsConfig.setProperty(
+					"geoserver.store.password",
+					storePassword);
 			System.out.println("GeoServer Store Config: Password = " + storePassword);
+			update = true;
 		}
-		
+
 		if (storeZookeeper != null && !storeZookeeper.isEmpty()) {
-			gsConfig.setProperty("geoserver.store.zookeeper", storeZookeeper);
+			gsConfig.setProperty(
+					"geoserver.store.zookeeper",
+					storeZookeeper);
 			System.out.println("GeoServer Store Config: Zookeeper = " + storeZookeeper);
+			update = true;
 		}
-		
+
 		if (storeInstance != null && !storeInstance.isEmpty()) {
-			gsConfig.setProperty("geoserver.store.instance", storeInstance);
+			gsConfig.setProperty(
+					"geoserver.store.instance",
+					storeInstance);
 			System.out.println("GeoServer Store Config: Instance = " + storeInstance);
+			update = true;
 		}
-		
-		ConfigOptions.writeProperties(
-				propFile,
-				gsConfig);
-		
-		System.out.println("GeoServer Store Config Saved");
+
+		if (update) {
+			ConfigOptions.writeProperties(
+					propFile,
+					gsConfig);
+
+			System.out.println("GeoServer Store Config Saved");
+		}
+		else {
+			System.err.println("GeoServer store config not changed.");
+			System.err.println("Please specify user, password, zookeeper, or instance");
+		}
 	}
 
 	protected HashMap<String, String> loadStoreConfig() {

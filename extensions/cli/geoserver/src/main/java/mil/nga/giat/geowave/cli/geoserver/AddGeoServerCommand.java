@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 
-@GeowaveOperation(name = "addgeoserver", parentOperation = ConfigSection.class)
+@GeowaveOperation(name = "geoserver", parentOperation = ConfigSection.class)
 @Parameters(commandDescription = "Create a local configuration for GeoServer")
 public class AddGeoServerCommand implements
 		Command
