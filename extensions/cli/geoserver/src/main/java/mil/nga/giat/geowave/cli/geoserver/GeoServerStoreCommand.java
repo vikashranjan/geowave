@@ -1,6 +1,7 @@
 package mil.nga.giat.geowave.cli.geoserver;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Properties;
 
 import javax.ws.rs.core.Response;
@@ -139,9 +140,41 @@ public class GeoServerStoreCommand implements
 		}
 	}
 
-	private void addStore() {}
+	private void addStore() {
+		// TODO: Obviously, this all needs to come from config
+		HashMap<String, String> geowaveStoreConfig = new HashMap<String, String>();
+		geowaveStoreConfig.put("user", "root");
+		geowaveStoreConfig.put("password", "password");
+		geowaveStoreConfig.put("gwNamespace", name);
+		geowaveStoreConfig.put("zookeeper", "localhost:2181");
+		geowaveStoreConfig.put("instance", "geowave");
+		
+		Response addStoreResponse = geoserverClient.addDatastore(
+				workspace,
+				name,
+				"accumulo",
+				geowaveStoreConfig);
 
-	private void deleteStore() {}
+		if (addStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() == Status.CREATED.getStatusCode()) {
+			System.out.println("Add store '" + name + "' to workspace '" + workspace + "' on GeoServer: OK");
+		}
+		else {
+			System.err.println("Error adding store '" + name + "' to workspace '" + workspace + "' on GeoServer; code = " + addStoreResponse.getStatus());
+		}
+	}
+
+	private void deleteStore() {
+		Response deleteStoreResponse = geoserverClient.deleteDatastore(
+				workspace,
+				name);
+
+		if (deleteStoreResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("Delete store '" + name + "' from workspace '" + workspace + "' on GeoServer: OK");
+		}
+		else {
+			System.err.println("Error deleting store '" + name + "' from workspace '" + workspace + "' on GeoServer; code = " + deleteStoreResponse.getStatus());
+		}
+	}
 
 	public String getWorkspace() {
 		return workspace;
