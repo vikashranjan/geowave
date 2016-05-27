@@ -10,6 +10,7 @@ public class GeoServerOperationProvider implements
 		AddGeoServerCommand.class,
 		GeoServerWorkspaceCommand.class,
 		GeoServerStoreCommand.class,
+		GeoServerLayerCommand.class,
 	};
 
 	@Override

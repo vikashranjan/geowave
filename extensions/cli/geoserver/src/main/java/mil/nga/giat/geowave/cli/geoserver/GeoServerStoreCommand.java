@@ -18,7 +18,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 
 @GeowaveOperation(name = "store", parentOperation = GeoServerSection.class)
-@Parameters(commandDescription = "GeoServer store CRUD")
+@Parameters(commandDescription = "GeoServer Store CRUD")
 public class GeoServerStoreCommand implements
 		Command
 {
@@ -33,39 +33,39 @@ public class GeoServerStoreCommand implements
 	private String workspace;
 
 	@Parameter(names = {
-		"-ds",
-		"--datastore"
-	}, required = false, description = "Datastore Name")
+		"-n",
+		"--name"
+	}, required = false, description = "Store Name")
 	private String datastore;
 
 	@Parameter(names = {
 		"-a",
 		"--action"
-	}, required = false, description = "Datastore Action (get, add, delete, config or list)")
+	}, required = false, description = "Store Action (get, add, delete, config or list)")
 	private String action;
 
 	@Parameter(names = {
 		"-u",
 		"--user"
-	}, required = false, description = "Datastore Config:User")
+	}, required = false, description = "Store Config:User")
 	private String storeUser;
 
 	@Parameter(names = {
 		"-p",
 		"--password"
-	}, required = false, description = "Datastore Config:Password")
+	}, required = false, description = "Store Config:Password")
 	private String storePassword;
 
 	@Parameter(names = {
 		"-z",
 		"--zookeeper"
-	}, required = false, description = "Datastore Config:Zookeeper")
+	}, required = false, description = "Store Config:Zookeeper")
 	private String storeZookeeper;
 
 	@Parameter(names = {
 		"-i",
 		"--instance"
-	}, required = false, description = "Datastore Config:Instance")
+	}, required = false, description = "Store Config:Instance")
 	private String storeInstance;
 
 	@Override
