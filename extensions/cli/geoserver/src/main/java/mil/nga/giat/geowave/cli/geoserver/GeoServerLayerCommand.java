@@ -28,19 +28,19 @@ public class GeoServerLayerCommand implements
 		"-ws",
 		"--workspace"
 	}, required = false, description = "Workspace Name")
-	private String workspace;
+	private String workspace = null;
 
 	@Parameter(names = {
 		"-ds",
 		"--datastore"
 	}, required = false, description = "Datastore Name")
-	private String datastore;
+	private String datastore = null;
 
 	@Parameter(names = {
 		"-n",
 		"--name"
 	}, required = false, description = "Layer Name")
-	private String layerName;
+	private String layerName = null;
 
 	@Parameter(names = {
 		"-a",
@@ -104,10 +104,6 @@ public class GeoServerLayerCommand implements
 						null),
 				workspace); // null is ok - uses default
 
-		if (workspace == null || workspace.isEmpty()) { // retrieve it
-			workspace = geoserverClient.getGeoserverWorkspace();
-		}
-		
 		debugOut("Layer command: workspace = " + workspace + "; action = " + action);
 
 		// Successfully prepared
@@ -164,9 +160,36 @@ public class GeoServerLayerCommand implements
 		}
 	}
 
-	private void addLayer() {}
+	private void addLayer() {
+		Response addLayerResponse = geoserverClient.addLayer(
+				workspace,
+				datastore,
+				"defaultStyle",
+				layerName);
 
-	private void deleteLayer() {}
+		if (addLayerResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer add layer response " + layerName + ":");
+			JSONObject listObj = JSONObject.fromObject(addLayerResponse.getEntity());
+			System.out.println(listObj.toString(2));
+		}
+		else {
+			System.err.println("Error adding GeoServer layer " + layerName + "; code = " + addLayerResponse.getStatus());
+		}
+	}
+
+	private void deleteLayer() {
+		Response deleteLayerResponse = geoserverClient.deleteLayer(
+				layerName);
+
+		if (deleteLayerResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer delete layer response " + layerName + ":");
+			JSONObject listObj = JSONObject.fromObject(deleteLayerResponse.getEntity());
+			System.out.println(listObj.toString(2));
+		}
+		else {
+			System.err.println("Error deleting GeoServer layer " + layerName + "; code = " + deleteLayerResponse.getStatus());
+		}
+	}
 
 	public String getWorkspace() {
 		return workspace;

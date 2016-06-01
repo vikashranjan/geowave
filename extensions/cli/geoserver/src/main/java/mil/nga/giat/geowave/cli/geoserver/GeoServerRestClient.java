@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.ws.rs.PathParam;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -486,6 +487,19 @@ public class GeoServerRestClient
 		return resp;
 	}
 
+	public Response deleteLayer(
+			final String layerName ) {
+
+		final Client client = ClientBuilder.newClient().register(
+				HttpAuthenticationFeature.basic(
+						geoserverUser,
+						geoserverPass));
+		final WebTarget target = client.target(geoserverUrl);
+
+		return target.path(
+				"geoserver/rest/layers/" + layerName).request().delete();
+	}
+
 	// Internal methods
 	protected String createFeatureTypeJson(
 			final String featureTypeName ) {
@@ -641,16 +655,13 @@ public class GeoServerRestClient
 		}
 
 		// test addWorkspace
-		// Response addWorkspaceResponse =
-		// geoserverClient.addWorkspace("DeleteMe");
-		// if (addWorkspaceResponse.getStatus() ==
-		// Status.CREATED.getStatusCode()) {
-		// System.out.println("Add workspace 'DeleteMe' to GeoServer: OK");
-		// }
-		// else {
-		// System.err.println("Error adding workspace 'DeleteMe' to GeoServer; code = "
-		// + addWorkspaceResponse.getStatus());
-		// }
+		Response addWorkspaceResponse = geoserverClient.addWorkspace("DeleteMe");
+		if (addWorkspaceResponse.getStatus() == Status.CREATED.getStatusCode()) {
+			System.out.println("Add workspace 'DeleteMe' to GeoServer: OK");
+		}
+		else {
+			System.err.println("Error adding workspace 'DeleteMe' to GeoServer; code = " + addWorkspaceResponse.getStatus());
+		}
 
 		// test store list
 		Response listStoresResponse = geoserverClient.getDatastores("topp");
@@ -682,35 +693,36 @@ public class GeoServerRestClient
 			System.err.println("Error getting GeoServer store info for 'topp/taz_shapes'; code = " + getStoreResponse.getStatus());
 		}
 
-		/*
-		 * // test add store HashMap<String, String> geowaveStoreConfig = new HashMap<String, String>();
-		 * geowaveStoreConfig.put("user", "root"); geowaveStoreConfig.put("password", "password");
-		 * geowaveStoreConfig.put("gwNamespace", "kamteststore2"); geowaveStoreConfig.put("zookeeper",
-		 * "localhost:2181"); geowaveStoreConfig.put("instance", "geowave");
-		 * 
-		 * Response addStoreResponse = geoserverClient.addDatastore( "DeleteMe", "kamteststore2", "accumulo",
-		 * geowaveStoreConfig);
-		 * 
-		 * if (addStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() ==
-		 * Status.CREATED.getStatusCode()) { System.out.println(
-		 * "Add store 'kamstoretest2' to workspace 'DeleteMe' on GeoServer: OK" ); } else { System.err.println(
-		 * "Error adding store 'kamstoretest2' to workspace 'DeleteMe' on GeoServer; code = " +
-		 * addStoreResponse.getStatus()); }
-		 * 
-		 * // test delete store Response deleteStoreResponse = geoserverClient.deleteDatastore( "DeleteMe",
-		 * "kamteststore");
-		 * 
-		 * if (deleteStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() ==
-		 * Status.CREATED.getStatusCode()) { System.out.println(
-		 * "Delete store 'kamstoretest' from workspace 'DeleteMe' on GeoServer: OK" ); } else { System.err.println(
-		 * "Error deleting store 'kamstoretest' from workspace 'DeleteMe' on GeoServer; code = " +
-		 * deleteStoreResponse.getStatus()); }
-		 * 
-		 * // test deleteWorkspace Response deleteWorkspaceResponse = geoserverClient.deleteWorkspace("DeleteMe"); if
-		 * (deleteWorkspaceResponse.getStatus() == Status.OK.getStatusCode()) {
-		 * System.out.println("Delete workspace 'DeleteMe' from GeoServer: OK"); } else { System.err.println(
-		 * "Error deleting workspace 'DeleteMe' from GeoServer; code = " + deleteWorkspaceResponse.getStatus()); }
-		 */
+		// test add store
+		HashMap<String, String> geowaveStoreConfig = new HashMap<String, String>();
+		geowaveStoreConfig.put(
+				"user",
+				"root");
+		geowaveStoreConfig.put(
+				"password",
+				"password");
+		geowaveStoreConfig.put(
+				"gwNamespace",
+				"kamteststore2");
+		geowaveStoreConfig.put(
+				"zookeeper",
+				"localhost:2181");
+		geowaveStoreConfig.put(
+				"instance",
+				"geowave");
+
+		Response addStoreResponse = geoserverClient.addDatastore(
+				"DeleteMe",
+				"kamteststore2",
+				"accumulo",
+				geowaveStoreConfig);
+
+		if (addStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() == Status.CREATED.getStatusCode()) {
+			System.out.println("Add store 'kamstoretest2' to workspace 'DeleteMe' on GeoServer: OK");
+		}
+		else {
+			System.err.println("Error adding store 'kamstoretest2' to workspace 'DeleteMe' on GeoServer; code = " + addStoreResponse.getStatus());
+		}
 
 		// test getLayer
 		Response getLayerResponse = geoserverClient.getLayer("states");
@@ -737,6 +749,52 @@ public class GeoServerRestClient
 		}
 		else {
 			System.err.println("Error getting GeoServer layer list; code = " + listLayersResponse.getStatus());
+		}
+
+		// test add layer
+		Response addLayerResponse = geoserverClient.addLayer("DeleteMe", "kamteststore2", "polygon", "kamtestlayer2");
+
+		if (addLayerResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer layer add response for 'kamtestlayer2':");
+
+			JSONObject jsonResponse = JSONObject.fromObject(addLayerResponse.getEntity());
+			System.out.println(jsonResponse.toString(2));
+		}
+		else {
+			System.err.println("Error getting GeoServer layer info for 'kamtestlayer2'; code = " + addLayerResponse.getStatus());
+		}
+		
+		// test delete layer
+		Response deleteLayerResponse = geoserverClient.deleteLayer("kamtestlayer2");
+		if (deleteLayerResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer layer delete response for 'kamtestlayer2':");
+
+			JSONObject jsonResponse = JSONObject.fromObject(deleteLayerResponse.getEntity());
+			System.out.println(jsonResponse.toString(2));
+		}
+		else {
+			System.err.println("Error getting GeoServer layer info for 'kamtestlayer2'; code = " + deleteLayerResponse.getStatus());
+		}
+
+		// test delete store
+		Response deleteStoreResponse = geoserverClient.deleteDatastore(
+				"DeleteMe",
+				"kamteststore2");
+
+		if (deleteStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() == Status.CREATED.getStatusCode()) {
+			System.out.println("Delete store 'kamstoretest2' from workspace 'DeleteMe' on GeoServer: OK");
+		}
+		else {
+			System.err.println("Error deleting store 'kamstoretest2' from workspace 'DeleteMe' on GeoServer; code = " + deleteStoreResponse.getStatus());
+		}
+
+		// test deleteWorkspace
+		Response deleteWorkspaceResponse = geoserverClient.deleteWorkspace("DeleteMe");
+		if (deleteWorkspaceResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("Delete workspace 'DeleteMe' from GeoServer: OK");
+		}
+		else {
+			System.err.println("Error deleting workspace 'DeleteMe' from GeoServer; code = " + deleteWorkspaceResponse.getStatus());
 		}
 	}
 
