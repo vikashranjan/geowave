@@ -272,10 +272,24 @@ public class GeoServerRestClient
 		return resp;
 	}
 
+	/**
+	 * Get list of layers from geoserver
+	 * 
+	 * @param workspaceName
+	 *            : if null, don't filter on workspace
+	 * @param datastoreName
+	 *            : if null, don't filter on datastore
+	 * @param geowaveOnly
+	 *            : if true, only return geowave layers
+	 * @return
+	 */
 	public Response getLayers(
 			String workspaceName,
 			String datastoreName,
 			boolean geowaveOnly ) {
+		boolean wsFilter = (workspaceName != null && !workspaceName.isEmpty());
+		boolean dsFilter = (datastoreName != null && !datastoreName.isEmpty());
+
 		final Client client = ClientBuilder.newClient().register(
 				HttpAuthenticationFeature.basic(
 						geoserverUser,
@@ -300,6 +314,14 @@ public class GeoServerRestClient
 			final Map<String, List<String>> namespaceLayersMap = new HashMap<String, List<String>>();
 			final Pattern p = Pattern.compile("workspaces/(.*?)/datastores/(.*?)/");
 			for (int i = 0; i < layerArray.size(); i++) {
+				boolean include = !geowaveOnly && !wsFilter && !dsFilter; // no filtering of any kind
+
+				if (include) { // just grab it...
+					layerInfoArray.add(layerArray.getJSONObject(i));
+					continue; // and move on
+				}
+
+				// at this point, we are filtering somehow. get some more info about the layer
 				final String name = layerArray.getJSONObject(
 						i).getString(
 						"name");
@@ -318,63 +340,68 @@ public class GeoServerRestClient
 					ds = m.group(2);
 				}
 
-				if ((ds != null && ds.equals(datastoreName)) && (ws != null && ws.equals(workspaceName))) {
-					final JSONObject datastore = JSONObject.fromObject(
-							getDatastore(
-									ds,
-									ws).getEntity()).getJSONObject(
-							"dataStore");
+				// filter on datastore?
+				if (!dsFilter || (ds != null && ds.equals(datastoreName))) {
 
-					// only process GeoWave layers
-					if (geowaveOnly) {
-						if (datastore != null && datastore.containsKey("type") && datastore.getString(
-								"type").startsWith(
-								"GeoWave Datastore")) {
+					// filter on workspace?
+					if (!wsFilter || (ws != null && ws.equals(workspaceName))) {
+						final JSONObject datastore = JSONObject.fromObject(
+								getDatastore(
+										ds,
+										ws).getEntity()).getJSONObject(
+								"dataStore");
 
-							JSONArray entryArray = null;
-							if (datastore.get("connectionParameters") instanceof JSONObject) {
-								entryArray = datastore.getJSONObject(
-										"connectionParameters").getJSONArray(
-										"entry");
-							}
-							else if (datastore.get("connectionParameters") instanceof JSONArray) {
-								entryArray = datastore.getJSONArray(
-										"connectionParameters").getJSONObject(
-										0).getJSONArray(
-										"entry");
-							}
+						// only process GeoWave layers
+						if (geowaveOnly) {
+							if (datastore != null && datastore.containsKey("type") && datastore.getString(
+									"type").startsWith(
+									"GeoWave Datastore")) {
 
-							if (entryArray == null) {
-								logger.error("entry Array is null - didn't find a connectionParameters datastore object that was a JSONObject or JSONArray");
-							}
-							else {
-								// group layers by namespace
-								for (int j = 0; j < entryArray.size(); j++) {
-									final JSONObject entry = entryArray.getJSONObject(j);
-									final String key = entry.getString("@key");
-									final String value = entry.getString("$");
+								JSONArray entryArray = null;
+								if (datastore.get("connectionParameters") instanceof JSONObject) {
+									entryArray = datastore.getJSONObject(
+											"connectionParameters").getJSONArray(
+											"entry");
+								}
+								else if (datastore.get("connectionParameters") instanceof JSONArray) {
+									entryArray = datastore.getJSONArray(
+											"connectionParameters").getJSONObject(
+											0).getJSONArray(
+											"entry");
+								}
 
-									if (key.startsWith("gwNamespace")) {
-										if (namespaceLayersMap.containsKey(value)) {
-											namespaceLayersMap.get(
-													value).add(
-													name);
+								if (entryArray == null) {
+									logger.error("entry Array is null - didn't find a connectionParameters datastore object that was a JSONObject or JSONArray");
+								}
+								else {
+									// group layers by namespace
+									for (int j = 0; j < entryArray.size(); j++) {
+										final JSONObject entry = entryArray.getJSONObject(j);
+										final String key = entry.getString("@key");
+										final String value = entry.getString("$");
+
+										if (key.startsWith("gwNamespace")) {
+											if (namespaceLayersMap.containsKey(value)) {
+												namespaceLayersMap.get(
+														value).add(
+														name);
+											}
+											else {
+												final ArrayList<String> layers = new ArrayList<String>();
+												layers.add(name);
+												namespaceLayersMap.put(
+														value,
+														layers);
+											}
+											break;
 										}
-										else {
-											final ArrayList<String> layers = new ArrayList<String>();
-											layers.add(name);
-											namespaceLayersMap.put(
-													value,
-													layers);
-										}
-										break;
 									}
 								}
 							}
 						}
-					}
-					else { // just get all the layers from this store
-						layerInfoArray.add(layerArray.getJSONObject(i));
+						else { // just get all the layers from this store
+							layerInfoArray.add(layerArray.getJSONObject(i));
+						}
 					}
 				}
 			}
@@ -656,42 +683,33 @@ public class GeoServerRestClient
 		}
 
 		/*
-		 * // test add store HashMap<String, String> geowaveStoreConfig = new
-		 * HashMap<String, String>(); geowaveStoreConfig.put("user", "root");
-		 * geowaveStoreConfig.put("password", "password");
-		 * geowaveStoreConfig.put("gwNamespace", "kamteststore2");
-		 * geowaveStoreConfig.put("zookeeper", "localhost:2181");
-		 * geowaveStoreConfig.put("instance", "geowave");
+		 * // test add store HashMap<String, String> geowaveStoreConfig = new HashMap<String, String>();
+		 * geowaveStoreConfig.put("user", "root"); geowaveStoreConfig.put("password", "password");
+		 * geowaveStoreConfig.put("gwNamespace", "kamteststore2"); geowaveStoreConfig.put("zookeeper",
+		 * "localhost:2181"); geowaveStoreConfig.put("instance", "geowave");
 		 * 
-		 * Response addStoreResponse = geoserverClient.addDatastore( "DeleteMe",
-		 * "kamteststore2", "accumulo", geowaveStoreConfig);
+		 * Response addStoreResponse = geoserverClient.addDatastore( "DeleteMe", "kamteststore2", "accumulo",
+		 * geowaveStoreConfig);
 		 * 
-		 * if (addStoreResponse.getStatus() == Status.OK.getStatusCode() ||
-		 * addStoreResponse.getStatus() == Status.CREATED.getStatusCode()) {
-		 * System.out.println(
-		 * "Add store 'kamstoretest2' to workspace 'DeleteMe' on GeoServer: OK"
-		 * ); } else { System.err.println(
-		 * "Error adding store 'kamstoretest2' to workspace 'DeleteMe' on GeoServer; code = "
-		 * + addStoreResponse.getStatus()); }
+		 * if (addStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() ==
+		 * Status.CREATED.getStatusCode()) { System.out.println(
+		 * "Add store 'kamstoretest2' to workspace 'DeleteMe' on GeoServer: OK" ); } else { System.err.println(
+		 * "Error adding store 'kamstoretest2' to workspace 'DeleteMe' on GeoServer; code = " +
+		 * addStoreResponse.getStatus()); }
 		 * 
-		 * // test delete store Response deleteStoreResponse =
-		 * geoserverClient.deleteDatastore( "DeleteMe", "kamteststore");
+		 * // test delete store Response deleteStoreResponse = geoserverClient.deleteDatastore( "DeleteMe",
+		 * "kamteststore");
 		 * 
-		 * if (deleteStoreResponse.getStatus() == Status.OK.getStatusCode() ||
-		 * addStoreResponse.getStatus() == Status.CREATED.getStatusCode()) {
-		 * System.out.println(
-		 * "Delete store 'kamstoretest' from workspace 'DeleteMe' on GeoServer: OK"
-		 * ); } else { System.err.println(
-		 * "Error deleting store 'kamstoretest' from workspace 'DeleteMe' on GeoServer; code = "
-		 * + deleteStoreResponse.getStatus()); }
+		 * if (deleteStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() ==
+		 * Status.CREATED.getStatusCode()) { System.out.println(
+		 * "Delete store 'kamstoretest' from workspace 'DeleteMe' on GeoServer: OK" ); } else { System.err.println(
+		 * "Error deleting store 'kamstoretest' from workspace 'DeleteMe' on GeoServer; code = " +
+		 * deleteStoreResponse.getStatus()); }
 		 * 
-		 * // test deleteWorkspace Response deleteWorkspaceResponse =
-		 * geoserverClient.deleteWorkspace("DeleteMe"); if
+		 * // test deleteWorkspace Response deleteWorkspaceResponse = geoserverClient.deleteWorkspace("DeleteMe"); if
 		 * (deleteWorkspaceResponse.getStatus() == Status.OK.getStatusCode()) {
-		 * System.out.println("Delete workspace 'DeleteMe' from GeoServer: OK");
-		 * } else { System.err.println(
-		 * "Error deleting workspace 'DeleteMe' from GeoServer; code = " +
-		 * deleteWorkspaceResponse.getStatus()); }
+		 * System.out.println("Delete workspace 'DeleteMe' from GeoServer: OK"); } else { System.err.println(
+		 * "Error deleting workspace 'DeleteMe' from GeoServer; code = " + deleteWorkspaceResponse.getStatus()); }
 		 */
 
 		// test getLayer
@@ -710,19 +728,11 @@ public class GeoServerRestClient
 		// test list layers
 		Response listLayersResponse = geoserverClient.getLayers(
 				"topp",
-				"taz_shapes",
+				null,
 				false);
 		if (listLayersResponse.getStatus() == Status.OK.getStatusCode()) {
 			System.out.println("\nGeoServer layer list:");
-
-			// final JSONArray layers =
-			// JSONObject.fromObject(listLayersResponse.getEntity()).getJSONArray(
-			// "layers").getJSONObject(
-			// 0).getJSONArray(
-			// "layers");
-
 			JSONObject listObj = JSONObject.fromObject(listLayersResponse.getEntity());
-
 			System.out.println(listObj.toString(2));
 		}
 		else {
