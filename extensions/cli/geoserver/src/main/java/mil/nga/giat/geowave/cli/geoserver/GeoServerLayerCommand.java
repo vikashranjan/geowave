@@ -10,7 +10,6 @@ import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
-import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import com.beust.jcommander.Parameter;
@@ -48,6 +47,12 @@ public class GeoServerLayerCommand implements
 		"--action"
 	}, required = false, description = "Datastore Action (get, add, delete, or list)")
 	private String action;
+
+	@Parameter(names = {
+		"-g",
+		"--geowaveOnly"
+	}, required = false, description = "For list action: show only geowave layers (default: false)")
+	private Boolean geowaveOnly;
 
 	@Override
 	public boolean prepare(
@@ -134,13 +139,24 @@ public class GeoServerLayerCommand implements
 	}
 
 	private void listLayers() {
+		Response listLayersResponse = geoserverClient.getLayers(
+				workspace,
+				datastore,
+				geowaveOnly);
+
+		if (listLayersResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer layer list:");
+			JSONObject listObj = JSONObject.fromObject(listLayersResponse.getEntity());
+			System.out.println(listObj.toString(2));
+		}
+		else {
+			System.err.println("Error getting GeoServer layer list; code = " + listLayersResponse.getStatus());
+		}
 	}
 
-	private void addLayer() {
-	}
+	private void addLayer() {}
 
-	private void deleteLayer() {
-	}
+	private void deleteLayer() {}
 
 	public String getWorkspace() {
 		return workspace;
