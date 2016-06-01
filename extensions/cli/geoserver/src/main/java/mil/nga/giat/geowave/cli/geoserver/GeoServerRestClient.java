@@ -1,7 +1,12 @@
 package mil.nga.giat.geowave.cli.geoserver;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -261,6 +266,162 @@ public class GeoServerRestClient
 			if (layer != null) {
 				return Response.ok(
 						layer.toString(defaultIndentation)).build();
+			}
+		}
+
+		return resp;
+	}
+
+	public Response getLayers(
+			String workspaceName,
+			String datastoreName,
+			boolean geowaveOnly ) {
+		final Client client = ClientBuilder.newClient().register(
+				HttpAuthenticationFeature.basic(
+						geoserverUser,
+						geoserverPass));
+		final WebTarget target = client.target(geoserverUrl);
+
+		final Response resp = target.path(
+				"geoserver/rest/layers.json").request().get();
+
+		if (resp.getStatus() == Status.OK.getStatusCode()) {
+			resp.bufferEntity();
+
+			// get the datastore names
+			final JSONArray layerArray = getArrayEntryNames(
+					JSONObject.fromObject(resp.readEntity(String.class)),
+					"layers",
+					"layer");
+
+			// holder for simple layer info (when geowaveOnly = false)
+			final JSONArray layerInfoArray = new JSONArray();
+
+			final Map<String, List<String>> namespaceLayersMap = new HashMap<String, List<String>>();
+			final Pattern p = Pattern.compile("workspaces/(.*?)/datastores/(.*?)/");
+			for (int i = 0; i < layerArray.size(); i++) {
+				final String name = layerArray.getJSONObject(
+						i).getString(
+						"name");
+
+				final String layer = (String) getLayer(
+						name).getEntity();
+
+				// get the workspace and name for each datastore
+				String ws = null;
+				String ds = null;
+
+				final Matcher m = p.matcher(layer);
+
+				if (m.find()) {
+					ws = m.group(1);
+					ds = m.group(2);
+				}
+
+				if ((ds != null && ds.equals(datastoreName)) && (ws != null && ws.equals(workspaceName))) {
+					final JSONObject datastore = JSONObject.fromObject(
+							getDatastore(
+									ds,
+									ws).getEntity()).getJSONObject(
+							"dataStore");
+
+					// only process GeoWave layers
+					if (geowaveOnly) {
+						if (datastore != null && datastore.containsKey("type") && datastore.getString(
+								"type").startsWith(
+								"GeoWave Datastore")) {
+
+							JSONArray entryArray = null;
+							if (datastore.get("connectionParameters") instanceof JSONObject) {
+								entryArray = datastore.getJSONObject(
+										"connectionParameters").getJSONArray(
+										"entry");
+							}
+							else if (datastore.get("connectionParameters") instanceof JSONArray) {
+								entryArray = datastore.getJSONArray(
+										"connectionParameters").getJSONObject(
+										0).getJSONArray(
+										"entry");
+							}
+
+							if (entryArray == null) {
+								logger.error("entry Array is null - didn't find a connectionParameters datastore object that was a JSONObject or JSONArray");
+							}
+							else {
+								// group layers by namespace
+								for (int j = 0; j < entryArray.size(); j++) {
+									final JSONObject entry = entryArray.getJSONObject(j);
+									final String key = entry.getString("@key");
+									final String value = entry.getString("$");
+
+									if (key.startsWith("gwNamespace")) {
+										if (namespaceLayersMap.containsKey(value)) {
+											namespaceLayersMap.get(
+													value).add(
+													name);
+										}
+										else {
+											final ArrayList<String> layers = new ArrayList<String>();
+											layers.add(name);
+											namespaceLayersMap.put(
+													value,
+													layers);
+										}
+										break;
+									}
+								}
+							}
+						}
+					}
+					else { // just get all the layers from this store
+						layerInfoArray.add(layerArray.getJSONObject(i));
+					}
+				}
+			}
+
+			// Handle geowaveOnly response
+			if (geowaveOnly) {
+				// create the json object with layers sorted by namespace
+				final JSONArray layersArray = new JSONArray();
+				for (final Map.Entry<String, List<String>> kvp : namespaceLayersMap.entrySet()) {
+					final JSONArray layers = new JSONArray();
+
+					for (int i = 0; i < kvp.getValue().size(); i++) {
+						final JSONObject layerObj = new JSONObject();
+						layerObj.put(
+								"name",
+								kvp.getValue().get(
+										i));
+						layers.add(layerObj);
+					}
+
+					final JSONObject layersObj = new JSONObject();
+					layersObj.put(
+							"namespace",
+							kvp.getKey());
+					layersObj.put(
+							"layers",
+							layers);
+
+					layersArray.add(layersObj);
+				}
+
+				final JSONObject layersObj = new JSONObject();
+				layersObj.put(
+						"layers",
+						layersArray);
+
+				return Response.ok(
+						layersObj.toString(defaultIndentation)).build();
+			}
+			else {
+				final JSONObject layersObj = new JSONObject();
+				layersObj.put(
+						"layers",
+						layerInfoArray);
+
+				return Response.ok(
+						layersObj.toString(defaultIndentation)).build();
 			}
 		}
 
@@ -546,6 +707,27 @@ public class GeoServerRestClient
 			System.err.println("Error getting GeoServer layer info for 'states'; code = " + getLayerResponse.getStatus());
 		}
 
+		// test list layers
+		Response listLayersResponse = geoserverClient.getLayers(
+				"topp",
+				"taz_shapes",
+				false);
+		if (listLayersResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer layer list:");
+
+			// final JSONArray layers =
+			// JSONObject.fromObject(listLayersResponse.getEntity()).getJSONArray(
+			// "layers").getJSONObject(
+			// 0).getJSONArray(
+			// "layers");
+
+			JSONObject listObj = JSONObject.fromObject(listLayersResponse.getEntity());
+
+			System.out.println(listObj.toString(2));
+		}
+		else {
+			System.err.println("Error getting GeoServer layer list; code = " + listLayersResponse.getStatus());
+		}
 	}
 
 	public String getGeoserverUrl() {
