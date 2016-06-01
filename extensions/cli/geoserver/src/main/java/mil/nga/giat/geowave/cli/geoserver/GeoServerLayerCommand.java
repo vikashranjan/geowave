@@ -52,12 +52,12 @@ public class GeoServerLayerCommand implements
 		"-g",
 		"--geowaveOnly"
 	}, required = false, description = "For list action: show only geowave layers (default: false)")
-	private Boolean geowaveOnly;
+	private Boolean geowaveOnly = false;
 
 	@Parameter(names = {
 			"-debug"
 		}, required = false, description = "Debug console output enabled")
-		private Boolean debug;
+		private Boolean debug = false;
 
 	@Override
 	public boolean prepare(
@@ -65,8 +65,6 @@ public class GeoServerLayerCommand implements
 		// validate requested action:
 		boolean valid = false;
 		
-		debugDumpParams(params);
-
 		if (action == null || action.isEmpty()) {
 			action = "list";
 			valid = true;
@@ -120,6 +118,8 @@ public class GeoServerLayerCommand implements
 	public void execute(
 			OperationParams params )
 			throws Exception {
+		debugDump(params);
+		
 		if (action.equals("get")) {
 			getLayer();
 		}
@@ -201,12 +201,13 @@ public class GeoServerLayerCommand implements
 		}
 	}
 	
-	private void debugDumpParams(
+	private void debugDump(
 			OperationParams params ) {
 		debugOut("DEBUG: Dump input params");
+		GeoServerLayerCommand layerCommand = (GeoServerLayerCommand)params.getOperationMap().get("layer");
 		
-		for (String key : params.getOperationMap().keySet()) {
-			debugOut(key + " = " + params.getOperationMap().get(key));
-		}
+		debugOut("Action: " + layerCommand.getAction());
+		debugOut("Workspace: " + layerCommand.getWorkspace());
+		debugOut("Datastore: " + layerCommand.getDatastore());
 	}
 }
