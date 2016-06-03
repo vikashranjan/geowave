@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.ws.rs.PathParam;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -457,9 +456,9 @@ public class GeoServerRestClient
 	}
 
 	public Response addLayer(
-			final String workspace,
-			final String datastore,
-			final String defaultStyle,
+			final String workspaceName,
+			final String datastoreName,
+			final String styleName,
 			final String layerName ) {
 
 		final Client client = ClientBuilder.newClient().register(
@@ -469,7 +468,7 @@ public class GeoServerRestClient
 		final WebTarget target = client.target(geoserverUrl);
 
 		Response resp = target.path(
-				"geoserver/rest/workspaces/" + workspace + "/datastores/" + datastore + "/featuretypes").request().post(
+				"geoserver/rest/workspaces/" + workspaceName + "/datastores/" + datastoreName + "/featuretypes").request().post(
 				Entity.entity(
 						"{'name':'" + layerName + "'}",
 						MediaType.APPLICATION_JSON));
@@ -481,7 +480,7 @@ public class GeoServerRestClient
 		resp = target.path(
 				"geoserver/rest/layers/" + layerName).request().put(
 				Entity.entity(
-						"{'layer':{'defaultStyle':{'name':'" + defaultStyle + "'}}}",
+						"{'layer':{'defaultStyle':{'name':'" + styleName + "'}}}",
 						MediaType.APPLICATION_JSON));
 
 		return resp;
