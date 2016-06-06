@@ -470,7 +470,7 @@ public class GeoServerRestClient
 		Response resp = target.path(
 				"geoserver/rest/workspaces/" + workspaceName + "/datastores/" + datastoreName + "/featuretypes").request().post(
 				Entity.entity(
-						"{'name':'" + layerName + "'}",
+						"{'featureType':{'name':'" + layerName + "'}}",
 						MediaType.APPLICATION_JSON));
 
 		if (resp.getStatus() != Status.CREATED.getStatusCode()) {
