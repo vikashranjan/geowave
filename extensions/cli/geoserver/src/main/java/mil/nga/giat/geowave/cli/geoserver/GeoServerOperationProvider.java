@@ -7,10 +7,19 @@ public class GeoServerOperationProvider implements
 {
 	private static final Class<?>[] OPERATIONS = new Class<?>[] {
 		GeoServerSection.class,
-		AddGeoServerCommand.class,
-		GeoServerWorkspaceCommand.class,
-		GeoServerStoreCommand.class,
-		GeoServerLayerCommand.class,
+		ConfigGeoServerCommand.class,
+		GeoServerListWorkspacesCommand.class,
+		GeoServerAddWorkspaceCommand.class,
+		GeoServerRemoveWorkspaceCommand.class,
+		GeoServerConfigStoreCommand.class,
+		GeoServerListStoresCommand.class,
+		GeoServerGetStoreCommand.class,
+		GeoServerAddStoreCommand.class,
+		GeoServerRemoveStoreCommand.class,
+		GeoServerListLayersCommand.class,
+		GeoServerGetLayerCommand.class,
+		GeoServerAddLayerCommand.class,
+		GeoServerRemoveLayerCommand.class,
 	};
 
 	@Override

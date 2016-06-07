@@ -6,8 +6,8 @@ import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.DefaultOperation;
 import mil.nga.giat.geowave.core.cli.operations.GeowaveTopLevelSection;
 
-@GeowaveOperation(name = "geoserver", parentOperation = GeowaveTopLevelSection.class)
-@Parameters(commandDescription = "Commands that manage geoserver data stores and layers for geowave")
+@GeowaveOperation(name = "gs", parentOperation = GeowaveTopLevelSection.class)
+@Parameters(commandDescription = "Commands that manage geoserver data stores and layers")
 public class GeoServerSection extends
 		DefaultOperation
 {

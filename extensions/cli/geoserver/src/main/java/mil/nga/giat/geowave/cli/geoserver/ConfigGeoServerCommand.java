@@ -9,26 +9,37 @@ import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.ConfigSection;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 
 @GeowaveOperation(name = "geoserver", parentOperation = ConfigSection.class)
 @Parameters(commandDescription = "Create a local configuration for GeoServer")
-public class AddGeoServerCommand implements
+public class ConfigGeoServerCommand implements
 		Command
 {
-	private final static Logger LOGGER = LoggerFactory.getLogger(AddGeoServerCommand.class);
-
-	public static final String GEOSERVER_URL = "geoserver.url";
-
 	@Parameter(names = {
 		"-u",
 		"--url"
 	}, required = true, description = "GeoServer URL")
 	private String url;
+
+	@Parameter(names = {
+		"-n",
+		"--name"
+	}, required = false, description = "GeoServer User")
+	private String name;
+
+	@Parameter(names = {
+		"-p",
+		"--pass"
+	}, required = false, description = "GeoServer Password")
+	private String pass;
+
+	@Parameter(names = {
+		"-ws",
+		"--workspace"
+	}, required = false, description = "GeoServer Default Workspace")
+	private String workspace;
 
 	@Override
 	public boolean prepare(
@@ -48,8 +59,26 @@ public class AddGeoServerCommand implements
 				null);
 
 		existingProps.setProperty(
-				GEOSERVER_URL,
+				GeoServerConfig.GEOSERVER_URL,
 				getUrl());
+
+		if (getName() != null) {
+			existingProps.setProperty(
+					GeoServerConfig.GEOSERVER_USER,
+					getName());
+		}
+
+		if (getPass() != null) {
+			existingProps.setProperty(
+					GeoServerConfig.GEOSERVER_PASS,
+					getPass());
+		}
+
+		if (getWorkspace() != null) {
+			existingProps.setProperty(
+					GeoServerConfig.GEOSERVER_WORKSPACE,
+					getWorkspace());
+		}
 
 		// Write properties file
 		ConfigOptions.writeProperties(
@@ -64,6 +93,33 @@ public class AddGeoServerCommand implements
 	public void setUrl(
 			String url ) {
 		this.url = url;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(
+			String name ) {
+		this.name = name;
+	}
+
+	public String getPass() {
+		return pass;
+	}
+
+	public void setPass(
+			String pass ) {
+		this.pass = pass;
+	}
+
+	public String getWorkspace() {
+		return workspace;
+	}
+
+	public void setWorkspace(
+			String workspace ) {
+		this.workspace = workspace;
 	}
 
 }
