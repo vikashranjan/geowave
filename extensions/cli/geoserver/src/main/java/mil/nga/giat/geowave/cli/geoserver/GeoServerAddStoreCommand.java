@@ -70,6 +70,10 @@ public class GeoServerAddStoreCommand implements
 
 		datastore = parameters.get(0);
 		
+		geowaveStoreConfig.put(
+				"gwNamespace",
+				datastore);
+		
 		Response addStoreResponse = geoserverClient.addDatastore(
 				workspace,
 				datastore,
