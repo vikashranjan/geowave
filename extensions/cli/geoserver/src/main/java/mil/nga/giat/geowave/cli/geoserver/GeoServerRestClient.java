@@ -52,6 +52,7 @@ public class GeoServerRestClient
 		return webTarget;
 	}
 
+	// Workspaces
 	public Response getWorkspaces() {
 		final Response resp = getWebTarget().path(
 				"geoserver/rest/workspaces.json").request().get();
@@ -94,6 +95,7 @@ public class GeoServerRestClient
 				"true").request().delete();
 	}
 
+	// Datastores
 	public Response getDatastore(
 			final String workspaceName,
 			String datastoreName ) {
@@ -183,6 +185,7 @@ public class GeoServerRestClient
 				"true").request().delete();
 	}
 
+	// Layers
 	public Response getLayer(
 			final String layerName ) {
 		final Response resp = getWebTarget().path(
@@ -407,6 +410,62 @@ public class GeoServerRestClient
 		return getWebTarget().path(
 				"geoserver/rest/layers/" + layerName).request().delete();
 	}
+	
+	// Coverages
+	public Response getCoverage(
+			final String workspaceName,
+			String coverageName ) {
+		final Response resp = getWebTarget().path(
+				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores/" + coverageName + ".json").request().get();
+
+		if (resp.getStatus() == Status.OK.getStatusCode()) {
+			resp.bufferEntity();
+
+			JSONObject cvgstore = JSONObject.fromObject(resp.readEntity(String.class));
+
+			if (cvgstore != null) {
+				return Response.ok(
+						cvgstore.toString(defaultIndentation)).build();
+			}
+		}
+
+		return resp;
+	}
+
+	public Response getCoverages(
+			String workspaceName ) {
+		final Response resp = getWebTarget().path(
+				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores.json").request().get();
+
+		if (resp.getStatus() == Status.OK.getStatusCode()) {
+			resp.bufferEntity();
+
+			// get the datastore names
+			final JSONArray coveragesArray = getArrayEntryNames(
+					JSONObject.fromObject(resp.readEntity(String.class)),
+					"coverageStores",
+					"coverageStore");
+
+			final JSONObject dsObj = new JSONObject();
+			dsObj.put(
+					"coverageStores",
+					coveragesArray);
+
+			return Response.ok(
+					dsObj.toString(defaultIndentation)).build();
+		}
+
+		return resp;
+	}
+
+	public Response deleteCoverage(
+			String workspaceName,
+			String cvgstoreName ) {
+		return getWebTarget().path(
+				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores/" + cvgstoreName).queryParam(
+				"recurse",
+				"true").request().delete();
+	}
 
 	// Internal methods
 	protected String createFeatureTypeJson(
@@ -574,39 +633,35 @@ public class GeoServerRestClient
 		// + addWorkspaceResponse.getStatus());
 		// }
 
-		// test store list
-		// Response listStoresResponse = geoserverClient.getDatastores("topp");
-		//
-		// if (listStoresResponse.getStatus() == Status.OK.getStatusCode()) {
-		// System.out.println("\nGeoServer stores list for 'topp':");
-		//
-		// JSONObject jsonResponse =
-		// JSONObject.fromObject(listStoresResponse.getEntity());
-		// JSONArray datastores = jsonResponse.getJSONArray("dataStores");
-		// System.out.println(datastores.toString(2));
-		// }
-		// else {
-		// System.err.println("Error getting GeoServer stores list for 'topp'; code = "
-		// + listStoresResponse.getStatus());
-		// }
-		//
-		// // test get store
-		// Response getStoreResponse = geoserverClient.getDatastore(
-		// "topp",
-		// "taz_shapes");
-		//
-		// if (getStoreResponse.getStatus() == Status.OK.getStatusCode()) {
-		// System.out.println("\nGeoServer store info for 'topp/taz_shapes':");
-		//
-		// JSONObject jsonResponse =
-		// JSONObject.fromObject(getStoreResponse.getEntity());
-		// JSONObject datastore = jsonResponse.getJSONObject("dataStore");
-		// System.out.println(datastore.toString(2));
-		// }
-		// else {
-		// System.err.println("Error getting GeoServer store info for 'topp/taz_shapes'; code = "
-		// + getStoreResponse.getStatus());
-		// }
+		// test coverage store list
+		Response listCoveragesResponse = geoserverClient.getCoverages("geowave");
+
+		if (listCoveragesResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer coverage stores list for 'geowave':");
+
+			JSONObject jsonResponse = JSONObject.fromObject(listCoveragesResponse.getEntity());
+			JSONArray datastores = jsonResponse.getJSONArray("coverageStores");
+			System.out.println(datastores.toString(2));
+		}
+		else {
+			System.err.println("Error getting GeoServer coverage stores list for 'geowave'; code = " + listCoveragesResponse.getStatus());
+		}
+
+		// test get coverage store
+		Response getCvgStoreResponse = geoserverClient.getCoverage(
+				"geowave",
+				"sfdem");
+
+		if (getCvgStoreResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer coverage store info for 'geowave/sfdem':");
+
+			JSONObject jsonResponse = JSONObject.fromObject(getCvgStoreResponse.getEntity());
+			JSONObject datastore = jsonResponse.getJSONObject("coverageStore");
+			System.out.println(datastore.toString(2));
+		}
+		else {
+			System.err.println("Error getting GeoServer coverage store info for 'geowave/sfdem'; code = " + getCvgStoreResponse.getStatus());
+		}
 
 		// test add store
 		// HashMap<String, String> geowaveStoreConfig = new HashMap<String,
@@ -674,21 +729,21 @@ public class GeoServerRestClient
 		// }
 
 		// test add layer
-		Response addLayerResponse = geoserverClient.addLayer(
-				"delete-me-ws",
-				"delete-me-ds",
-				"polygon",
-				"ne_50m_admin_0_countries");
-
-		if (addLayerResponse.getStatus() == Status.OK.getStatusCode()) {
-			System.out.println("\nGeoServer layer add response for 'ne_50m_admin_0_countries':");
-
-			JSONObject jsonResponse = JSONObject.fromObject(addLayerResponse.getEntity());
-			System.out.println(jsonResponse.toString(2));
-		}
-		else {
-			System.err.println("Error adding GeoServer layer 'ne_50m_admin_0_countries'; code = " + addLayerResponse.getStatus());
-		}
+//		Response addLayerResponse = geoserverClient.addLayer(
+//				"delete-me-ws",
+//				"delete-me-ds",
+//				"polygon",
+//				"ne_50m_admin_0_countries");
+//
+//		if (addLayerResponse.getStatus() == Status.OK.getStatusCode()) {
+//			System.out.println("\nGeoServer layer add response for 'ne_50m_admin_0_countries':");
+//
+//			JSONObject jsonResponse = JSONObject.fromObject(addLayerResponse.getEntity());
+//			System.out.println(jsonResponse.toString(2));
+//		}
+//		else {
+//			System.err.println("Error adding GeoServer layer 'ne_50m_admin_0_countries'; code = " + addLayerResponse.getStatus());
+//		}
 
 		// test delete layer
 		// Response deleteLayerResponse =

@@ -1,8 +1,6 @@
 package mil.nga.giat.geowave.cli.geoserver;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -11,14 +9,15 @@ import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 
 import com.beust.jcommander.Parameter;
-import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
-@GeowaveOperation(name = "rmds", parentOperation = GeoServerSection.class)
-@Parameters(commandDescription = "Remove GeoServer DataStore")
-public class GeoServerRemoveStoreCommand implements
+@GeowaveOperation(name = "listcs", parentOperation = GeoServerSection.class)
+@Parameters(commandDescription = "List GeoServer coverage stores")
+public class GeoServerListCoveragesCommand implements
 		Command
 {
 	private GeoServerRestClient geoserverClient = null;
@@ -26,12 +25,8 @@ public class GeoServerRemoveStoreCommand implements
 	@Parameter(names = {
 		"-ws",
 		"--workspace"
-	}, required = true, description = "Workspace Name")
+	}, required = true, description = "<workspace name>")
 	private String workspace;
-
-	@Parameter(description = "<datastore name>")
-	private List<String> parameters = new ArrayList<String>();
-	private String datastoreName = null;
 
 	@Override
 	public boolean prepare(
@@ -57,22 +52,17 @@ public class GeoServerRemoveStoreCommand implements
 	public void execute(
 			OperationParams params )
 			throws Exception {
-		if (parameters.size() != 1) {
-			throw new ParameterException(
-					"Requires argument: <datastore name>");
-		}
+		Response listCvgStoresResponse = geoserverClient.getCoverages(workspace);
 
-		datastoreName = parameters.get(0);
-		
-		Response deleteStoreResponse = geoserverClient.deleteDatastore(
-				workspace,
-				datastoreName);
+		if (listCvgStoresResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer coverage stores list for '" + workspace + "':");
 
-		if (deleteStoreResponse.getStatus() == Status.OK.getStatusCode()) {
-			System.out.println("Delete store '" + datastoreName + "' from workspace '" + workspace + "' on GeoServer: OK");
+			JSONObject jsonResponse = JSONObject.fromObject(listCvgStoresResponse.getEntity());
+			JSONArray cvgStores = jsonResponse.getJSONArray("coverageStores");
+			System.out.println(cvgStores.toString(2));
 		}
 		else {
-			System.err.println("Error deleting store '" + datastoreName + "' from workspace '" + workspace + "' on GeoServer; code = " + deleteStoreResponse.getStatus());
+			System.err.println("Error getting GeoServer coverage stores list for '" + workspace + "'; code = " + listCvgStoresResponse.getStatus());
 		}
 	}
 }
