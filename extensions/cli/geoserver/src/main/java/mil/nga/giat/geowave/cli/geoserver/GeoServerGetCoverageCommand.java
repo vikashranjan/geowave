@@ -32,7 +32,7 @@ public class GeoServerGetCoverageCommand implements
 
 	@Parameter(description = "<coverage store name>")
 	private List<String> parameters = new ArrayList<String>();
-	private String cvgstore = null;
+	private String csName = null;
 
 	@Override
 	public boolean prepare(
@@ -63,21 +63,21 @@ public class GeoServerGetCoverageCommand implements
 					"Requires argument: <coverage store name>");
 		}
 
-		cvgstore = parameters.get(0);
+		csName = parameters.get(0);
 		
 		Response getCvgStoreResponse = geoserverClient.getCoverage(
 				workspace,
-				cvgstore);
+				csName);
 
 		if (getCvgStoreResponse.getStatus() == Status.OK.getStatusCode()) {
-			System.out.println("\nGeoServer coverage store info for '" + cvgstore + "':");
+			System.out.println("\nGeoServer coverage store info for '" + csName + "':");
 
 			JSONObject jsonResponse = JSONObject.fromObject(getCvgStoreResponse.getEntity());
-			JSONObject datastore = jsonResponse.getJSONObject("dataStore");
-			System.out.println(datastore.toString(2));
+			JSONObject cvgstore = jsonResponse.getJSONObject("coverageStore");
+			System.out.println(cvgstore.toString(2));
 		}
 		else {
-			System.err.println("Error getting GeoServer coverage store info for '" + cvgstore + "'; code = " + getCvgStoreResponse.getStatus());
+			System.err.println("Error getting GeoServer coverage store info for '" + csName + "'; code = " + getCvgStoreResponse.getStatus());
 		}
 	}
 }
