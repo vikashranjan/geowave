@@ -458,6 +458,31 @@ public class GeoServerRestClient
 		return resp;
 	}
 
+	public Response addCoverage(
+			String workspaceName,
+			String cvgstoreName,
+			String geowaveStoreType,
+			Map<String, String> geowaveStoreConfig ) {
+
+		final String cvgStoreJson = createCoverageJson(
+				geowaveStoreType,
+				geowaveStoreConfig,
+				cvgstoreName);
+
+		// create a new geoserver style
+		final Response resp = getWebTarget().path(
+				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores").request().post(
+				Entity.entity(
+						cvgStoreJson,
+						MediaType.APPLICATION_JSON));
+
+		if (resp.getStatus() == Status.CREATED.getStatusCode()) {
+			return Response.ok().build();
+		}
+
+		return resp;
+	}
+
 	public Response deleteCoverage(
 			String workspaceName,
 			String cvgstoreName ) {
@@ -586,6 +611,19 @@ public class GeoServerRestClient
 				"dataStore",
 				dataStore);
 
+		return jsonObj.toString();
+	}
+	
+	private String createCoverageJson(
+			String geowaveStoreType,
+			Map<String, String> geowaveStoreConfig,
+			String cvgstoreName ) {
+		final JSONObject jsonObj = new JSONObject();
+		
+		// TODO: generate local xml config file
+		
+		// TODO: create coverage post request json
+		
 		return jsonObj.toString();
 	}
 
