@@ -11,6 +11,7 @@ import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import com.beust.jcommander.Parameter;
@@ -77,8 +78,8 @@ public class GeoServerListCoveragesCommand implements
 			System.out.println("\nGeoServer coverage list for '" + csName + "':");
 
 			JSONObject jsonResponse = JSONObject.fromObject(getCvgStoreResponse.getEntity());
-			JSONObject cvgstore = jsonResponse.getJSONObject("coverages");
-			System.out.println(cvgstore.toString(2));
+			JSONArray cvgArray = jsonResponse.getJSONArray("coverages");
+			System.out.println(cvgArray.toString(2));
 		}
 		else {
 			System.err.println("Error getting GeoServer coverage list for '" + csName + "'; code = " + getCvgStoreResponse.getStatus());
