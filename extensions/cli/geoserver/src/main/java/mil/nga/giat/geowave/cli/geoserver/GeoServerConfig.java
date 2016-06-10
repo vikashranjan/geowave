@@ -191,4 +191,8 @@ public class GeoServerConfig
 			String workspace ) {
 		this.workspace = workspace;
 	}
+	
+	public File getPropFile() {
+		return this.propFile;
+	}
 }

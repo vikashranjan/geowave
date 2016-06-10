@@ -11,6 +11,8 @@ import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
+import mil.nga.giat.geowave.core.store.operations.remote.options.DataStorePluginOptions;
+import mil.nga.giat.geowave.core.store.operations.remote.options.StoreLoader;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -22,6 +24,7 @@ public class GeoServerAddDatastoreCommand implements
 		Command
 {
 	private GeoServerRestClient geoserverClient = null;
+	private DataStorePluginOptions inputStoreOptions = null;
 
 	@Parameter(names = {
 		"-ws",
@@ -67,13 +70,22 @@ public class GeoServerAddDatastoreCommand implements
 		if (workspace == null || workspace.isEmpty()) {
 			workspace = geoserverClient.getConfig().getWorkspace();
 		}
+				
+		if (inputStoreOptions == null) {
+			StoreLoader inputStoreLoader = new StoreLoader(
+					datastore);
+			if (!inputStoreLoader.loadFromConfig(geoserverClient.getConfig().getPropFile())) {
+				throw new ParameterException(
+						"Cannot find store name: " + inputStoreLoader.getStoreName());
+			}
+			inputStoreOptions = inputStoreLoader.getDataStorePlugin();
+		}
 
 		Response addStoreResponse = geoserverClient.addDatastore(
 				workspace,
 				datastore,
 				"accumulo",
-				geoserverClient.getConfig().loadStoreConfig(
-						datastore));
+				inputStoreOptions.getFactoryOptionsAsMap());
 
 		if (addStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() == Status.CREATED.getStatusCode()) {
 			System.out.println("Add store '" + datastore + "' to workspace '" + workspace + "' on GeoServer: OK");
