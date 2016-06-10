@@ -18,6 +18,16 @@ public class GeoServerConfig
 	public static final String DEFAULT_PASS = "geoserver";
 	public static final String DEFAULT_WORKSPACE = "geowave";
 
+	public static final String GS_STORE_INSTANCE = "geoserver.store.instance";
+	public static final String GS_STORE_ZOOKEEPER = "geoserver.store.zookeeper";
+	public static final String GS_STORE_USER = "geoserver.store.user";
+	public static final String GS_STORE_PASS = "geoserver.store.pass";
+
+	public static final String DEFAULT_STORE_INSTANCE = "geowave";
+	public static final String DEFAULT_STORE_ZOOKEEPER = "localhost:2181";
+	public static final String DEFAULT_STORE_USER = "root";
+	public static final String DEFAULT_STORE_PASS = "password";
+
 	public final static String DISPLAY_NAME_PREFIX = "GeoWave Datastore - ";
 	public static final String QUERY_INDEX_STRATEGY_KEY = "Query Index Strategy";
 
@@ -26,10 +36,7 @@ public class GeoServerConfig
 	private String pass = DEFAULT_PASS;
 	private String workspace = DEFAULT_WORKSPACE;
 
-	/**
-	 * No-arg constructor uses defaults
-	 */
-	public GeoServerConfig() {}
+	private final File propFile;
 
 	/**
 	 * Properties File holds defaults; updates config if empty.
@@ -38,6 +45,8 @@ public class GeoServerConfig
 	 */
 	public GeoServerConfig(
 			File propFile ) {
+		this.propFile = propFile;
+
 		Properties gsConfig = ConfigOptions.loadProperties(
 				propFile,
 				null);
@@ -90,45 +99,43 @@ public class GeoServerConfig
 	}
 
 	/**
-	 * Secondary constructor for direct-access testing
-	 * 
-	 * @param url
-	 * @param user
-	 * @param pass
-	 * @param workspace
+	 * Secondary no-arg constructor for direct-access testing
 	 */
-	public GeoServerConfig(
-			final String url,
-			final String user,
-			final String pass,
-			final String workspace ) {
-		this.url = url;
-		this.user = user;
-		this.pass = pass;
-		this.workspace = workspace;
+	public GeoServerConfig() {
+		this.propFile = null;
+		this.user = DEFAULT_USER;
+		this.pass = DEFAULT_PASS;
+		this.url = DEFAULT_URL;
+		this.workspace = DEFAULT_WORKSPACE;
 	}
 
 	public HashMap<String, String> loadStoreConfig(
-			File propFile,
-			String datastore ) {
-		Properties gsConfig = ConfigOptions.loadProperties(
-				propFile,
-				null);
+			String storeName ) {
+		Properties gsConfig;
+
+		if (propFile != null) {
+			gsConfig = ConfigOptions.loadProperties(
+					propFile,
+					null);
+		}
+		else {
+			gsConfig = new Properties();
+		}
 
 		HashMap<String, String> geowaveStoreConfig = new HashMap<String, String>();
 
 		String sUser = gsConfig.getProperty(
-				"geoserver.store.user",
-				"root");
+				GS_STORE_USER,
+				DEFAULT_STORE_PASS);
 		String sPassword = gsConfig.getProperty(
-				"geoserver.store.password",
-				"password");
+				GS_STORE_PASS,
+				DEFAULT_STORE_USER);
 		String sZookeeper = gsConfig.getProperty(
-				"geoserver.store.zookeeper",
-				"localhost:2181");
+				GS_STORE_ZOOKEEPER,
+				DEFAULT_STORE_ZOOKEEPER);
 		String sInstance = gsConfig.getProperty(
-				"geoserver.store.instance",
-				"geowave");
+				GS_STORE_INSTANCE,
+				DEFAULT_STORE_INSTANCE);
 
 		geowaveStoreConfig.put(
 				"user",
@@ -138,7 +145,7 @@ public class GeoServerConfig
 				sPassword);
 		geowaveStoreConfig.put(
 				"gwNamespace",
-				datastore);
+				storeName);
 		geowaveStoreConfig.put(
 				"zookeeper",
 				sZookeeper);

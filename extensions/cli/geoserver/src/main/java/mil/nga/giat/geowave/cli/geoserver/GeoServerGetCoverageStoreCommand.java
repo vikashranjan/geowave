@@ -11,14 +11,15 @@ import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
+import net.sf.json.JSONObject;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
-@GeowaveOperation(name = "rmcs", parentOperation = GeoServerSection.class)
-@Parameters(commandDescription = "Remove GeoServer Coverage Store")
-public class GeoServerRemoveCoverageCommand implements
+@GeowaveOperation(name = "getcs", parentOperation = GeoServerSection.class)
+@Parameters(commandDescription = "Get GeoServer CoverageStore info")
+public class GeoServerGetCoverageStoreCommand implements
 		Command
 {
 	private GeoServerRestClient geoserverClient = null;
@@ -26,12 +27,12 @@ public class GeoServerRemoveCoverageCommand implements
 	@Parameter(names = {
 		"-ws",
 		"--workspace"
-	}, required = true, description = "Workspace Name")
+	}, required = false, description = "<workspace name>")
 	private String workspace;
 
 	@Parameter(description = "<coverage store name>")
 	private List<String> parameters = new ArrayList<String>();
-	private String cvgstoreName = null;
+	private String csName = null;
 
 	@Override
 	public boolean prepare(
@@ -62,17 +63,25 @@ public class GeoServerRemoveCoverageCommand implements
 					"Requires argument: <coverage store name>");
 		}
 
-		cvgstoreName = parameters.get(0);
+		if (workspace == null || workspace.isEmpty()) {
+			workspace = geoserverClient.getConfig().getWorkspace();
+		}
 
-		Response deleteCvgStoreResponse = geoserverClient.deleteCoverage(
+		csName = parameters.get(0);
+		
+		Response getCvgStoreResponse = geoserverClient.getCoverage(
 				workspace,
-				cvgstoreName);
+				csName);
 
-		if (deleteCvgStoreResponse.getStatus() == Status.OK.getStatusCode()) {
-			System.out.println("Delete store '" + cvgstoreName + "' from workspace '" + workspace + "' on GeoServer: OK");
+		if (getCvgStoreResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer coverage store info for '" + csName + "':");
+
+			JSONObject jsonResponse = JSONObject.fromObject(getCvgStoreResponse.getEntity());
+			JSONObject cvgstore = jsonResponse.getJSONObject("coverageStore");
+			System.out.println(cvgstore.toString(2));
 		}
 		else {
-			System.err.println("Error deleting store '" + cvgstoreName + "' from workspace '" + workspace + "' on GeoServer; code = " + deleteCvgStoreResponse.getStatus());
+			System.err.println("Error getting GeoServer coverage store info for '" + csName + "'; code = " + getCvgStoreResponse.getStatus());
 		}
 	}
 }

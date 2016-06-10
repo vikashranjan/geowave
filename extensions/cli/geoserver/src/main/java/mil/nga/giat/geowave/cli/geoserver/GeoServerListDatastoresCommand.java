@@ -17,7 +17,7 @@ import com.beust.jcommander.Parameters;
 
 @GeowaveOperation(name = "listds", parentOperation = GeoServerSection.class)
 @Parameters(commandDescription = "List GeoServer datastores")
-public class GeoServerListStoresCommand implements
+public class GeoServerListDatastoresCommand implements
 		Command
 {
 	private GeoServerRestClient geoserverClient = null;
@@ -25,7 +25,7 @@ public class GeoServerListStoresCommand implements
 	@Parameter(names = {
 		"-ws",
 		"--workspace"
-	}, required = true, description = "<workspace name>")
+	}, required = false, description = "<workspace name>")
 	private String workspace;
 
 	@Override
@@ -52,6 +52,10 @@ public class GeoServerListStoresCommand implements
 	public void execute(
 			OperationParams params )
 			throws Exception {
+		if (workspace == null || workspace.isEmpty()) {
+			workspace = geoserverClient.getConfig().getWorkspace();
+		}
+
 		Response listStoresResponse = geoserverClient.getDatastores(workspace);
 
 		if (listStoresResponse.getStatus() == Status.OK.getStatusCode()) {

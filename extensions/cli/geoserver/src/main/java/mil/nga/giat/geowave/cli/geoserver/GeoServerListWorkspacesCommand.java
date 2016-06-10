@@ -1,7 +1,6 @@
 package mil.nga.giat.geowave.cli.geoserver;
 
 import java.io.File;
-import java.util.Properties;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;

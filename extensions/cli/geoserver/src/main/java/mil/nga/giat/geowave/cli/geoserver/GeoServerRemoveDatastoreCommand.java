@@ -11,15 +11,14 @@ import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
-import net.sf.json.JSONObject;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
-@GeowaveOperation(name = "getds", parentOperation = GeoServerSection.class)
-@Parameters(commandDescription = "Get GeoServer DataStore info")
-public class GeoServerGetStoreCommand implements
+@GeowaveOperation(name = "rmds", parentOperation = GeoServerSection.class)
+@Parameters(commandDescription = "Remove GeoServer DataStore")
+public class GeoServerRemoveDatastoreCommand implements
 		Command
 {
 	private GeoServerRestClient geoserverClient = null;
@@ -27,12 +26,12 @@ public class GeoServerGetStoreCommand implements
 	@Parameter(names = {
 		"-ws",
 		"--workspace"
-	}, required = true, description = "<workspace name>")
+	}, required = false, description = "Workspace Name")
 	private String workspace;
 
 	@Parameter(description = "<datastore name>")
 	private List<String> parameters = new ArrayList<String>();
-	private String datastore = null;
+	private String datastoreName = null;
 
 	@Override
 	public boolean prepare(
@@ -63,21 +62,21 @@ public class GeoServerGetStoreCommand implements
 					"Requires argument: <datastore name>");
 		}
 
-		datastore = parameters.get(0);
+		if (workspace == null || workspace.isEmpty()) {
+			workspace = geoserverClient.getConfig().getWorkspace();
+		}
+
+		datastoreName = parameters.get(0);
 		
-		Response getStoreResponse = geoserverClient.getDatastore(
+		Response deleteStoreResponse = geoserverClient.deleteDatastore(
 				workspace,
-				datastore);
+				datastoreName);
 
-		if (getStoreResponse.getStatus() == Status.OK.getStatusCode()) {
-			System.out.println("\nGeoServer store info for '" + datastore + "':");
-
-			JSONObject jsonResponse = JSONObject.fromObject(getStoreResponse.getEntity());
-			JSONObject datastore = jsonResponse.getJSONObject("dataStore");
-			System.out.println(datastore.toString(2));
+		if (deleteStoreResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("Delete store '" + datastoreName + "' from workspace '" + workspace + "' on GeoServer: OK");
 		}
 		else {
-			System.err.println("Error getting GeoServer store info for '" + datastore + "'; code = " + getStoreResponse.getStatus());
+			System.err.println("Error deleting store '" + datastoreName + "' from workspace '" + workspace + "' on GeoServer; code = " + deleteStoreResponse.getStatus());
 		}
 	}
 }

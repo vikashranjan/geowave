@@ -27,7 +27,7 @@ public class GeoServerAddLayerCommand implements
 	@Parameter(names = {
 		"-ws",
 		"--workspace"
-	}, required = true, description = "<workspace name>")
+	}, required = false, description = "<workspace name>")
 	private String workspace = null;
 
 	@Parameter(names = {
@@ -67,6 +67,10 @@ public class GeoServerAddLayerCommand implements
 		if (parameters.size() != 1) {
 			throw new ParameterException(
 					"Requires argument: <layer name>");
+		}
+
+		if (workspace == null || workspace.isEmpty()) {
+			workspace = geoserverClient.getConfig().getWorkspace();
 		}
 
 		layerName = parameters.get(0);

@@ -11,15 +11,14 @@ import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
-import net.sf.json.JSONObject;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
-@GeowaveOperation(name = "getcs", parentOperation = GeoServerSection.class)
-@Parameters(commandDescription = "Get GeoServer CoverageStore info")
-public class GeoServerGetCoverageCommand implements
+@GeowaveOperation(name = "addcs", parentOperation = GeoServerSection.class)
+@Parameters(commandDescription = "Add a GeoServer coverage store")
+public class GeoServerAddCoverageStoreCommand implements
 		Command
 {
 	private GeoServerRestClient geoserverClient = null;
@@ -27,12 +26,12 @@ public class GeoServerGetCoverageCommand implements
 	@Parameter(names = {
 		"-ws",
 		"--workspace"
-	}, required = true, description = "<workspace name>")
+	}, required = false, description = "<workspace name>")
 	private String workspace;
 
 	@Parameter(description = "<coverage store name>")
 	private List<String> parameters = new ArrayList<String>();
-	private String csName = null;
+	private String cvgstore = null;
 
 	@Override
 	public boolean prepare(
@@ -60,24 +59,27 @@ public class GeoServerGetCoverageCommand implements
 			throws Exception {
 		if (parameters.size() != 1) {
 			throw new ParameterException(
-					"Requires argument: <coverage store name>");
+					"Requires argument: <datastore name>");
 		}
 
-		csName = parameters.get(0);
+		cvgstore = parameters.get(0);
 		
-		Response getCvgStoreResponse = geoserverClient.getCoverage(
+		if (workspace == null || workspace.isEmpty()) {
+			workspace = geoserverClient.getConfig().getWorkspace();
+		}
+
+		Response addStoreResponse = geoserverClient.addCoverage(
 				workspace,
-				csName);
+				cvgstore,
+				"accumulo",
+				geoserverClient.getConfig().loadStoreConfig(
+						cvgstore));
 
-		if (getCvgStoreResponse.getStatus() == Status.OK.getStatusCode()) {
-			System.out.println("\nGeoServer coverage store info for '" + csName + "':");
-
-			JSONObject jsonResponse = JSONObject.fromObject(getCvgStoreResponse.getEntity());
-			JSONObject cvgstore = jsonResponse.getJSONObject("coverageStore");
-			System.out.println(cvgstore.toString(2));
+		if (addStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() == Status.CREATED.getStatusCode()) {
+			System.out.println("Add store '" + cvgstore + "' to workspace '" + workspace + "' on GeoServer: OK");
 		}
 		else {
-			System.err.println("Error getting GeoServer coverage store info for '" + csName + "'; code = " + getCvgStoreResponse.getStatus());
+			System.err.println("Error adding store '" + cvgstore + "' to workspace '" + workspace + "' on GeoServer; code = " + addStoreResponse.getStatus());
 		}
 	}
 }

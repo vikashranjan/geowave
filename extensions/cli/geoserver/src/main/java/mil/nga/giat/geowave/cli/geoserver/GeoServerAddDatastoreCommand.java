@@ -2,7 +2,6 @@ package mil.nga.giat.geowave.cli.geoserver;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import javax.ws.rs.core.Response;
@@ -17,23 +16,22 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
-@GeowaveOperation(name = "addcs", parentOperation = GeoServerSection.class)
-@Parameters(commandDescription = "Add a GeoServer coverage store")
-public class GeoServerAddCoverageCommand implements
+@GeowaveOperation(name = "addds", parentOperation = GeoServerSection.class)
+@Parameters(commandDescription = "Add a GeoServer datastore")
+public class GeoServerAddDatastoreCommand implements
 		Command
 {
 	private GeoServerRestClient geoserverClient = null;
-	private HashMap<String, String> geowaveStoreConfig;
 
 	@Parameter(names = {
 		"-ws",
 		"--workspace"
-	}, required = true, description = "<workspace name>")
-	private String workspace;
+	}, required = false, description = "<workspace name>")
+	private String workspace = null;
 
-	@Parameter(description = "<coverage store name>")
+	@Parameter(description = "<datastore name>")
 	private List<String> parameters = new ArrayList<String>();
-	private String cvgstore = null;
+	private String datastore = null;
 
 	@Override
 	public boolean prepare(
@@ -45,10 +43,6 @@ public class GeoServerAddCoverageCommand implements
 
 			GeoServerConfig config = new GeoServerConfig(
 					propFile);
-
-			geowaveStoreConfig = config.loadStoreConfig(
-					propFile,
-					cvgstore);
 
 			// Create the rest client
 			geoserverClient = new GeoServerRestClient(
@@ -68,23 +62,24 @@ public class GeoServerAddCoverageCommand implements
 					"Requires argument: <datastore name>");
 		}
 
-		cvgstore = parameters.get(0);
-		
-		geowaveStoreConfig.put(
-				"gwNamespace",
-				cvgstore);
-		
-		Response addStoreResponse = geoserverClient.addCoverage(
+		datastore = parameters.get(0);
+
+		if (workspace == null || workspace.isEmpty()) {
+			workspace = geoserverClient.getConfig().getWorkspace();
+		}
+
+		Response addStoreResponse = geoserverClient.addDatastore(
 				workspace,
-				cvgstore,
+				datastore,
 				"accumulo",
-				geowaveStoreConfig);
+				geoserverClient.getConfig().loadStoreConfig(
+						datastore));
 
 		if (addStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() == Status.CREATED.getStatusCode()) {
-			System.out.println("Add store '" + cvgstore + "' to workspace '" + workspace + "' on GeoServer: OK");
+			System.out.println("Add store '" + datastore + "' to workspace '" + workspace + "' on GeoServer: OK");
 		}
 		else {
-			System.err.println("Error adding store '" + cvgstore + "' to workspace '" + workspace + "' on GeoServer; code = " + addStoreResponse.getStatus());
+			System.err.println("Error adding store '" + datastore + "' to workspace '" + workspace + "' on GeoServer; code = " + addStoreResponse.getStatus());
 		}
 	}
 }
