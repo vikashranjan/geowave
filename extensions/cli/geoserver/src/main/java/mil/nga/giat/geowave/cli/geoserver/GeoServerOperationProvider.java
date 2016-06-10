@@ -11,7 +11,6 @@ public class GeoServerOperationProvider implements
 		GeoServerListWorkspacesCommand.class,
 		GeoServerAddWorkspaceCommand.class,
 		GeoServerRemoveWorkspaceCommand.class,
-		GeoServerConfigStoreCommand.class,
 		GeoServerListDatastoresCommand.class,
 		GeoServerGetDatastoreCommand.class,
 		GeoServerAddDatastoreCommand.class,
