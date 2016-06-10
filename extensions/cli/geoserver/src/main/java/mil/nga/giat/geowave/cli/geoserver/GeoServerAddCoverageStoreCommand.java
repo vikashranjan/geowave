@@ -81,7 +81,7 @@ public class GeoServerAddCoverageStoreCommand implements
 			inputStoreOptions = inputStoreLoader.getDataStorePlugin();
 		}
 
-		Response addStoreResponse = geoserverClient.addCoverage(
+		Response addStoreResponse = geoserverClient.addCoverageStore(
 				workspace,
 				cvgstore,
 				"accumulo",

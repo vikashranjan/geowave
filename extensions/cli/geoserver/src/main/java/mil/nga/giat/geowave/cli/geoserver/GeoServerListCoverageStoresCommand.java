@@ -56,7 +56,7 @@ public class GeoServerListCoverageStoresCommand implements
 			workspace = geoserverClient.getConfig().getWorkspace();
 		}
 
-		Response listCvgStoresResponse = geoserverClient.getCoverages(workspace);
+		Response listCvgStoresResponse = geoserverClient.getCoverageStores(workspace);
 
 		if (listCvgStoresResponse.getStatus() == Status.OK.getStatusCode()) {
 			System.out.println("\nGeoServer coverage stores list for '" + workspace + "':");

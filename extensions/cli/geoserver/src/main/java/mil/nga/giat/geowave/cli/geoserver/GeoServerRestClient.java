@@ -411,8 +411,8 @@ public class GeoServerRestClient
 				"geoserver/rest/layers/" + layerName).request().delete();
 	}
 	
-	// Coverages
-	public Response getCoverage(
+	// Coverage Stores
+	public Response getCoverageStore(
 			final String workspaceName,
 			String coverageName ) {
 		final Response resp = getWebTarget().path(
@@ -432,7 +432,7 @@ public class GeoServerRestClient
 		return resp;
 	}
 
-	public Response getCoverages(
+	public Response getCoverageStores(
 			String workspaceName ) {
 		final Response resp = getWebTarget().path(
 				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores.json").request().get();
@@ -458,7 +458,7 @@ public class GeoServerRestClient
 		return resp;
 	}
 
-	public Response addCoverage(
+	public Response addCoverageStore(
 			String workspaceName,
 			String cvgstoreName,
 			String geowaveStoreType,
@@ -483,7 +483,7 @@ public class GeoServerRestClient
 		return resp;
 	}
 
-	public Response deleteCoverage(
+	public Response deleteCoverageStore(
 			String workspaceName,
 			String cvgstoreName ) {
 		return getWebTarget().path(
@@ -491,6 +491,35 @@ public class GeoServerRestClient
 				"recurse",
 				"true").request().delete();
 	}
+	
+	// Coverages (raster layers)
+	public Response getCoverages(
+			String workspaceName,
+			String cvsstoreName) {
+		final Response resp = getWebTarget().path(
+				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores/" + cvsstoreName + "/coverages.json").request().get();
+
+		if (resp.getStatus() == Status.OK.getStatusCode()) {
+			resp.bufferEntity();
+
+			// get the datastore names
+			final JSONArray coveragesArray = getArrayEntryNames(
+					JSONObject.fromObject(resp.readEntity(String.class)),
+					"coverages",
+					"coverage");
+
+			final JSONObject dsObj = new JSONObject();
+			dsObj.put(
+					"coverages",
+					coveragesArray);
+
+			return Response.ok(
+					dsObj.toString(defaultIndentation)).build();
+		}
+
+		return resp;
+	}
+
 
 	// Internal methods
 	protected String createFeatureTypeJson(
@@ -672,7 +701,7 @@ public class GeoServerRestClient
 		// }
 
 		// test coverage store list
-		Response listCoveragesResponse = geoserverClient.getCoverages("geowave");
+		Response listCoveragesResponse = geoserverClient.getCoverageStores("geowave");
 
 		if (listCoveragesResponse.getStatus() == Status.OK.getStatusCode()) {
 			System.out.println("\nGeoServer coverage stores list for 'geowave':");
@@ -686,7 +715,7 @@ public class GeoServerRestClient
 		}
 
 		// test get coverage store
-		Response getCvgStoreResponse = geoserverClient.getCoverage(
+		Response getCvgStoreResponse = geoserverClient.getCoverageStore(
 				"geowave",
 				"sfdem");
 

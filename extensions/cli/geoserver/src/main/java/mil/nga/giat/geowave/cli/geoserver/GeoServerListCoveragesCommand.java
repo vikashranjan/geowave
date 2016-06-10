@@ -11,14 +11,15 @@ import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
+import net.sf.json.JSONObject;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
-@GeowaveOperation(name = "rmcs", parentOperation = GeoServerSection.class)
-@Parameters(commandDescription = "Remove GeoServer Coverage Store")
-public class GeoServerRemoveCoverageStoreCommand implements
+@GeowaveOperation(name = "listcv", parentOperation = GeoServerSection.class)
+@Parameters(commandDescription = "List GeoServer Coverages")
+public class GeoServerListCoveragesCommand implements
 		Command
 {
 	private GeoServerRestClient geoserverClient = null;
@@ -26,12 +27,12 @@ public class GeoServerRemoveCoverageStoreCommand implements
 	@Parameter(names = {
 		"-ws",
 		"--workspace"
-	}, required = false, description = "Workspace Name")
+	}, required = false, description = "<workspace name>")
 	private String workspace;
 
 	@Parameter(description = "<coverage store name>")
 	private List<String> parameters = new ArrayList<String>();
-	private String cvgstoreName = null;
+	private String csName = null;
 
 	@Override
 	public boolean prepare(
@@ -66,17 +67,21 @@ public class GeoServerRemoveCoverageStoreCommand implements
 			workspace = geoserverClient.getConfig().getWorkspace();
 		}
 
-		cvgstoreName = parameters.get(0);
-
-		Response deleteCvgStoreResponse = geoserverClient.deleteCoverageStore(
+		csName = parameters.get(0);
+		
+		Response getCvgStoreResponse = geoserverClient.getCoverages(
 				workspace,
-				cvgstoreName);
+				csName);
 
-		if (deleteCvgStoreResponse.getStatus() == Status.OK.getStatusCode()) {
-			System.out.println("Delete store '" + cvgstoreName + "' from workspace '" + workspace + "' on GeoServer: OK");
+		if (getCvgStoreResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer coverage list for '" + csName + "':");
+
+			JSONObject jsonResponse = JSONObject.fromObject(getCvgStoreResponse.getEntity());
+			JSONObject cvgstore = jsonResponse.getJSONObject("coverages");
+			System.out.println(cvgstore.toString(2));
 		}
 		else {
-			System.err.println("Error deleting store '" + cvgstoreName + "' from workspace '" + workspace + "' on GeoServer; code = " + deleteCvgStoreResponse.getStatus());
+			System.err.println("Error getting GeoServer coverage list for '" + csName + "'; code = " + getCvgStoreResponse.getStatus());
 		}
 	}
 }

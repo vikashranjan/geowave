@@ -69,7 +69,7 @@ public class GeoServerGetCoverageStoreCommand implements
 
 		csName = parameters.get(0);
 		
-		Response getCvgStoreResponse = geoserverClient.getCoverage(
+		Response getCvgStoreResponse = geoserverClient.getCoverageStore(
 				workspace,
 				csName);
 
