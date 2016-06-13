@@ -62,7 +62,7 @@ public class GeoServerAddCoverageStoreCommand implements
 			throws Exception {
 		if (parameters.size() != 1) {
 			throw new ParameterException(
-					"Requires argument: <datastore name>");
+					"Requires argument: <coverage store name>");
 		}
 
 		cvgstore = parameters.get(0);

@@ -473,7 +473,7 @@ public class GeoServerRestClient
 				geowaveStoreConfig,
 				cvgstoreName);
 		
-		logger.info("Add coverage store - xml params:\n" + cvgStoreXml);
+		System.out.println("Add coverage store - xml params:\n" + cvgStoreXml);
 
 		// create a new geoserver style
 		final Response resp = getWebTarget().path(
@@ -526,6 +526,36 @@ public class GeoServerRestClient
 		return resp;
 	}
 
+	public Response getCoverage(
+			final String workspaceName,
+			String cvgStoreName,
+			String coverageName ) {
+		final Response resp = getWebTarget().path(
+				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores/" + cvgStoreName + "/coverages/" + coverageName + ".json").request().get();
+
+		if (resp.getStatus() == Status.OK.getStatusCode()) {
+			resp.bufferEntity();
+
+			JSONObject cvg = JSONObject.fromObject(resp.readEntity(String.class));
+
+			if (cvg != null) {
+				return Response.ok(
+						cvg.toString(defaultIndentation)).build();
+			}
+		}
+
+		return resp;
+	}
+
+	public Response deleteCoverage(
+			String workspaceName,
+			String cvgstoreName,
+			String coverageName ) {
+		return getWebTarget().path(
+				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores/" + cvgstoreName + "/coverages/" + coverageName).queryParam(
+				"recurse",
+				"true").request().delete();
+	}
 
 	// Internal methods
 	protected String createFeatureTypeJson(
