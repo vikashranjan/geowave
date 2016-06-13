@@ -15,12 +15,16 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.apache.log4j.Logger;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 public class GeoServerRestClient
 {
@@ -464,17 +468,19 @@ public class GeoServerRestClient
 			String geowaveStoreType,
 			Map<String, String> geowaveStoreConfig ) {
 
-		final String cvgStoreJson = createCoverageJson(
+		final String cvgStoreXml = createCoverageXml(
 				geowaveStoreType,
 				geowaveStoreConfig,
 				cvgstoreName);
+		
+		logger.info("Add coverage store - xml params:\n" + cvgStoreXml);
 
 		// create a new geoserver style
 		final Response resp = getWebTarget().path(
 				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores").request().post(
 				Entity.entity(
-						cvgStoreJson,
-						MediaType.APPLICATION_JSON));
+						cvgStoreXml,
+						MediaType.TEXT_XML));
 
 		if (resp.getStatus() == Status.CREATED.getStatusCode()) {
 			return Response.ok().build();
@@ -643,17 +649,49 @@ public class GeoServerRestClient
 		return jsonObj.toString();
 	}
 	
-	private String createCoverageJson(
+	private String createCoverageXml(
 			String geowaveStoreType,
 			Map<String, String> geowaveStoreConfig,
 			String cvgstoreName ) {
-		final JSONObject jsonObj = new JSONObject();
+		String coverageXml = null;
 		
-		// TODO: generate local xml config file
+		try {
+			Document xmlDoc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+			
+			Element rootEl = xmlDoc.createElement("config");
+			xmlDoc.appendChild(rootEl);
+			
+			String user = geowaveStoreConfig.get("user");
+			Element userEl = xmlDoc.createElement("user");
+			userEl.appendChild(xmlDoc.createTextNode(user));
+			rootEl.appendChild(userEl);
+			
+			String pass = geowaveStoreConfig.get("password");
+			Element passEl = xmlDoc.createElement("password");
+			passEl.appendChild(xmlDoc.createTextNode(pass));
+			rootEl.appendChild(passEl);
+			
+			String zookeeper = geowaveStoreConfig.get("zookeeper");
+			Element zkEl = xmlDoc.createElement("zookeeper");
+			zkEl.appendChild(xmlDoc.createTextNode(zookeeper));
+			rootEl.appendChild(zkEl);
+			
+			String instance = geowaveStoreConfig.get("instance");
+			Element instEl = xmlDoc.createElement("instance");
+			instEl.appendChild(xmlDoc.createTextNode(instance));
+			rootEl.appendChild(instEl);
+			
+			Element gwnsEl = xmlDoc.createElement("gwNamespace");
+			gwnsEl.appendChild(xmlDoc.createTextNode(cvgstoreName));
+			rootEl.appendChild(gwnsEl);
+			
+			coverageXml = rootEl.getTextContent();
+		}
+		catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		}
 		
-		// TODO: create coverage post request json
-		
-		return jsonObj.toString();
+		return coverageXml;
 	}
 
 	// Example use of geoserver rest client
@@ -729,7 +767,7 @@ public class GeoServerRestClient
 		else {
 			System.err.println("Error getting GeoServer coverage store info for 'geowave/sfdem'; code = " + getCvgStoreResponse.getStatus());
 		}
-
+		
 		// test add store
 		// HashMap<String, String> geowaveStoreConfig = new HashMap<String,
 		// String>();
