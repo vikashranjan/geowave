@@ -1,5 +1,6 @@
 package mil.nga.giat.geowave.cli.geoserver;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +18,13 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.TransformerFactoryConfigurationError;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -715,9 +723,29 @@ public class GeoServerRestClient
 			gwnsEl.appendChild(xmlDoc.createTextNode(cvgstoreName));
 			rootEl.appendChild(gwnsEl);
 			
-			coverageXml = rootEl.getTextContent();
+			// use a transformer to create the xml string for the rest call
+			Transformer xformer = TransformerFactory.newInstance()
+                    .newTransformer();
+			DOMSource source = new DOMSource(xmlDoc);
+			StreamResult result = new StreamResult(new StringWriter());
+			
+			xformer.transform(source, result);
+			
+			coverageXml = result.getWriter().toString();
 		}
 		catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		}
+		catch (TransformerConfigurationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch (TransformerFactoryConfigurationError e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch (TransformerException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
