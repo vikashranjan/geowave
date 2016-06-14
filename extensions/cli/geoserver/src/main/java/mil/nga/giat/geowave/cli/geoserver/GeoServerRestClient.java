@@ -488,7 +488,7 @@ public class GeoServerRestClient
 				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores").request().post(
 				Entity.entity(
 						cvgStoreXml,
-						MediaType.TEXT_XML));
+						MediaType.APPLICATION_XML));
 
 		if (resp.getStatus() == Status.CREATED.getStatusCode()) {
 			return Response.ok().build();
@@ -706,6 +706,14 @@ public class GeoServerRestClient
 			Element wsEl = xmlDoc.createElement("workspace");
 			wsEl.appendChild(xmlDoc.createTextNode(workspace));
 			rootEl.appendChild(wsEl);
+			
+			Element typeEl = xmlDoc.createElement("type");
+			typeEl.appendChild(xmlDoc.createTextNode("GeoWaveRasterFormat"));
+			rootEl.appendChild(typeEl);
+			
+			Element enabledEl = xmlDoc.createElement("enabled");
+			enabledEl.appendChild(xmlDoc.createTextNode("true"));
+			rootEl.appendChild(enabledEl);
 			
 			Element configEl = xmlDoc.createElement("config");
 			rootEl.appendChild(configEl);
