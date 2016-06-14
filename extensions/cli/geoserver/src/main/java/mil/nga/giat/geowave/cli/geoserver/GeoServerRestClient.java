@@ -707,29 +707,32 @@ public class GeoServerRestClient
 			wsEl.appendChild(xmlDoc.createTextNode(workspace));
 			rootEl.appendChild(wsEl);
 			
+			Element configEl = xmlDoc.createElement("config");
+			rootEl.appendChild(configEl);
+			
 			String user = geowaveStoreConfig.get("user");
 			Element userEl = xmlDoc.createElement("user");
 			userEl.appendChild(xmlDoc.createTextNode(user));
-			rootEl.appendChild(userEl);
+			configEl.appendChild(userEl);
 			
 			String pass = geowaveStoreConfig.get("password");
 			Element passEl = xmlDoc.createElement("password");
 			passEl.appendChild(xmlDoc.createTextNode(pass));
-			rootEl.appendChild(passEl);
+			configEl.appendChild(passEl);
 			
 			String zookeeper = geowaveStoreConfig.get("zookeeper");
 			Element zkEl = xmlDoc.createElement("zookeeper");
 			zkEl.appendChild(xmlDoc.createTextNode(zookeeper));
-			rootEl.appendChild(zkEl);
+			configEl.appendChild(zkEl);
 			
 			String instance = geowaveStoreConfig.get("instance");
 			Element instEl = xmlDoc.createElement("instance");
 			instEl.appendChild(xmlDoc.createTextNode(instance));
-			rootEl.appendChild(instEl);
+			configEl.appendChild(instEl);
 			
 			Element gwnsEl = xmlDoc.createElement("gwNamespace");
 			gwnsEl.appendChild(xmlDoc.createTextNode(cvgstoreName));
-			rootEl.appendChild(gwnsEl);
+			configEl.appendChild(gwnsEl);
 			
 			// use a transformer to create the xml string for the rest call
 			Transformer xformer = TransformerFactory.newInstance()
