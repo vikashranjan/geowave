@@ -1,5 +1,6 @@
 package mil.nga.giat.geowave.cli.geoserver;
 
+import java.io.FileWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -422,7 +423,7 @@ public class GeoServerRestClient
 		return getWebTarget().path(
 				"geoserver/rest/layers/" + layerName).request().delete();
 	}
-	
+
 	// Coverage Stores
 	public Response getCoverageStore(
 			final String workspaceName,
@@ -471,16 +472,11 @@ public class GeoServerRestClient
 	}
 
 	public Response addCoverageStore(
-			String workspaceName,
-			String cvgstoreName,
-			String geowaveStoreType,
 			Map<String, String> geowaveStoreConfig ) {
+		String workspaceName = geowaveStoreConfig.get(GeoServerConfig.GEOSERVER_WORKSPACE);
 
-		final String cvgStoreXml = createCoverageXml(
-				workspaceName,
-				cvgstoreName,
-				geowaveStoreConfig);
-		
+		final String cvgStoreXml = createCoverageXml(geowaveStoreConfig);
+
 		System.out.println("Add coverage store - xml params:\n" + cvgStoreXml);
 
 		// create a new geoserver style
@@ -505,11 +501,11 @@ public class GeoServerRestClient
 				"recurse",
 				"true").request().delete();
 	}
-	
+
 	// Coverages (raster layers)
 	public Response getCoverages(
 			String workspaceName,
-			String cvsstoreName) {
+			String cvsstoreName ) {
 		final Response resp = getWebTarget().path(
 				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores/" + cvsstoreName + "/coverages.json").request().get();
 
@@ -686,89 +682,124 @@ public class GeoServerRestClient
 
 		return jsonObj.toString();
 	}
-	
+
 	private String createCoverageXml(
-			String workspace,
-			String cvgstoreName,
-			Map<String, String> geowaveStoreConfig) {
+			Map<String, String> geowaveStoreConfig ) {
 		String coverageXml = null;
-		
+
+		String workspace = geowaveStoreConfig.get(GeoServerConfig.GEOSERVER_WORKSPACE);
+		String cvgstoreName = geowaveStoreConfig.get("geoserver.coverageStore");
+		String storeConfigUrl = geowaveStoreConfig.get(GeoServerConfig.GS_STORE_URL);
+		String storeConfigPath = geowaveStoreConfig.get(GeoServerConfig.GS_STORE_PATH);
+
 		try {
+			// create the post XML
 			Document xmlDoc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
-			
+
 			Element rootEl = xmlDoc.createElement("coverageStore");
 			xmlDoc.appendChild(rootEl);
-			
+
 			Element nameEl = xmlDoc.createElement("name");
 			nameEl.appendChild(xmlDoc.createTextNode(cvgstoreName));
 			rootEl.appendChild(nameEl);
-			
+
 			Element wsEl = xmlDoc.createElement("workspace");
 			wsEl.appendChild(xmlDoc.createTextNode(workspace));
 			rootEl.appendChild(wsEl);
-			
-			Element typeEl = xmlDoc.createElement("type");
-			typeEl.appendChild(xmlDoc.createTextNode("GeoWaveRasterFormat"));
-			rootEl.appendChild(typeEl);
-			
+
 			Element enabledEl = xmlDoc.createElement("enabled");
 			enabledEl.appendChild(xmlDoc.createTextNode("true"));
 			rootEl.appendChild(enabledEl);
-			
-			Element configEl = xmlDoc.createElement("config");
+
+			Element configEl = xmlDoc.createElement("url");
+			configEl.appendChild(xmlDoc.createTextNode(storeConfigUrl));
 			rootEl.appendChild(configEl);
-			
+
+			// Retrieve store config
 			String user = geowaveStoreConfig.get("user");
+			String pass = geowaveStoreConfig.get("password");
+			String zookeeper = geowaveStoreConfig.get("zookeeper");
+			String instance = geowaveStoreConfig.get("instance");
+
+			// Write the temp XML file for the store config
+			writeConfigXml(
+					storeConfigPath,
+					user,
+					pass,
+					zookeeper,
+					instance,
+					cvgstoreName);
+
+			// use a transformer to create the xml string for the rest call
+			Transformer xformer = TransformerFactory.newInstance().newTransformer();
+			DOMSource source = new DOMSource(
+					xmlDoc);
+			StreamResult result = new StreamResult(
+					new StringWriter());
+
+			xformer.transform(
+					source,
+					result);
+
+			coverageXml = result.getWriter().toString();
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return coverageXml;
+	}
+
+	private void writeConfigXml(
+			String storeConfigPath,
+			String user,
+			String pass,
+			String zookeeper,
+			String instance,
+			String cvgstoreName ) {
+		try {
+			// create the post XML
+			Document xmlDoc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+
+			Element configEl = xmlDoc.createElement("config");
+			xmlDoc.appendChild(configEl);
+
 			Element userEl = xmlDoc.createElement("user");
 			userEl.appendChild(xmlDoc.createTextNode(user));
 			configEl.appendChild(userEl);
-			
-			String pass = geowaveStoreConfig.get("password");
+
 			Element passEl = xmlDoc.createElement("password");
 			passEl.appendChild(xmlDoc.createTextNode(pass));
 			configEl.appendChild(passEl);
-			
-			String zookeeper = geowaveStoreConfig.get("zookeeper");
+
 			Element zkEl = xmlDoc.createElement("zookeeper");
 			zkEl.appendChild(xmlDoc.createTextNode(zookeeper));
 			configEl.appendChild(zkEl);
-			
-			String instance = geowaveStoreConfig.get("instance");
+
 			Element instEl = xmlDoc.createElement("instance");
 			instEl.appendChild(xmlDoc.createTextNode(instance));
 			configEl.appendChild(instEl);
-			
+
 			Element gwnsEl = xmlDoc.createElement("gwNamespace");
 			gwnsEl.appendChild(xmlDoc.createTextNode(cvgstoreName));
 			configEl.appendChild(gwnsEl);
 			
-			// use a transformer to create the xml string for the rest call
-			Transformer xformer = TransformerFactory.newInstance()
-                    .newTransformer();
-			DOMSource source = new DOMSource(xmlDoc);
-			StreamResult result = new StreamResult(new StringWriter());
+			Transformer xformer = TransformerFactory.newInstance().newTransformer();
+			DOMSource source = new DOMSource(
+					xmlDoc);
 			
-			xformer.transform(source, result);
+			String xmlFile = storeConfigPath + "/gwraster.xml";			
+			FileWriter xmlWriter = new FileWriter(xmlFile);
 			
-			coverageXml = result.getWriter().toString();
+			StreamResult result = new StreamResult(xmlWriter);
+
+			xformer.transform(
+					source,
+					result);
 		}
-		catch (ParserConfigurationException e) {
+		catch (Exception e) {
 			e.printStackTrace();
 		}
-		catch (TransformerConfigurationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		catch (TransformerFactoryConfigurationError e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		catch (TransformerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		return coverageXml;
 	}
 
 	// Example use of geoserver rest client
@@ -844,7 +875,7 @@ public class GeoServerRestClient
 		else {
 			System.err.println("Error getting GeoServer coverage store info for 'geowave/sfdem'; code = " + getCvgStoreResponse.getStatus());
 		}
-		
+
 		// test add store
 		// HashMap<String, String> geowaveStoreConfig = new HashMap<String,
 		// String>();
@@ -911,21 +942,22 @@ public class GeoServerRestClient
 		// }
 
 		// test add layer
-//		Response addLayerResponse = geoserverClient.addLayer(
-//				"delete-me-ws",
-//				"delete-me-ds",
-//				"polygon",
-//				"ne_50m_admin_0_countries");
-//
-//		if (addLayerResponse.getStatus() == Status.OK.getStatusCode()) {
-//			System.out.println("\nGeoServer layer add response for 'ne_50m_admin_0_countries':");
-//
-//			JSONObject jsonResponse = JSONObject.fromObject(addLayerResponse.getEntity());
-//			System.out.println(jsonResponse.toString(2));
-//		}
-//		else {
-//			System.err.println("Error adding GeoServer layer 'ne_50m_admin_0_countries'; code = " + addLayerResponse.getStatus());
-//		}
+		// Response addLayerResponse = geoserverClient.addLayer(
+		// "delete-me-ws",
+		// "delete-me-ds",
+		// "polygon",
+		// "ne_50m_admin_0_countries");
+		//
+		// if (addLayerResponse.getStatus() == Status.OK.getStatusCode()) {
+		// System.out.println("\nGeoServer layer add response for 'ne_50m_admin_0_countries':");
+		//
+		// JSONObject jsonResponse = JSONObject.fromObject(addLayerResponse.getEntity());
+		// System.out.println(jsonResponse.toString(2));
+		// }
+		// else {
+		// System.err.println("Error adding GeoServer layer 'ne_50m_admin_0_countries'; code = " +
+		// addLayerResponse.getStatus());
+		// }
 
 		// test delete layer
 		// Response deleteLayerResponse =

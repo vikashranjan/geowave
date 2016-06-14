@@ -41,6 +41,12 @@ public class ConfigGeoServerCommand implements
 	}, required = false, description = "GeoServer Default Workspace")
 	private String workspace;
 
+	@Parameter(names = {
+		"-su",
+		"--storeurl"
+	}, required = false, description = "GeoServer Default Coverage Store Config URL")
+	private String storeUrl;
+
 	@Override
 	public boolean prepare(
 			OperationParams params ) {
@@ -78,6 +84,12 @@ public class ConfigGeoServerCommand implements
 			existingProps.setProperty(
 					GeoServerConfig.GEOSERVER_WORKSPACE,
 					getWorkspace());
+		}
+
+		if (getStoreUrl() != null) {
+			existingProps.setProperty(
+					GeoServerConfig.GS_STORE_URL,
+					getStoreUrl());
 		}
 
 		// Write properties file
@@ -120,6 +132,15 @@ public class ConfigGeoServerCommand implements
 	public void setWorkspace(
 			String workspace ) {
 		this.workspace = workspace;
+	}
+
+	public String getStoreUrl() {
+		return storeUrl;
+	}
+
+	public void setStoreUrl(
+			String storeUrl ) {
+		this.storeUrl = storeUrl;
 	}
 
 }

@@ -22,11 +22,15 @@ public class GeoServerConfig
 	public static final String GS_STORE_ZOOKEEPER = "geoserver.store.zookeeper";
 	public static final String GS_STORE_USER = "geoserver.store.user";
 	public static final String GS_STORE_PASS = "geoserver.store.pass";
+	public static final String GS_STORE_URL = "geoserver.store.config.url";
+	public static final String GS_STORE_PATH = "geoserver.store.config.path";
 
 	public static final String DEFAULT_STORE_INSTANCE = "geowave";
 	public static final String DEFAULT_STORE_ZOOKEEPER = "localhost:2181";
 	public static final String DEFAULT_STORE_USER = "root";
 	public static final String DEFAULT_STORE_PASS = "password";
+	public static final String DEFAULT_STORE_URL = "file:data/config/gwraster.xml";
+	public static final String DEFAULT_STORE_PATH = "/usr/share/tomcat/webapps/geoserver/data_dir/data/config";
 
 	public final static String DISPLAY_NAME_PREFIX = "GeoWave Datastore - ";
 	public static final String QUERY_INDEX_STRATEGY_KEY = "Query Index Strategy";
@@ -35,6 +39,8 @@ public class GeoServerConfig
 	private String user = DEFAULT_USER;
 	private String pass = DEFAULT_PASS;
 	private String workspace = DEFAULT_WORKSPACE;
+	private String storeUrl = DEFAULT_STORE_URL;
+	private String storePath = DEFAULT_STORE_PATH;
 
 	private final File propFile;
 
@@ -86,6 +92,24 @@ public class GeoServerConfig
 			gsConfig.setProperty(
 					GEOSERVER_WORKSPACE,
 					workspace);
+			update = true;
+		}
+
+		String storeConfigUrl = gsConfig.getProperty(GS_STORE_URL);
+		if (storeConfigUrl == null) {
+			storeUrl = DEFAULT_STORE_URL;
+			gsConfig.setProperty(
+					GS_STORE_URL,
+					storeUrl);
+			update = true;
+		}
+
+		String storeConfigPath = gsConfig.getProperty(GS_STORE_PATH);
+		if (storeConfigPath == null) {
+			storePath = DEFAULT_STORE_PATH;
+			gsConfig.setProperty(
+					GS_STORE_PATH,
+					storeUrl);
 			update = true;
 		}
 
@@ -194,5 +218,23 @@ public class GeoServerConfig
 	
 	public File getPropFile() {
 		return this.propFile;
+	}
+
+	public String getStoreUrl() {
+		return storeUrl;
+	}
+
+	public void setStoreUrl(
+			String storeUrl ) {
+		this.storeUrl = storeUrl;
+	}
+
+	public String getStorePath() {
+		return storePath;
+	}
+
+	public void setStorePath(
+			String storePath ) {
+		this.storePath = storePath;
 	}
 }

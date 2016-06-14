@@ -3,6 +3,7 @@ package mil.nga.giat.geowave.cli.geoserver;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -66,7 +67,7 @@ public class GeoServerAddCoverageStoreCommand implements
 		}
 
 		cvgstore = parameters.get(0);
-		
+
 		if (workspace == null || workspace.isEmpty()) {
 			workspace = geoserverClient.getConfig().getWorkspace();
 		}
@@ -81,11 +82,27 @@ public class GeoServerAddCoverageStoreCommand implements
 			inputStoreOptions = inputStoreLoader.getDataStorePlugin();
 		}
 
-		Response addStoreResponse = geoserverClient.addCoverageStore(
-				workspace,
-				cvgstore,
-				"accumulo",
-				inputStoreOptions.getFactoryOptionsAsMap());
+		// Get the store's accumulo config
+		Map<String, String> storeConfigMap = inputStoreOptions.getFactoryOptionsAsMap();
+		
+		// Add in geoserver coverage store info
+		storeConfigMap.put(
+				GeoServerConfig.GEOSERVER_WORKSPACE,
+				workspace);
+
+		storeConfigMap.put(
+				"geoserver.coverageStore",
+				cvgstore);
+
+		storeConfigMap.put(
+				GeoServerConfig.GS_STORE_URL,
+				geoserverClient.getConfig().getStoreUrl());
+
+		storeConfigMap.put(
+				GeoServerConfig.GS_STORE_PATH,
+				geoserverClient.getConfig().getStorePath());
+
+		Response addStoreResponse = geoserverClient.addCoverageStore(storeConfigMap);
 
 		if (addStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() == Status.CREATED.getStatusCode()) {
 			System.out.println("Add store '" + cvgstore + "' to workspace '" + workspace + "' on GeoServer: OK");
