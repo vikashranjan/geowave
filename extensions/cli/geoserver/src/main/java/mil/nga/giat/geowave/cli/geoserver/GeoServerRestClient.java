@@ -707,13 +707,21 @@ public class GeoServerRestClient
 			wsEl.appendChild(xmlDoc.createTextNode(workspace));
 			rootEl.appendChild(wsEl);
 
+			Element typeEl = xmlDoc.createElement("type");
+			typeEl.appendChild(xmlDoc.createTextNode("GeoWaveRasterFormat"));
+			rootEl.appendChild(typeEl);
+
 			Element enabledEl = xmlDoc.createElement("enabled");
 			enabledEl.appendChild(xmlDoc.createTextNode("true"));
 			rootEl.appendChild(enabledEl);
 
-			Element configEl = xmlDoc.createElement("url");
-			configEl.appendChild(xmlDoc.createTextNode(storeConfigUrl));
+			Element configEl = xmlDoc.createElement("configure");
+			configEl.appendChild(xmlDoc.createTextNode("all"));
 			rootEl.appendChild(configEl);
+
+			Element urlEl = xmlDoc.createElement("url");
+			urlEl.appendChild(xmlDoc.createTextNode(storeConfigUrl));
+			rootEl.appendChild(urlEl);
 
 			// Retrieve store config
 			String user = geowaveStoreConfig.get("user");
