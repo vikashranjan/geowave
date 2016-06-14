@@ -35,12 +35,12 @@ public class GeoServerConfig
 	public final static String DISPLAY_NAME_PREFIX = "GeoWave Datastore - ";
 	public static final String QUERY_INDEX_STRATEGY_KEY = "Query Index Strategy";
 
-	private String url = DEFAULT_URL;
-	private String user = DEFAULT_USER;
-	private String pass = DEFAULT_PASS;
-	private String workspace = DEFAULT_WORKSPACE;
-	private String storeUrl = DEFAULT_STORE_URL;
-	private String storePath = DEFAULT_STORE_PATH;
+	private String url = null;
+	private String user = null;
+	private String pass = null;
+	private String workspace = null;
+	private String storeUrl = null;
+	private String storePath = null;
 
 	private final File propFile;
 
@@ -59,8 +59,8 @@ public class GeoServerConfig
 
 		boolean update = false;
 
-		String geoserverUrl = gsConfig.getProperty(GEOSERVER_URL);
-		if (geoserverUrl == null) {
+		url = gsConfig.getProperty(GEOSERVER_URL);
+		if (url == null) {
 			url = DEFAULT_URL;
 			gsConfig.setProperty(
 					GEOSERVER_URL,
@@ -68,8 +68,8 @@ public class GeoServerConfig
 			update = true;
 		}
 
-		String geoserverUser = gsConfig.getProperty(GEOSERVER_USER);
-		if (geoserverUser == null) {
+		user = gsConfig.getProperty(GEOSERVER_USER);
+		if (user == null) {
 			user = DEFAULT_USER;
 			gsConfig.setProperty(
 					GEOSERVER_USER,
@@ -77,8 +77,8 @@ public class GeoServerConfig
 			update = true;
 		}
 
-		String geoserverPass = gsConfig.getProperty(GEOSERVER_PASS);
-		if (geoserverPass == null) {
+		pass = gsConfig.getProperty(GEOSERVER_PASS);
+		if (pass == null) {
 			pass = DEFAULT_PASS;
 			gsConfig.setProperty(
 					GEOSERVER_PASS,
@@ -86,8 +86,8 @@ public class GeoServerConfig
 			update = true;
 		}
 
-		String geoserverWorkspace = gsConfig.getProperty(GEOSERVER_WORKSPACE);
-		if (geoserverWorkspace == null) {
+		workspace = gsConfig.getProperty(GEOSERVER_WORKSPACE);
+		if (workspace == null) {
 			workspace = DEFAULT_WORKSPACE;
 			gsConfig.setProperty(
 					GEOSERVER_WORKSPACE,
@@ -95,8 +95,8 @@ public class GeoServerConfig
 			update = true;
 		}
 
-		String storeConfigUrl = gsConfig.getProperty(GS_STORE_URL);
-		if (storeConfigUrl == null) {
+		storeUrl = gsConfig.getProperty(GS_STORE_URL);
+		if (storeUrl == null) {
 			storeUrl = DEFAULT_STORE_URL;
 			gsConfig.setProperty(
 					GS_STORE_URL,
@@ -104,8 +104,8 @@ public class GeoServerConfig
 			update = true;
 		}
 
-		String storeConfigPath = gsConfig.getProperty(GS_STORE_PATH);
-		if (storeConfigPath == null) {
+		storePath = gsConfig.getProperty(GS_STORE_PATH);
+		if (storePath == null) {
 			storePath = DEFAULT_STORE_PATH;
 			gsConfig.setProperty(
 					GS_STORE_PATH,
@@ -131,6 +131,8 @@ public class GeoServerConfig
 		this.pass = DEFAULT_PASS;
 		this.url = DEFAULT_URL;
 		this.workspace = DEFAULT_WORKSPACE;
+		this.storeUrl = DEFAULT_STORE_URL;
+		this.storePath = DEFAULT_STORE_PATH;
 	}
 
 	public HashMap<String, String> loadStoreConfig(
@@ -217,7 +219,7 @@ public class GeoServerConfig
 	}
 	
 	public File getPropFile() {
-		return this.propFile;
+		return propFile;
 	}
 
 	public String getStoreUrl() {
