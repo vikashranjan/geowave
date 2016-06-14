@@ -20,7 +20,7 @@ public class ConfigGeoServerCommand implements
 	@Parameter(names = {
 		"-u",
 		"--url"
-	}, required = true, description = "GeoServer URL")
+	}, required = false, description = "GeoServer URL")
 	private String url;
 
 	@Parameter(names = {
@@ -44,8 +44,14 @@ public class ConfigGeoServerCommand implements
 	@Parameter(names = {
 		"-su",
 		"--storeurl"
-	}, required = false, description = "GeoServer Default Coverage Store Config URL")
+	}, required = false, description = "GeoServer Coverage Store Config URL")
 	private String storeUrl;
+
+	@Parameter(names = {
+		"-sp",
+		"--storepath"
+	}, required = false, description = "GeoServer Coverage Store Config Path")
+	private String storePath;
 
 	@Override
 	public boolean prepare(
@@ -64,9 +70,12 @@ public class ConfigGeoServerCommand implements
 				propFile,
 				null);
 
-		existingProps.setProperty(
-				GeoServerConfig.GEOSERVER_URL,
-				getUrl());
+		// all switches are optional
+		if (getUrl() != null) {
+			existingProps.setProperty(
+					GeoServerConfig.GEOSERVER_URL,
+					getUrl());
+		}
 
 		if (getName() != null) {
 			existingProps.setProperty(
@@ -90,6 +99,12 @@ public class ConfigGeoServerCommand implements
 			existingProps.setProperty(
 					GeoServerConfig.GS_STORE_URL,
 					getStoreUrl());
+		}
+
+		if (getStorePath() != null) {
+			existingProps.setProperty(
+					GeoServerConfig.GS_STORE_PATH,
+					getStorePath());
 		}
 
 		// Write properties file
@@ -141,6 +156,15 @@ public class ConfigGeoServerCommand implements
 	public void setStoreUrl(
 			String storeUrl ) {
 		this.storeUrl = storeUrl;
+	}
+
+	public String getStorePath() {
+		return storePath;
+	}
+
+	public void setStorePath(
+			String storePath ) {
+		this.storePath = storePath;
 	}
 
 }
