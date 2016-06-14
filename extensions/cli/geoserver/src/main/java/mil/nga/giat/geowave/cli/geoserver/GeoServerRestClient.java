@@ -696,7 +696,7 @@ public class GeoServerRestClient
 		try {
 			Document xmlDoc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
 			
-			Element rootEl = xmlDoc.createElement("config");
+			Element rootEl = xmlDoc.createElement("coverageStore");
 			xmlDoc.appendChild(rootEl);
 			
 			String user = geowaveStoreConfig.get("user");
