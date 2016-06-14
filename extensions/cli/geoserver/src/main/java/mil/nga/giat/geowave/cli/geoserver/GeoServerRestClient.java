@@ -477,9 +477,9 @@ public class GeoServerRestClient
 			Map<String, String> geowaveStoreConfig ) {
 
 		final String cvgStoreXml = createCoverageXml(
-				geowaveStoreType,
-				geowaveStoreConfig,
-				cvgstoreName);
+				workspaceName,
+				cvgstoreName,
+				geowaveStoreConfig);
 		
 		System.out.println("Add coverage store - xml params:\n" + cvgStoreXml);
 
@@ -688,9 +688,9 @@ public class GeoServerRestClient
 	}
 	
 	private String createCoverageXml(
-			String geowaveStoreType,
-			Map<String, String> geowaveStoreConfig,
-			String cvgstoreName ) {
+			String workspace,
+			String cvgstoreName,
+			Map<String, String> geowaveStoreConfig) {
 		String coverageXml = null;
 		
 		try {
@@ -698,6 +698,14 @@ public class GeoServerRestClient
 			
 			Element rootEl = xmlDoc.createElement("coverageStore");
 			xmlDoc.appendChild(rootEl);
+			
+			Element nameEl = xmlDoc.createElement("name");
+			nameEl.appendChild(xmlDoc.createTextNode(cvgstoreName));
+			rootEl.appendChild(nameEl);
+			
+			Element wsEl = xmlDoc.createElement("workspace");
+			wsEl.appendChild(xmlDoc.createTextNode(workspace));
+			rootEl.appendChild(wsEl);
 			
 			String user = geowaveStoreConfig.get("user");
 			Element userEl = xmlDoc.createElement("user");
