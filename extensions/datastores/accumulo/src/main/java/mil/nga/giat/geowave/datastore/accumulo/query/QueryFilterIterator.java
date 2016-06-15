@@ -19,6 +19,7 @@ import org.apache.log4j.Logger;
 import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.index.ByteArrayUtils;
 import mil.nga.giat.geowave.core.index.PersistenceUtils;
+import mil.nga.giat.geowave.core.store.GeoWaveUrlStreamHandlerFactory;
 import mil.nga.giat.geowave.core.store.data.CommonIndexedPersistenceEncoding;
 import mil.nga.giat.geowave.core.store.data.PersistentDataset;
 import mil.nga.giat.geowave.core.store.data.PersistentValue;
@@ -59,47 +60,7 @@ public class QueryFilterIterator extends
 	}
 
 	private static void initialize() {
-		try {
-			URL.setURLStreamHandlerFactory(new FsUrlStreamHandlerFactory());
-		}
-		catch (final Error factoryError) {
-			String type = "";
-			Field f = null;
-			try {
-				f = URL.class.getDeclaredField("factory");
-			}
-			catch (final NoSuchFieldException e) {
-				LOGGER
-						.error(
-								"URL.setURLStreamHandlerFactory() can only be called once per JVM instance, and currently something has set it to;  additionally unable to discover type of Factory",
-								e);
-				throw (factoryError);
-			}
-			f.setAccessible(true);
-			Object o;
-			try {
-				o = f.get(null);
-			}
-			catch (final IllegalAccessException e) {
-				LOGGER
-						.error(
-								"URL.setURLStreamHandlerFactory() can only be called once per JVM instance, and currently something has set it to;  additionally unable to discover type of Factory",
-								e);
-				throw (factoryError);
-			}
-			if (o instanceof FsUrlStreamHandlerFactory) {
-				LOGGER
-						.info("setURLStreamHandlerFactory already set on this JVM to FsUrlStreamHandlerFactory.  Nothing to do");
-				return;
-			}
-			else {
-				type = o.getClass().getCanonicalName();
-			}
-			LOGGER
-					.error("URL.setURLStreamHandlerFactory() can only be called once per JVM instance, and currently something has set it to: "
-							+ type);
-			throw (factoryError);
-		}
+		GeoWaveUrlStreamHandlerFactory.getInstance().setDefaultURLStreamHandlerFactory(new FsUrlStreamHandlerFactory());
 	}
 
 	@Override

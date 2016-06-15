@@ -1,17 +1,12 @@
 package mil.nga.giat.geowave.adapter.raster.plugin;
 
 import java.awt.Color;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.HashMap;
 
-import mil.nga.giat.geowave.adapter.raster.plugin.GeoWaveRasterConfig.ConfigParameter;
-import mil.nga.giat.geowave.core.index.StringUtils;
+import mil.nga.giat.geowave.core.store.GeoWaveUrlStreamHandlerFactory;
 
 import org.apache.log4j.Logger;
 import org.geotools.coverage.grid.io.AbstractGridCoverage2DReader;
@@ -58,6 +53,8 @@ public class GeoWaveGTRasterFormat extends
 
 	public GeoWaveGTRasterFormat() {
 		super();
+		GeoWaveUrlStreamHandlerFactory.getInstance(); // is this thing getting init'd?
+	
 		setInfo();
 	}
 

@@ -34,6 +34,8 @@ import mil.nga.giat.geowave.core.index.HierarchicalNumericIndexStrategy.SubStrat
 import mil.nga.giat.geowave.core.index.NumericIndexStrategy;
 import mil.nga.giat.geowave.core.store.CloseableIterator;
 import mil.nga.giat.geowave.core.store.DataStore;
+import mil.nga.giat.geowave.core.store.GeoWaveUrlStreamHandler;
+import mil.nga.giat.geowave.core.store.GeoWaveUrlStreamHandlerFactory;
 import mil.nga.giat.geowave.core.store.adapter.AdapterStore;
 import mil.nga.giat.geowave.core.store.adapter.DataAdapter;
 import mil.nga.giat.geowave.core.store.adapter.statistics.DataStatistics;
@@ -77,8 +79,7 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
 /**
- * the reader gets the connection info and returns a grid coverage for every
- * data adapter
+ * the reader gets the connection info and returns a grid coverage for every data adapter
  */
 public class GeoWaveRasterReader extends
 		AbstractGridCoverage2DReader implements
@@ -136,7 +137,13 @@ public class GeoWaveRasterReader extends
 				source,
 				uHints);
 		this.source = source;
-		if (GeoWaveGTRasterFormat.isParamList(source)) {
+		if (isGeowaveProtocol(source)) {
+			// TODO: parse param list from custom url
+			System.err.println("Need to parse params from this string:");
+			throw new MalformedURLException(
+					source.toString());
+		}
+		else if (GeoWaveGTRasterFormat.isParamList(source)) {
 			try {
 				config = GeoWaveRasterConfig.readFromConfigParams(source.toString());
 			}
@@ -165,6 +172,12 @@ public class GeoWaveRasterReader extends
 			}
 		}
 		init(config);
+	}
+
+	private boolean isGeowaveProtocol(
+			Object source ) {
+		return ((source instanceof String) && source.toString().startsWith(
+				GeoWaveUrlStreamHandler.GW_PROTOCOL));
 	}
 
 	public GeoWaveRasterReader(
@@ -371,12 +384,8 @@ public class GeoWaveRasterReader extends
 					OverviewStatistics.STATS_ID);
 			if (statistics instanceof OverviewStatistics) {
 				final OverviewStatistics overviewStats = (OverviewStatistics) statistics;
-				width = (int) Math
-						.ceil(((bboxStats.getMaxX() - bboxStats.getMinX()) / overviewStats.getResolutions()[0]
-								.getResolution(0)));
-				height = (int) Math
-						.ceil(((bboxStats.getMaxY() - bboxStats.getMinY()) / overviewStats.getResolutions()[0]
-								.getResolution(1)));
+				width = (int) Math.ceil(((bboxStats.getMaxX() - bboxStats.getMinX()) / overviewStats.getResolutions()[0].getResolution(0)));
+				height = (int) Math.ceil(((bboxStats.getMaxY() - bboxStats.getMinY()) / overviewStats.getResolutions()[0].getResolution(1)));
 			}
 		}
 
@@ -420,9 +429,7 @@ public class GeoWaveRasterReader extends
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * org.opengis.coverage.grid.GridCoverageReader#read(org.opengis.parameter
-	 * .GeneralParameterValue [])
+	 * @see org.opengis.coverage.grid.GridCoverageReader#read(org.opengis.parameter .GeneralParameterValue [])
 	 */
 	@Override
 	public GridCoverage2D read(
@@ -716,9 +723,7 @@ public class GeoWaveRasterReader extends
 			final TreeMap<Double, SubStrategy> sortedStrategies = new TreeMap<Double, SubStrategy>();
 			SubStrategy targetIndexStrategy = null;
 			for (final SubStrategy subStrategy : ((HierarchicalNumericIndexStrategy) strategy).getSubStrategies()) {
-				final double[] idRangePerDimension = subStrategy
-						.getIndexStrategy()
-						.getHighestPrecisionIdRangePerDimension();
+				final double[] idRangePerDimension = subStrategy.getIndexStrategy().getHighestPrecisionIdRangePerDimension();
 				double rangeSum = 0;
 				for (final double range : idRangePerDimension) {
 					rangeSum += range;
@@ -729,9 +734,7 @@ public class GeoWaveRasterReader extends
 						subStrategy);
 			}
 			for (final SubStrategy subStrategy : sortedStrategies.descendingMap().values()) {
-				final double[] highestPrecisionIdRangePerDimension = subStrategy
-						.getIndexStrategy()
-						.getHighestPrecisionIdRangePerDimension();
+				final double[] highestPrecisionIdRangePerDimension = subStrategy.getIndexStrategy().getHighestPrecisionIdRangePerDimension();
 				// if the id range is less than or equal to the target
 				// resolution in each dimension, use this substrategy
 				boolean withinTargetResolution = true;
@@ -799,8 +802,7 @@ public class GeoWaveRasterReader extends
 	}
 
 	/**
-	 * transforms (if necessary) the requested envelope into the CRS used by
-	 * this reader.
+	 * transforms (if necessary) the requested envelope into the CRS used by this reader.
 	 * 
 	 * @throws DataSourceException
 	 */
