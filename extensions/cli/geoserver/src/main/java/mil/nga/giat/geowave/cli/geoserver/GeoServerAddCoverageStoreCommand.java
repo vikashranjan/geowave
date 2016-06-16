@@ -93,14 +93,14 @@ public class GeoServerAddCoverageStoreCommand implements
 		storeConfigMap.put(
 				"geoserver.coverageStore",
 				cvgstore);
-
-		storeConfigMap.put(
-				GeoServerConfig.GS_STORE_URL,
-				geoserverClient.getConfig().getStoreUrl());
-
-		storeConfigMap.put(
-				GeoServerConfig.GS_STORE_PATH,
-				geoserverClient.getConfig().getStorePath());
+		
+//		storeConfigMap.put(
+//				GeoServerConfig.GS_STORE_URL,
+//				geoserverClient.getConfig().getStoreUrl());
+//
+//		storeConfigMap.put(
+//				GeoServerConfig.GS_STORE_PATH,
+//				geoserverClient.getConfig().getStorePath());
 
 		Response addStoreResponse = geoserverClient.addCoverageStore(storeConfigMap);
 

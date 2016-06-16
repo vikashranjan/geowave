@@ -5,6 +5,7 @@ import java.net.URL;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 public class GeoWaveUrlStreamHandlerFactory implements
@@ -30,6 +31,7 @@ public class GeoWaveUrlStreamHandlerFactory implements
 	}
 
 	private static void initialize() {
+		LOGGER.setLevel(Level.DEBUG);
 		if (singleton != null) {
 			LOGGER.warn("GeoWaveUrlStreamHandlerFactory already initialized!");
 			return;

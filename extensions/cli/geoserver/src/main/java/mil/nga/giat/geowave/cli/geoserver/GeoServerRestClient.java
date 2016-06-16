@@ -27,6 +27,7 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import mil.nga.giat.geowave.core.store.GeoWaveUrlStreamHandler;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
@@ -689,8 +690,8 @@ public class GeoServerRestClient
 
 		String workspace = geowaveStoreConfig.get(GeoServerConfig.GEOSERVER_WORKSPACE);
 		String cvgstoreName = geowaveStoreConfig.get("geoserver.coverageStore");
-		String storeConfigUrl = geowaveStoreConfig.get(GeoServerConfig.GS_STORE_URL);
-		String storeConfigPath = geowaveStoreConfig.get(GeoServerConfig.GS_STORE_PATH);
+//		String storeConfigUrl = geowaveStoreConfig.get(GeoServerConfig.GS_STORE_URL);
+//		String storeConfigPath = geowaveStoreConfig.get(GeoServerConfig.GS_STORE_PATH);
 
 		try {
 			// create the post XML
@@ -719,16 +720,20 @@ public class GeoServerRestClient
 			configEl.appendChild(xmlDoc.createTextNode("all"));
 			rootEl.appendChild(configEl);
 
+			// Method using custom URL & handler:
+			String storeConfigUrl = createParamUrl(geowaveStoreConfig);
+
 			Element urlEl = xmlDoc.createElement("url");
 			urlEl.appendChild(xmlDoc.createTextNode(storeConfigUrl));
 			rootEl.appendChild(urlEl);
 
+			/* 
 			// Retrieve store config
 			String user = geowaveStoreConfig.get("user");
 			String pass = geowaveStoreConfig.get("password");
 			String zookeeper = geowaveStoreConfig.get("zookeeper");
 			String instance = geowaveStoreConfig.get("instance");
-
+			
 			// Write the temp XML file for the store config
 			writeConfigXml(
 					storeConfigPath,
@@ -737,6 +742,7 @@ public class GeoServerRestClient
 					zookeeper,
 					instance,
 					cvgstoreName);
+			*/
 
 			// use a transformer to create the xml string for the rest call
 			Transformer xformer = TransformerFactory.newInstance().newTransformer();
@@ -748,7 +754,7 @@ public class GeoServerRestClient
 			xformer.transform(
 					source,
 					result);
-
+			
 			coverageXml = result.getWriter().toString();
 		}
 		catch (Exception e) {
@@ -756,6 +762,30 @@ public class GeoServerRestClient
 		}
 
 		return coverageXml;
+	}
+
+	private String createParamUrl(
+			Map<String, String> geowaveStoreConfig ) {
+		// Retrieve store config
+		String user = geowaveStoreConfig.get("user");
+		String pass = geowaveStoreConfig.get("password");
+		String zookeeper = geowaveStoreConfig.get("zookeeper");
+		String instance = geowaveStoreConfig.get("instance");
+		
+		// Create the custom geowave url w/ params
+		StringBuffer buf = new StringBuffer();
+		buf.append(GeoWaveUrlStreamHandler.GW_PROTOCOL);
+		buf.append(":");
+		buf.append("user=");
+		buf.append(user);
+		buf.append(";password=");
+		buf.append(pass);
+		buf.append(";zookeeper=");
+		buf.append(zookeeper);
+		buf.append(";instance=");
+		buf.append(instance);
+		
+		return buf.toString();
 	}
 
 	private void writeConfigXml(

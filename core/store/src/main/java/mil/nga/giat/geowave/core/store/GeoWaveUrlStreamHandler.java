@@ -21,7 +21,7 @@ public class GeoWaveUrlStreamHandler extends
 				url) {
 			public void connect()
 					throws IOException {
-				LOGGER.debug(GW_PROTOCOL + " custom protocol registered.");
+				LOGGER.info(GW_PROTOCOL + " custom protocol registered.");
 			}
 		};
 	}
