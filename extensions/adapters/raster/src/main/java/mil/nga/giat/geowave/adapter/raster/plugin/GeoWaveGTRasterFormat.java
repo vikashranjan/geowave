@@ -6,8 +6,6 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.util.HashMap;
 
-import mil.nga.giat.geowave.core.store.GeoWaveUrlStreamHandlerFactory;
-
 import org.apache.log4j.Logger;
 import org.geotools.coverage.grid.io.AbstractGridCoverage2DReader;
 import org.geotools.coverage.grid.io.AbstractGridFormat;
@@ -53,7 +51,7 @@ public class GeoWaveGTRasterFormat extends
 
 	public GeoWaveGTRasterFormat() {
 		super();
-		GeoWaveUrlStreamHandlerFactory.getInstance(); // is this thing getting init'd?
+//		GeoWaveUrlStreamHandlerFactory.getInstance(); // uncomment if not being statically initialized in GeoWaveUrlStreamHandlerFactory
 	
 		setInfo();
 	}

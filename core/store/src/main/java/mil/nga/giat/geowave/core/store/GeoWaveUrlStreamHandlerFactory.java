@@ -17,9 +17,9 @@ public class GeoWaveUrlStreamHandlerFactory implements
 	private URLStreamHandlerFactory defaultFactory;
 	private static GeoWaveUrlStreamHandlerFactory singleton;
 	
-	static {
-		initialize();
-	}
+//	static {
+//		initialize();
+//	}
 
 	static public GeoWaveUrlStreamHandlerFactory getInstance() {
 		if (singleton == null) {
