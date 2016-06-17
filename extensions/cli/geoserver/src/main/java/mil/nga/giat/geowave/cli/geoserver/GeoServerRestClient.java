@@ -774,8 +774,8 @@ public class GeoServerRestClient
 		
 		// Create the custom geowave url w/ params
 		StringBuffer buf = new StringBuffer();
-		buf.append(GeoWaveUrlStreamHandler.GW_PROTOCOL);
-		buf.append(":");
+//		buf.append(GeoWaveUrlStreamHandler.GW_PROTOCOL);
+//		buf.append(":");
 		buf.append("user=");
 		buf.append(user);
 		buf.append(";password=");
