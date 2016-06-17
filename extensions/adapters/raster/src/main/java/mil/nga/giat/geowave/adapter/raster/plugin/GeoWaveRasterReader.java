@@ -34,8 +34,6 @@ import mil.nga.giat.geowave.core.index.HierarchicalNumericIndexStrategy.SubStrat
 import mil.nga.giat.geowave.core.index.NumericIndexStrategy;
 import mil.nga.giat.geowave.core.store.CloseableIterator;
 import mil.nga.giat.geowave.core.store.DataStore;
-import mil.nga.giat.geowave.core.store.GeoWaveUrlStreamHandler;
-import mil.nga.giat.geowave.core.store.GeoWaveUrlStreamHandlerFactory;
 import mil.nga.giat.geowave.core.store.adapter.AdapterStore;
 import mil.nga.giat.geowave.core.store.adapter.DataAdapter;
 import mil.nga.giat.geowave.core.store.adapter.statistics.DataStatistics;
@@ -137,13 +135,7 @@ public class GeoWaveRasterReader extends
 				source,
 				uHints);
 		this.source = source;
-		if (isGeowaveProtocol(source)) {
-			// TODO: parse param list from custom url
-			System.err.println("Need to parse params from this string:");
-			throw new MalformedURLException(
-					source.toString());
-		}
-		else if (GeoWaveGTRasterFormat.isParamList(source)) {
+		if (GeoWaveGTRasterFormat.isParamList(source)) {
 			try {
 				config = GeoWaveRasterConfig.readFromConfigParams(source.toString());
 			}
@@ -172,12 +164,6 @@ public class GeoWaveRasterReader extends
 			}
 		}
 		init(config);
-	}
-
-	private boolean isGeowaveProtocol(
-			Object source ) {
-		return ((source instanceof String) && source.toString().startsWith(
-				GeoWaveUrlStreamHandler.GW_PROTOCOL));
 	}
 
 	public GeoWaveRasterReader(

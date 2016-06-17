@@ -771,6 +771,7 @@ public class GeoServerRestClient
 		String pass = geowaveStoreConfig.get("password");
 		String zookeeper = geowaveStoreConfig.get("zookeeper");
 		String instance = geowaveStoreConfig.get("instance");
+		String gwNamespace = geowaveStoreConfig.get("geoserver.coverageStore");
 		
 		// Create the custom geowave url w/ params
 		StringBuffer buf = new StringBuffer();
@@ -784,6 +785,8 @@ public class GeoServerRestClient
 		buf.append(zookeeper);
 		buf.append(";instance=");
 		buf.append(instance);
+		buf.append(";gwNamespace=");
+		buf.append(gwNamespace);
 		
 		return buf.toString();
 	}
