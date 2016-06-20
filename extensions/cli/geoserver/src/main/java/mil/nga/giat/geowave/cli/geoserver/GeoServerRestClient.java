@@ -18,19 +18,15 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import mil.nga.giat.geowave.core.store.GeoWaveUrlStreamHandler;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.w3c.dom.Document;
@@ -47,6 +43,7 @@ public class GeoServerRestClient
 	public GeoServerRestClient(
 			GeoServerConfig config ) {
 		this.config = config;
+		logger.setLevel(Level.DEBUG);
 	}
 
 	public GeoServerConfig getConfig() {
@@ -556,10 +553,13 @@ public class GeoServerRestClient
 			final String workspaceName,
 			final String cvgStoreName,
 			final String coverageName ) {
+		String jsonString = "{'coverage':{'name':'" + coverageName + "'}}";
+		logger.debug("Posting JSON: " + jsonString + " to " + workspaceName + "/" + cvgStoreName);
+		
 		Response resp = getWebTarget().path(
 				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores/" + cvgStoreName + "/coverages").request().post(
 				Entity.entity(
-						"{'coverage':{'name':'" + coverageName + "'}}",
+						jsonString,
 						MediaType.APPLICATION_JSON));
 
 		if (resp.getStatus() != Status.CREATED.getStatusCode()) {
