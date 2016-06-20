@@ -551,6 +551,23 @@ public class GeoServerRestClient
 
 		return resp;
 	}
+	
+	public Response addCoverage(
+			final String workspaceName,
+			final String cvgStoreName,
+			final String coverageName ) {
+		Response resp = getWebTarget().path(
+				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores/" + cvgStoreName + "/coverages").request().post(
+				Entity.entity(
+						"{'coverage':{'name':'" + coverageName + "'}}",
+						MediaType.APPLICATION_JSON));
+
+		if (resp.getStatus() != Status.CREATED.getStatusCode()) {
+			return resp;
+		}
+
+		return resp;
+	}
 
 	public Response deleteCoverage(
 			String workspaceName,

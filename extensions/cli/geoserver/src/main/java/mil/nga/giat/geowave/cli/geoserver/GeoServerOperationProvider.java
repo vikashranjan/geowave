@@ -24,6 +24,7 @@ public class GeoServerOperationProvider implements
 		GeoServerAddCoverageStoreCommand.class,
 		GeoServerRemoveCoverageStoreCommand.class,
 		GeoServerListCoveragesCommand.class,
+		GeoServerAddCoverageCommand.class,
 	};
 
 	@Override
