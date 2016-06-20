@@ -564,8 +564,8 @@ public class GeoServerRestClient
 						jsonString,
 						MediaType.APPLICATION_JSON));
 
-		if (resp.getStatus() != Status.CREATED.getStatusCode()) {
-			return resp;
+		if (resp.getStatus() == Status.CREATED.getStatusCode()) {
+			return Response.ok().build();
 		}
 
 		return resp;

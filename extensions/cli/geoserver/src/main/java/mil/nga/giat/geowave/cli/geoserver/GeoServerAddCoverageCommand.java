@@ -81,9 +81,7 @@ public class GeoServerAddCoverageCommand implements
 				cvgName);
 
 		if (addLayerResponse.getStatus() == Status.OK.getStatusCode()) {
-			System.out.println("\nGeoServer add coverage response " + cvgName + ":");
-			JSONObject listObj = JSONObject.fromObject(addLayerResponse.getEntity());
-			System.out.println(listObj.toString(2));
+			System.out.println("Add coverage '" + cvgName + "' to '" + workspace + "/" + cvgstore + "' on GeoServer: OK");
 		}
 		else {
 			System.err.println("Error adding GeoServer coverage " + cvgName + "; code = " + addLayerResponse.getStatus());
