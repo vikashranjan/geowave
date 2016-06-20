@@ -553,7 +553,9 @@ public class GeoServerRestClient
 			final String workspaceName,
 			final String cvgStoreName,
 			final String coverageName ) {
-		String jsonString = "{'coverage':{'name':'" + coverageName + "'}}";
+		String jsonString = "{'coverage':"
+				+ "{'name':'" + coverageName + "'},"
+				+ "{'nativeName':'" + coverageName + "'}}";
 		logger.debug("Posting JSON: " + jsonString + " to " + workspaceName + "/" + cvgStoreName);
 		
 		Response resp = getWebTarget().path(
