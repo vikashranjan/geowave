@@ -1,5 +1,6 @@
 package mil.nga.giat.geowave.cli.geoserver;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -23,6 +24,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import mil.nga.giat.geowave.core.store.operations.remote.options.DataStorePluginOptions;
+import mil.nga.giat.geowave.core.store.operations.remote.options.StoreLoader;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
@@ -31,6 +34,8 @@ import org.apache.log4j.Logger;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+
+import com.beust.jcommander.ParameterException;
 
 public class GeoServerRestClient
 {
@@ -808,6 +813,17 @@ public class GeoServerRestClient
 		buf.append(gwNamespace);
 		
 		return buf.toString();
+	}
+	
+	public DataStorePluginOptions getDataStorePlugin(String storeName, File propFile) {
+		StoreLoader inputStoreLoader = new StoreLoader(
+				storeName);
+		if (!inputStoreLoader.loadFromConfig(propFile)) {
+			throw new ParameterException(
+					"Cannot find store name: " + inputStoreLoader.getStoreName());
+		}
+		
+		return inputStoreLoader.getDataStorePlugin();
 	}
 
 	private void writeConfigXml(

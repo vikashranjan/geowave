@@ -1,40 +1,35 @@
 package mil.nga.giat.geowave.cli.geoserver;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 
 import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
+import mil.nga.giat.geowave.core.index.ByteArrayId;
+import mil.nga.giat.geowave.core.store.CloseableIterator;
+import mil.nga.giat.geowave.core.store.adapter.AdapterStore;
+import mil.nga.giat.geowave.core.store.adapter.DataAdapter;
 import mil.nga.giat.geowave.core.store.operations.remote.options.DataStorePluginOptions;
-import mil.nga.giat.geowave.core.store.operations.remote.options.StoreLoader;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
-@GeowaveOperation(name = "addds", parentOperation = GeoServerSection.class)
-@Parameters(commandDescription = "Add a GeoServer datastore")
-public class GeoServerAddDatastoreCommand implements
+@GeowaveOperation(name = "getsa", parentOperation = GeoServerSection.class)
+@Parameters(commandDescription = "Get GeoWave store adapters")
+public class GeoServerGetStoreAdapterCommand implements
 		Command
 {
 	private GeoServerRestClient geoserverClient = null;
 	private DataStorePluginOptions inputStoreOptions = null;
 
-	@Parameter(names = {
-		"-ws",
-		"--workspace"
-	}, required = false, description = "<workspace name>")
-	private String workspace = null;
-
-	@Parameter(description = "<datastore name>")
+	@Parameter(description = "<store name>")
 	private List<String> parameters = new ArrayList<String>();
-	private String datastore = null;
+	private String storeName = null;
 
 	@Override
 	public boolean prepare(
@@ -62,32 +57,33 @@ public class GeoServerAddDatastoreCommand implements
 			throws Exception {
 		if (parameters.size() != 1) {
 			throw new ParameterException(
-					"Requires argument: <datastore name>");
+					"Requires argument: <store name>");
 		}
 
-		datastore = parameters.get(0);
+		storeName = parameters.get(0);
 
-		if (workspace == null || workspace.isEmpty()) {
-			workspace = geoserverClient.getConfig().getWorkspace();
-		}
-				
 		if (inputStoreOptions == null) {
 			inputStoreOptions = geoserverClient.getDataStorePlugin(
-					datastore,
+					storeName,
 					geoserverClient.getConfig().getPropFile());
 		}
 
-		Response addStoreResponse = geoserverClient.addDatastore(
-				workspace,
-				datastore,
-				"accumulo",
-				inputStoreOptions.getFactoryOptionsAsMap());
-
-		if (addStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() == Status.CREATED.getStatusCode()) {
-			System.out.println("Add store '" + datastore + "' to workspace '" + workspace + "' on GeoServer: OK");
+		AdapterStore adapterStore = inputStoreOptions.createAdapterStore();
+		
+		System.out.println("Store " + storeName + " has these adapters:");
+		
+		try (final CloseableIterator<DataAdapter<?>> it = adapterStore.getAdapters()) {			
+			while (it.hasNext()) {
+				final DataAdapter<?> adapter = it.next();
+				ByteArrayId adapterId = adapter.getAdapterId();
+				
+				System.out.println(adapterId.toString());
+			}
+			
 		}
-		else {
-			System.err.println("Error adding store '" + datastore + "' to workspace '" + workspace + "' on GeoServer; code = " + addStoreResponse.getStatus());
-		}
+		catch (final IOException e) {
+			System.err.println(
+					"unable to close adapter iterator while looking up coverage names");
+		}		
 	}
 }

@@ -13,7 +13,6 @@ import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
 import mil.nga.giat.geowave.core.store.operations.remote.options.DataStorePluginOptions;
-import mil.nga.giat.geowave.core.store.operations.remote.options.StoreLoader;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -73,18 +72,14 @@ public class GeoServerAddCoverageStoreCommand implements
 		}
 
 		if (inputStoreOptions == null) {
-			StoreLoader inputStoreLoader = new StoreLoader(
-					cvgstore);
-			if (!inputStoreLoader.loadFromConfig(geoserverClient.getConfig().getPropFile())) {
-				throw new ParameterException(
-						"Cannot find store name: " + inputStoreLoader.getStoreName());
-			}
-			inputStoreOptions = inputStoreLoader.getDataStorePlugin();
+			inputStoreOptions = geoserverClient.getDataStorePlugin(
+					cvgstore,
+					geoserverClient.getConfig().getPropFile());
 		}
 
 		// Get the store's accumulo config
 		Map<String, String> storeConfigMap = inputStoreOptions.getFactoryOptionsAsMap();
-		
+
 		// Add in geoserver coverage store info
 		storeConfigMap.put(
 				GeoServerConfig.GEOSERVER_WORKSPACE,
@@ -93,14 +88,14 @@ public class GeoServerAddCoverageStoreCommand implements
 		storeConfigMap.put(
 				"geoserver.coverageStore",
 				cvgstore);
-		
-//		storeConfigMap.put(
-//				GeoServerConfig.GS_STORE_URL,
-//				geoserverClient.getConfig().getStoreUrl());
-//
-//		storeConfigMap.put(
-//				GeoServerConfig.GS_STORE_PATH,
-//				geoserverClient.getConfig().getStorePath());
+
+		// storeConfigMap.put(
+		// GeoServerConfig.GS_STORE_URL,
+		// geoserverClient.getConfig().getStoreUrl());
+		//
+		// storeConfigMap.put(
+		// GeoServerConfig.GS_STORE_PATH,
+		// geoserverClient.getConfig().getStorePath());
 
 		Response addStoreResponse = geoserverClient.addCoverageStore(storeConfigMap);
 
