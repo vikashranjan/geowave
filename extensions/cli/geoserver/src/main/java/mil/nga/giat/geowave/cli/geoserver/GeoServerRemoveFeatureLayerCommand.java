@@ -17,9 +17,9 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
-@GeowaveOperation(name = "getlayer", parentOperation = GeoServerSection.class)
-@Parameters(commandDescription = "Get a GeoServer layer")
-public class GeoServerGetLayerCommand implements
+@GeowaveOperation(name = "rmfl", parentOperation = GeoServerSection.class)
+@Parameters(commandDescription = "Remove GeoServer feature Layer")
+public class GeoServerRemoveFeatureLayerCommand implements
 		Command
 {
 	private GeoServerRestClient geoserverClient = null;
@@ -59,16 +59,15 @@ public class GeoServerGetLayerCommand implements
 
 		layerName = parameters.get(0);
 
-		Response getLayerResponse = geoserverClient.getLayer(layerName);
+		Response deleteLayerResponse = geoserverClient.deleteFeatureLayer(layerName);
 
-		if (getLayerResponse.getStatus() == Status.OK.getStatusCode()) {
-			System.out.println("\nGeoServer layer info for '" + layerName + "':");
-
-			JSONObject jsonResponse = JSONObject.fromObject(getLayerResponse.getEntity());
-			System.out.println(jsonResponse.toString(2));
+		if (deleteLayerResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("\nGeoServer delete layer response " + layerName + ":");
+			JSONObject listObj = JSONObject.fromObject(deleteLayerResponse.getEntity());
+			System.out.println(listObj.toString(2));
 		}
 		else {
-			System.err.println("Error getting GeoServer layer info for '" + layerName + "'; code = " + getLayerResponse.getStatus());
+			System.err.println("Error deleting GeoServer layer " + layerName + "; code = " + deleteLayerResponse.getStatus());
 		}
 	}
 }

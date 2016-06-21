@@ -71,7 +71,7 @@ public class GeoServerAddDatastoreCommand implements
 		}
 
 		if (inputStoreOptions == null) {
-			inputStoreOptions = geoserverClient.getDataStorePlugin(datastore);
+			inputStoreOptions = geoserverClient.getStorePlugin(datastore);
 		}
 
 		Response addStoreResponse = geoserverClient.addDatastore(

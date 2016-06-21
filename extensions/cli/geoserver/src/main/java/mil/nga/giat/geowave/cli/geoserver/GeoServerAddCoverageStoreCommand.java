@@ -72,7 +72,7 @@ public class GeoServerAddCoverageStoreCommand implements
 		}
 
 		if (inputStoreOptions == null) {
-			inputStoreOptions = geoserverClient.getDataStorePlugin(cvgstore);
+			inputStoreOptions = geoserverClient.getStorePlugin(cvgstore);
 		}
 
 		// Get the store's accumulo config

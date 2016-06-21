@@ -17,9 +17,9 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
-@GeowaveOperation(name = "addlayer", parentOperation = GeoServerSection.class)
-@Parameters(commandDescription = "Add a GeoServer layer")
-public class GeoServerAddLayerCommand implements
+@GeowaveOperation(name = "addfl", parentOperation = GeoServerSection.class)
+@Parameters(commandDescription = "Add a GeoServer feature layer")
+public class GeoServerAddFeatureLayerCommand implements
 		Command
 {
 	private GeoServerRestClient geoserverClient = null;
@@ -75,7 +75,7 @@ public class GeoServerAddLayerCommand implements
 
 		layerName = parameters.get(0);
 
-		Response addLayerResponse = geoserverClient.addLayer(
+		Response addLayerResponse = geoserverClient.addFeatureLayer(
 				workspace,
 				datastore,
 				"defaultStyle",

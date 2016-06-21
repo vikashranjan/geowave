@@ -54,7 +54,7 @@ public class GeoServerGetStoreAdapterCommand implements
 		}
 
 		storeName = parameters.get(0);
-		ArrayList<String> adapterList = geoserverClient.getDataStoreAdapters(storeName);
+		ArrayList<String> adapterList = geoserverClient.getStoreAdapters(storeName);
 
 		System.out.println("Store " + storeName + " has these adapters:");
 		for (String adapterId : adapterList) {

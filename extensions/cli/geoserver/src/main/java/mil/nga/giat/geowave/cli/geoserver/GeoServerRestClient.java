@@ -24,7 +24,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import mil.nga.giat.geowave.core.index.ByteArrayId;
+import mil.nga.giat.geowave.adapter.vector.GeotoolsFeatureDataAdapter;
 import mil.nga.giat.geowave.core.store.CloseableIterator;
 import mil.nga.giat.geowave.core.store.adapter.AdapterStore;
 import mil.nga.giat.geowave.core.store.adapter.DataAdapter;
@@ -45,6 +45,12 @@ public class GeoServerRestClient
 {
 	private final static Logger logger = Logger.getLogger(GeoServerRestClient.class);
 	private final static int defaultIndentation = 2;
+
+	private class DataAdapterInfo
+	{
+		String adapterId;
+		Boolean isRaster;
+	}
 
 	private GeoServerConfig config;
 	private WebTarget webTarget = null;
@@ -72,7 +78,68 @@ public class GeoServerRestClient
 		return webTarget;
 	}
 
+	// Convenience - add a layer generically for the given store
+	public Response addLayer(
+			String workspaceName,
+			final String storeName,
+			final Boolean addAll) {
+		// retrieve the adapter info list for the store
+		ArrayList<DataAdapterInfo> adapterInfoList = getStoreAdapterInfo(storeName);
+		
+		if (adapterInfoList.size() > 1 && !addAll) {
+			// TODO: send back the list of adapter ids so the user can pick one
+			return null;
+		}
+
+		// verify the workspace exists
+		if (!workspaceExists(workspaceName)) {
+			Response addWsResponse = addWorkspace(workspaceName);
+			if (addWsResponse.getStatus() != Status.CREATED.getStatusCode()) {
+				return addWsResponse;
+			}
+		}
+		
+		// iterate through data adapters
+		for (DataAdapterInfo dataAdapterInfo : adapterInfoList) {
+			// handle coverage stores & coverages
+			if (dataAdapterInfo.isRaster) {
+				// verify coverage store exists
+				Response getCsResponse = getCoverageStore(workspaceName, storeName);
+			}
+		}
+
+		return Response.ok().build();
+	}
+
 	// Workspaces
+	public boolean workspaceExists(String workspace) {
+		if (workspace == null) {
+			workspace = config.getWorkspace();
+		}
+		
+		Response getWsResponse = getWorkspaces();
+		if (getWsResponse.getStatus() == Status.OK.getStatusCode()) {
+			JSONObject jsonResponse = JSONObject.fromObject(getWsResponse.getEntity());
+
+			final JSONArray workspaces = jsonResponse.getJSONArray("workspaces");
+			
+			for (int i = 0; i < workspaces.size(); i++) {
+				String wsName = workspaces.getJSONObject(
+						i).getString(
+						"name");
+				
+				if (wsName.equals(workspace)) {
+					return true;
+				}
+			}
+		}
+		else {
+			logger.error("Error retieving GeoServer workspace list");
+		}
+		
+		return false;
+	}
+	
 	public Response getWorkspaces() {
 		final Response resp = getWebTarget().path(
 				"geoserver/rest/workspaces.json").request().get();
@@ -205,8 +272,8 @@ public class GeoServerRestClient
 				"true").request().delete();
 	}
 
-	// Layers
-	public Response getLayer(
+	// Feature (vector) Layers
+	public Response getFeatureLayer(
 			final String layerName ) {
 		final Response resp = getWebTarget().path(
 				"geoserver/rest/layers/" + layerName + ".json").request().get();
@@ -234,7 +301,7 @@ public class GeoServerRestClient
 	 *            : if true, only return geowave layers
 	 * @return
 	 */
-	public Response getLayers(
+	public Response getFeatureLayers(
 			String workspaceName,
 			String datastoreName,
 			boolean geowaveOnly ) {
@@ -272,7 +339,7 @@ public class GeoServerRestClient
 						i).getString(
 						"name");
 
-				final String layer = (String) getLayer(
+				final String layer = (String) getFeatureLayer(
 						name).getEntity();
 
 				// get the workspace and name for each datastore
@@ -401,7 +468,7 @@ public class GeoServerRestClient
 		return resp;
 	}
 
-	public Response addLayer(
+	public Response addFeatureLayer(
 			final String workspaceName,
 			final String datastoreName,
 			final String styleName,
@@ -425,7 +492,7 @@ public class GeoServerRestClient
 		return resp;
 	}
 
-	public Response deleteLayer(
+	public Response deleteFeatureLayer(
 			final String layerName ) {
 		return getWebTarget().path(
 				"geoserver/rest/layers/" + layerName).request().delete();
@@ -809,7 +876,7 @@ public class GeoServerRestClient
 		return buf.toString();
 	}
 
-	public DataStorePluginOptions getDataStorePlugin(
+	public DataStorePluginOptions getStorePlugin(
 			String storeName ) {
 		StoreLoader inputStoreLoader = new StoreLoader(
 				storeName);
@@ -821,20 +888,41 @@ public class GeoServerRestClient
 		return inputStoreLoader.getDataStorePlugin();
 	}
 
-	public ArrayList<String> getDataStoreAdapters(
+	public ArrayList<String> getStoreAdapters(
 			String storeName ) {
-		DataStorePluginOptions dsPlugin = getDataStorePlugin(storeName);
+		ArrayList<DataAdapterInfo> adapterInfoList = getStoreAdapterInfo(storeName);
+		ArrayList<String> adapterIdList = new ArrayList<String>();
+
+		for (DataAdapterInfo info : adapterInfoList) {
+			adapterIdList.add(info.adapterId);
+		}
+
+		return adapterIdList;
+	}
+
+	private ArrayList<DataAdapterInfo> getStoreAdapterInfo(
+			String storeName ) {
+		DataStorePluginOptions dsPlugin = getStorePlugin(storeName);
 
 		AdapterStore adapterStore = dsPlugin.createAdapterStore();
 
-		ArrayList<String> adapterList = new ArrayList<String>();
+		ArrayList<DataAdapterInfo> adapterInfoList = new ArrayList<DataAdapterInfo>();
 
 		try (final CloseableIterator<DataAdapter<?>> it = adapterStore.getAdapters()) {
 			while (it.hasNext()) {
 				final DataAdapter<?> adapter = it.next();
-				ByteArrayId adapterId = adapter.getAdapterId();
 
-				adapterList.add(adapterId.getString());
+				DataAdapterInfo info = new DataAdapterInfo();
+				info.adapterId = adapter.getAdapterId().getString();
+
+				if (adapter instanceof GeotoolsFeatureDataAdapter) {
+					info.isRaster = true;
+				}
+				else {
+					info.isRaster = false;
+				}
+
+				adapterInfoList.add(info);
 			}
 
 		}
@@ -842,7 +930,7 @@ public class GeoServerRestClient
 			System.err.println("unable to close adapter iterator while looking up coverage names");
 		}
 
-		return adapterList;
+		return adapterInfoList;
 	}
 
 	private void writeConfigXml(
