@@ -1,7 +1,7 @@
 package mil.nga.giat.geowave.cli.geoserver;
 
-import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +24,10 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import mil.nga.giat.geowave.core.index.ByteArrayId;
+import mil.nga.giat.geowave.core.store.CloseableIterator;
+import mil.nga.giat.geowave.core.store.adapter.AdapterStore;
+import mil.nga.giat.geowave.core.store.adapter.DataAdapter;
 import mil.nga.giat.geowave.core.store.operations.remote.options.DataStorePluginOptions;
 import mil.nga.giat.geowave.core.store.operations.remote.options.StoreLoader;
 import net.sf.json.JSONArray;
@@ -553,16 +557,14 @@ public class GeoServerRestClient
 
 		return resp;
 	}
-	
+
 	public Response addCoverage(
 			final String workspaceName,
 			final String cvgStoreName,
 			final String coverageName ) {
-		String jsonString = "{'coverage':"
-				+ "{'name':'" + coverageName + "',"
-				+ "'nativeCoverageName':'" + coverageName + "'}}";
+		String jsonString = "{'coverage':" + "{'name':'" + coverageName + "'," + "'nativeCoverageName':'" + coverageName + "'}}";
 		logger.debug("Posting JSON: " + jsonString + " to " + workspaceName + "/" + cvgStoreName);
-		
+
 		Response resp = getWebTarget().path(
 				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores/" + cvgStoreName + "/coverages").request().post(
 				Entity.entity(
@@ -714,8 +716,8 @@ public class GeoServerRestClient
 
 		String workspace = geowaveStoreConfig.get(GeoServerConfig.GEOSERVER_WORKSPACE);
 		String cvgstoreName = geowaveStoreConfig.get("geoserver.coverageStore");
-//		String storeConfigUrl = geowaveStoreConfig.get(GeoServerConfig.GS_STORE_URL);
-//		String storeConfigPath = geowaveStoreConfig.get(GeoServerConfig.GS_STORE_PATH);
+		// String storeConfigUrl = geowaveStoreConfig.get(GeoServerConfig.GS_STORE_URL);
+		// String storeConfigPath = geowaveStoreConfig.get(GeoServerConfig.GS_STORE_PATH);
 
 		try {
 			// create the post XML
@@ -751,22 +753,14 @@ public class GeoServerRestClient
 			urlEl.appendChild(xmlDoc.createTextNode(storeConfigUrl));
 			rootEl.appendChild(urlEl);
 
-			/* 
-			// Retrieve store config
-			String user = geowaveStoreConfig.get("user");
-			String pass = geowaveStoreConfig.get("password");
-			String zookeeper = geowaveStoreConfig.get("zookeeper");
-			String instance = geowaveStoreConfig.get("instance");
-			
-			// Write the temp XML file for the store config
-			writeConfigXml(
-					storeConfigPath,
-					user,
-					pass,
-					zookeeper,
-					instance,
-					cvgstoreName);
-			*/
+			/*
+			 * // Retrieve store config String user = geowaveStoreConfig.get("user"); String pass =
+			 * geowaveStoreConfig.get("password"); String zookeeper = geowaveStoreConfig.get("zookeeper"); String
+			 * instance = geowaveStoreConfig.get("instance");
+			 * 
+			 * // Write the temp XML file for the store config writeConfigXml( storeConfigPath, user, pass, zookeeper,
+			 * instance, cvgstoreName);
+			 */
 
 			// use a transformer to create the xml string for the rest call
 			Transformer xformer = TransformerFactory.newInstance().newTransformer();
@@ -778,7 +772,7 @@ public class GeoServerRestClient
 			xformer.transform(
 					source,
 					result);
-			
+
 			coverageXml = result.getWriter().toString();
 		}
 		catch (Exception e) {
@@ -796,11 +790,11 @@ public class GeoServerRestClient
 		String zookeeper = geowaveStoreConfig.get("zookeeper");
 		String instance = geowaveStoreConfig.get("instance");
 		String gwNamespace = geowaveStoreConfig.get("geoserver.coverageStore");
-		
+
 		// Create the custom geowave url w/ params
 		StringBuffer buf = new StringBuffer();
-//		buf.append(GeoWaveUrlStreamHandler.GW_PROTOCOL);
-//		buf.append(":");
+		// buf.append(GeoWaveUrlStreamHandler.GW_PROTOCOL);
+		// buf.append(":");
 		buf.append("user=");
 		buf.append(user);
 		buf.append(";password=");
@@ -811,19 +805,44 @@ public class GeoServerRestClient
 		buf.append(instance);
 		buf.append(";gwNamespace=");
 		buf.append(gwNamespace);
-		
+
 		return buf.toString();
 	}
-	
-	public DataStorePluginOptions getDataStorePlugin(String storeName, File propFile) {
+
+	public DataStorePluginOptions getDataStorePlugin(
+			String storeName ) {
 		StoreLoader inputStoreLoader = new StoreLoader(
 				storeName);
-		if (!inputStoreLoader.loadFromConfig(propFile)) {
+		if (!inputStoreLoader.loadFromConfig(config.getPropFile())) {
 			throw new ParameterException(
 					"Cannot find store name: " + inputStoreLoader.getStoreName());
 		}
-		
+
 		return inputStoreLoader.getDataStorePlugin();
+	}
+
+	public ArrayList<String> getDataStoreAdapters(
+			String storeName ) {
+		DataStorePluginOptions dsPlugin = getDataStorePlugin(storeName);
+
+		AdapterStore adapterStore = dsPlugin.createAdapterStore();
+
+		ArrayList<String> adapterList = new ArrayList<String>();
+
+		try (final CloseableIterator<DataAdapter<?>> it = adapterStore.getAdapters()) {
+			while (it.hasNext()) {
+				final DataAdapter<?> adapter = it.next();
+				ByteArrayId adapterId = adapter.getAdapterId();
+
+				adapterList.add(adapterId.getString());
+			}
+
+		}
+		catch (final IOException e) {
+			System.err.println("unable to close adapter iterator while looking up coverage names");
+		}
+
+		return adapterList;
 	}
 
 	private void writeConfigXml(
@@ -859,15 +878,17 @@ public class GeoServerRestClient
 			Element gwnsEl = xmlDoc.createElement("gwNamespace");
 			gwnsEl.appendChild(xmlDoc.createTextNode(cvgstoreName));
 			configEl.appendChild(gwnsEl);
-			
+
 			Transformer xformer = TransformerFactory.newInstance().newTransformer();
 			DOMSource source = new DOMSource(
 					xmlDoc);
-			
-			String xmlFile = storeConfigPath + "/gwraster.xml";			
-			FileWriter xmlWriter = new FileWriter(xmlFile);
-			
-			StreamResult result = new StreamResult(xmlWriter);
+
+			String xmlFile = storeConfigPath + "/gwraster.xml";
+			FileWriter xmlWriter = new FileWriter(
+					xmlFile);
+
+			StreamResult result = new StreamResult(
+					xmlWriter);
 
 			xformer.transform(
 					source,

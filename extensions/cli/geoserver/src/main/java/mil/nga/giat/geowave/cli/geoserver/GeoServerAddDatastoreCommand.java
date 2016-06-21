@@ -12,7 +12,6 @@ import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
 import mil.nga.giat.geowave.core.store.operations.remote.options.DataStorePluginOptions;
-import mil.nga.giat.geowave.core.store.operations.remote.options.StoreLoader;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -70,11 +69,9 @@ public class GeoServerAddDatastoreCommand implements
 		if (workspace == null || workspace.isEmpty()) {
 			workspace = geoserverClient.getConfig().getWorkspace();
 		}
-				
+
 		if (inputStoreOptions == null) {
-			inputStoreOptions = geoserverClient.getDataStorePlugin(
-					datastore,
-					geoserverClient.getConfig().getPropFile());
+			inputStoreOptions = geoserverClient.getDataStorePlugin(datastore);
 		}
 
 		Response addStoreResponse = geoserverClient.addDatastore(

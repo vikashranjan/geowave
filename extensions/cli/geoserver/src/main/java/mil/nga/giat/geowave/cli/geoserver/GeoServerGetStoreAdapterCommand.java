@@ -1,7 +1,6 @@
 package mil.nga.giat.geowave.cli.geoserver;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,11 +8,6 @@ import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
-import mil.nga.giat.geowave.core.index.ByteArrayId;
-import mil.nga.giat.geowave.core.store.CloseableIterator;
-import mil.nga.giat.geowave.core.store.adapter.AdapterStore;
-import mil.nga.giat.geowave.core.store.adapter.DataAdapter;
-import mil.nga.giat.geowave.core.store.operations.remote.options.DataStorePluginOptions;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -25,7 +19,6 @@ public class GeoServerGetStoreAdapterCommand implements
 		Command
 {
 	private GeoServerRestClient geoserverClient = null;
-	private DataStorePluginOptions inputStoreOptions = null;
 
 	@Parameter(description = "<store name>")
 	private List<String> parameters = new ArrayList<String>();
@@ -61,29 +54,11 @@ public class GeoServerGetStoreAdapterCommand implements
 		}
 
 		storeName = parameters.get(0);
+		ArrayList<String> adapterList = geoserverClient.getDataStoreAdapters(storeName);
 
-		if (inputStoreOptions == null) {
-			inputStoreOptions = geoserverClient.getDataStorePlugin(
-					storeName,
-					geoserverClient.getConfig().getPropFile());
-		}
-
-		AdapterStore adapterStore = inputStoreOptions.createAdapterStore();
-		
 		System.out.println("Store " + storeName + " has these adapters:");
-		
-		try (final CloseableIterator<DataAdapter<?>> it = adapterStore.getAdapters()) {			
-			while (it.hasNext()) {
-				final DataAdapter<?> adapter = it.next();
-				ByteArrayId adapterId = adapter.getAdapterId();
-				
-				System.out.println(adapterId.toString());
-			}
-			
+		for (String adapterId : adapterList) {
+			System.out.println(adapterId);
 		}
-		catch (final IOException e) {
-			System.err.println(
-					"unable to close adapter iterator while looking up coverage names");
-		}		
 	}
 }
