@@ -1001,6 +1001,8 @@ public class GeoServerRestClient
 
 				DataAdapterInfo info = new DataAdapterInfo();
 				info.adapterId = adapter.getAdapterId().getString();
+				logger.debug("Adapter ID: " + info.adapterId);
+				logger.debug("Adapter type: " + adapter.getClass().getSimpleName());
 
 				if (adapter instanceof GeotoolsFeatureDataAdapter) {
 					info.isRaster = true;
@@ -1016,6 +1018,8 @@ public class GeoServerRestClient
 		catch (final IOException e) {
 			System.err.println("unable to close adapter iterator while looking up coverage names");
 		}
+		
+		logger.debug("getStoreAdapterInfo("+storeName+") got " + adapterInfoList.size() + " ids");
 
 		return adapterInfoList;
 	}
