@@ -7,31 +7,39 @@ import java.util.List;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import net.sf.json.JSONObject;
 import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
+import mil.nga.giat.geowave.core.store.operations.remote.options.DataStorePluginOptions;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
-@GeowaveOperation(name = "addcs", parentOperation = GeoServerSection.class)
-@Parameters(commandDescription = "Add a GeoServer coverage store")
-public class GeoServerAddCoverageStoreCommand implements
+@GeowaveOperation(name = "addlayer", parentOperation = GeoServerSection.class)
+@Parameters(commandDescription = "Add a GeoServer layer from the given GeoWave store")
+public class GeoServerAddLayerCommand implements
 		Command
 {
 	private GeoServerRestClient geoserverClient = null;
 
 	@Parameter(names = {
-		"-ws",
-		"--workspace"
-	}, required = false, description = "<workspace name>")
-	private String workspace;
+			"-ws",
+			"--workspace"
+		}, required = false, description = "<workspace name>")
+		private String workspace = null;
 
-	@Parameter(description = "<coverage store name>")
+	@Parameter(names = {
+			"-a",
+			"--addAll"
+		}, required = false, description = "Add all layers for the given store")
+		private Boolean addAll = false;
+
+	@Parameter(description = "<GeoWave store name>")
 	private List<String> parameters = new ArrayList<String>();
-	private String cvgstore = null;
+	private String gwStore = null;
 
 	@Override
 	public boolean prepare(
@@ -59,24 +67,28 @@ public class GeoServerAddCoverageStoreCommand implements
 			throws Exception {
 		if (parameters.size() != 1) {
 			throw new ParameterException(
-					"Requires argument: <coverage store name>");
+					"Requires argument: <store name>");
 		}
 
-		cvgstore = parameters.get(0);
+		gwStore = parameters.get(0);
 
 		if (workspace == null || workspace.isEmpty()) {
 			workspace = geoserverClient.getConfig().getWorkspace();
 		}
 
-		Response addStoreResponse = geoserverClient.addCoverageStore(
+		Response addLayerResponse = geoserverClient.addLayer(
 				workspace,
-				cvgstore);
+				gwStore,
+				addAll);
 
-		if (addStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() == Status.CREATED.getStatusCode()) {
-			System.out.println("Add store '" + cvgstore + "' to workspace '" + workspace + "' on GeoServer: OK");
+		if (addLayerResponse.getStatus() == Status.OK.getStatusCode()) {
+			System.out.println("Add GeoServer layer for '" + gwStore + ": OK");
+			
+			JSONObject jsonResponse = JSONObject.fromObject(addLayerResponse.getEntity());
+			System.out.println(jsonResponse.toString(2));
 		}
 		else {
-			System.err.println("Error adding store '" + cvgstore + "' to workspace '" + workspace + "' on GeoServer; code = " + addStoreResponse.getStatus());
+			System.err.println("Error adding GeoServer layer for store '" + gwStore + "; code = " + addLayerResponse.getStatus());
 		}
 	}
 }
