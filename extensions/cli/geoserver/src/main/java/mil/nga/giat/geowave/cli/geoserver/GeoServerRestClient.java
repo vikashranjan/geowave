@@ -88,7 +88,7 @@ public class GeoServerRestClient
 
 		if (adapterInfoList.size() > 1 && !addAll) {
 			// TODO: send back the list of adapter ids so the user can pick one
-			return null;
+			return Response.notModified("MULTIPLE LAYERS NOT IMPLEMENTED").build();
 		}
 
 		// verify the workspace exists
