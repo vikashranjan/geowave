@@ -24,7 +24,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import mil.nga.giat.geowave.adapter.vector.GeotoolsFeatureDataAdapter;
+import mil.nga.giat.geowave.adapter.raster.adapter.RasterDataAdapter;
 import mil.nga.giat.geowave.core.store.CloseableIterator;
 import mil.nga.giat.geowave.core.store.adapter.AdapterStore;
 import mil.nga.giat.geowave.core.store.adapter.DataAdapter;
@@ -995,19 +995,21 @@ public class GeoServerRestClient
 
 		ArrayList<DataAdapterInfo> adapterInfoList = new ArrayList<DataAdapterInfo>();
 
+		logger.debug("Adapter list for " + storeName + ":");
+		
 		try (final CloseableIterator<DataAdapter<?>> it = adapterStore.getAdapters()) {
 			while (it.hasNext()) {
 				final DataAdapter<?> adapter = it.next();
 
 				DataAdapterInfo info = new DataAdapterInfo();
 				info.adapterId = adapter.getAdapterId().getString();
-				logger.debug("Adapter ID: " + info.adapterId);
-				logger.debug("Adapter type: " + adapter.getClass().getSimpleName());
+				logger.debug("> Adapter ID: " + info.adapterId);
+				logger.debug("> Adapter Type: " + adapter.getClass().getSimpleName());
 
-				if (adapter instanceof GeotoolsFeatureDataAdapter) {
+				if (adapter instanceof RasterDataAdapter) {
 					info.isRaster = true;
 				}
-				else {
+				else { // must be a feature layer
 					info.isRaster = false;
 				}
 
