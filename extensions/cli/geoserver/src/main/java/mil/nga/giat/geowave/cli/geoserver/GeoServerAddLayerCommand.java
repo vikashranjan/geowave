@@ -7,12 +7,11 @@ import java.util.List;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import net.sf.json.JSONObject;
 import mil.nga.giat.geowave.core.cli.annotations.GeowaveOperation;
 import mil.nga.giat.geowave.core.cli.api.Command;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
-import mil.nga.giat.geowave.core.store.operations.remote.options.DataStorePluginOptions;
+import net.sf.json.JSONObject;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -26,16 +25,22 @@ public class GeoServerAddLayerCommand implements
 	private GeoServerRestClient geoserverClient = null;
 
 	@Parameter(names = {
-			"-ws",
-			"--workspace"
-		}, required = false, description = "<workspace name>")
-		private String workspace = null;
+		"-ws",
+		"--workspace"
+	}, required = false, description = "<workspace name>")
+	private String workspace = null;
 
 	@Parameter(names = {
-			"-a",
-			"--addAll"
-		}, required = false, description = "Add all layers for the given store")
-		private Boolean addAll = false;
+		"-a",
+		"--addAll"
+	}, required = false, description = "Add all layers for the given store")
+	private Boolean addAll = false;
+
+	@Parameter(names = {
+		"-id",
+		"--adapterId"
+	}, required = false, description = "select just <adapter id> from the store")
+	private String adapterId = null;
 
 	@Parameter(description = "<GeoWave store name>")
 	private List<String> parameters = new ArrayList<String>();
@@ -76,14 +81,18 @@ public class GeoServerAddLayerCommand implements
 			workspace = geoserverClient.getConfig().getWorkspace();
 		}
 
+		if (addAll) { // add all supercedes specific adapter selection
+			adapterId = "addAll";
+		}
+
 		Response addLayerResponse = geoserverClient.addLayer(
 				workspace,
 				gwStore,
-				addAll);
+				adapterId);
 
 		if (addLayerResponse.getStatus() == Status.OK.getStatusCode()) {
 			System.out.println("Add GeoServer layer for '" + gwStore + ": OK");
-			
+
 			JSONObject jsonResponse = JSONObject.fromObject(addLayerResponse.getEntity());
 			System.out.println(jsonResponse.toString(2));
 		}

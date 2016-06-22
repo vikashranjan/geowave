@@ -82,13 +82,20 @@ public class GeoServerRestClient
 	public Response addLayer(
 			String workspaceName,
 			final String storeName,
-			final Boolean addAll ) {
+			final String adapterId ) {
 		// retrieve the adapter info list for the store
-		ArrayList<DataAdapterInfo> adapterInfoList = getStoreAdapterInfo(storeName);
+		ArrayList<DataAdapterInfo> adapterInfoList = getStoreAdapterInfo(
+				storeName,
+				adapterId);
 
-		if (adapterInfoList.size() > 1 && !addAll) {
-			// TODO: send back the list of adapter ids so the user can pick one
-			return Response.notModified("MULTIPLE LAYERS NOT IMPLEMENTED").build();
+		if (adapterInfoList.size() > 1 && !adapterId.equals("addAll")) {
+			String descr = "Please use --addAll, or choose one of these with --adapterId:";
+			JSONObject jsonObj = getJsonFromAdapters(
+					adapterInfoList,
+					descr);
+
+			return Response.notModified(
+					jsonObj.toString(defaultIndentation)).build();
 		}
 
 		// verify the workspace exists
@@ -159,10 +166,21 @@ public class GeoServerRestClient
 		}
 
 		// Report back to the caller the adapter IDs and the types that were used to create the layers
+		JSONObject jsonObj = getJsonFromAdapters(
+				adapterInfoList,
+				"Successfully added:");
+
+		return Response.ok(
+				jsonObj.toString(defaultIndentation)).build();
+	}
+
+	private JSONObject getJsonFromAdapters(
+			ArrayList<DataAdapterInfo> adapterInfoList,
+			String description ) {
 		StringBuffer buf = new StringBuffer();
 
 		// If we made it this far, let's just iterate through the adapter IDs and build the JSON response data
-		buf.append("{'layers':[");
+		buf.append("{'description':'" + description + "', " + "'layers':[");
 
 		for (int i = 0; i < adapterInfoList.size(); i++) {
 			DataAdapterInfo info = adapterInfoList.get(i);
@@ -177,10 +195,7 @@ public class GeoServerRestClient
 
 		buf.append("]}");
 
-		JSONObject jsonObj = JSONObject.fromObject(buf.toString());
-		
-		return Response.ok(
-				jsonObj.toString(defaultIndentation)).build();
+		return JSONObject.fromObject(buf.toString());
 	}
 
 	// Workspaces
@@ -944,8 +959,12 @@ public class GeoServerRestClient
 	}
 
 	public ArrayList<String> getStoreAdapters(
-			String storeName ) {
-		ArrayList<DataAdapterInfo> adapterInfoList = getStoreAdapterInfo(storeName);
+			String storeName,
+			String adapterId ) {
+		ArrayList<DataAdapterInfo> adapterInfoList = getStoreAdapterInfo(
+				storeName,
+				adapterId);
+		
 		ArrayList<String> adapterIdList = new ArrayList<String>();
 
 		for (DataAdapterInfo info : adapterInfoList) {
@@ -956,7 +975,8 @@ public class GeoServerRestClient
 	}
 
 	private ArrayList<DataAdapterInfo> getStoreAdapterInfo(
-			String storeName ) {
+			String storeName,
+			String adapterId ) {
 		DataStorePluginOptions dsPlugin = getStorePlugin(storeName);
 
 		AdapterStore adapterStore = dsPlugin.createAdapterStore();
@@ -964,32 +984,36 @@ public class GeoServerRestClient
 		ArrayList<DataAdapterInfo> adapterInfoList = new ArrayList<DataAdapterInfo>();
 
 		logger.debug("Adapter list for " + storeName + ":");
-		
+
 		try (final CloseableIterator<DataAdapter<?>> it = adapterStore.getAdapters()) {
 			while (it.hasNext()) {
 				final DataAdapter<?> adapter = it.next();
 
 				DataAdapterInfo info = new DataAdapterInfo();
 				info.adapterId = adapter.getAdapterId().getString();
-				logger.debug("> Adapter ID: " + info.adapterId);
-				logger.debug("> Adapter Type: " + adapter.getClass().getSimpleName());
 
-				if (adapter instanceof RasterDataAdapter) {
-					info.isRaster = true;
-				}
-				else { // must be a feature layer
-					info.isRaster = false;
-				}
+				if (adapterId == null || adapterId.equals("addAll") || adapterId.equals(info.adapterId)) {
 
-				adapterInfoList.add(info);
+					logger.debug("> Adapter ID: " + info.adapterId);
+					logger.debug("> Adapter Type: " + adapter.getClass().getSimpleName());
+
+					if (adapter instanceof RasterDataAdapter) {
+						info.isRaster = true;
+					}
+					else { // must be a feature layer
+						info.isRaster = false;
+					}
+
+					adapterInfoList.add(info);
+				}
 			}
 
 		}
 		catch (final IOException e) {
 			System.err.println("unable to close adapter iterator while looking up coverage names");
 		}
-		
-		logger.debug("getStoreAdapterInfo("+storeName+") got " + adapterInfoList.size() + " ids");
+
+		logger.debug("getStoreAdapterInfo(" + storeName + ") got " + adapterInfoList.size() + " ids");
 
 		return adapterInfoList;
 	}
