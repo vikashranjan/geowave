@@ -151,7 +151,6 @@ public class GeoServerRestClient
 				Response addFlResponse = addFeatureLayer(
 						workspaceName,
 						storeName,
-						"DefaultStyle",
 						dataAdapterInfo.adapterId);
 				if (addFlResponse.getStatus() != Status.CREATED.getStatusCode()) {
 					return addFlResponse;
@@ -324,17 +323,11 @@ public class GeoServerRestClient
 				true);
 
 		// create a new geoserver style
-		final Response resp = getWebTarget().path(
+		return getWebTarget().path(
 				"geoserver/rest/workspaces/" + workspaceName + "/datastores").request().post(
 				Entity.entity(
 						dataStoreJson,
 						MediaType.APPLICATION_JSON));
-
-		if (resp.getStatus() == Status.CREATED.getStatusCode()) {
-			return Response.ok().build();
-		}
-
-		return resp;
 	}
 
 	public Response deleteDatastore(
@@ -545,25 +538,12 @@ public class GeoServerRestClient
 	public Response addFeatureLayer(
 			final String workspaceName,
 			final String datastoreName,
-			final String styleName,
 			final String layerName ) {
-		Response resp = getWebTarget().path(
+		return getWebTarget().path(
 				"geoserver/rest/workspaces/" + workspaceName + "/datastores/" + datastoreName + "/featuretypes").request().post(
 				Entity.entity(
 						"{'featureType':{'name':'" + layerName + "'}}",
 						MediaType.APPLICATION_JSON));
-
-		if (resp.getStatus() != Status.CREATED.getStatusCode()) {
-			return resp;
-		}
-
-		resp = getWebTarget().path(
-				"geoserver/rest/layers/" + layerName).request().put(
-				Entity.entity(
-						"{'layer':{'defaultStyle':{'name':'" + styleName + "'}}}",
-						MediaType.APPLICATION_JSON));
-
-		return resp;
 	}
 
 	public Response deleteFeatureLayer(
@@ -641,17 +621,11 @@ public class GeoServerRestClient
 		System.out.println("Add coverage store - xml params:\n" + cvgStoreXml);
 
 		// create a new geoserver style
-		final Response resp = getWebTarget().path(
+		return getWebTarget().path(
 				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores").request().post(
 				Entity.entity(
 						cvgStoreXml,
 						MediaType.APPLICATION_XML));
-
-		if (resp.getStatus() == Status.CREATED.getStatusCode()) {
-			return Response.ok().build();
-		}
-
-		return resp;
 	}
 
 	public Response deleteCoverageStore(
@@ -719,17 +693,11 @@ public class GeoServerRestClient
 		String jsonString = "{'coverage':" + "{'name':'" + coverageName + "'," + "'nativeCoverageName':'" + coverageName + "'}}";
 		logger.debug("Posting JSON: " + jsonString + " to " + workspaceName + "/" + cvgStoreName);
 
-		Response resp = getWebTarget().path(
+		return getWebTarget().path(
 				"geoserver/rest/workspaces/" + workspaceName + "/coveragestores/" + cvgStoreName + "/coverages").request().post(
 				Entity.entity(
 						jsonString,
 						MediaType.APPLICATION_JSON));
-
-		if (resp.getStatus() == Status.CREATED.getStatusCode()) {
-			return Response.ok().build();
-		}
-
-		return resp;
 	}
 
 	public Response deleteCoverage(
