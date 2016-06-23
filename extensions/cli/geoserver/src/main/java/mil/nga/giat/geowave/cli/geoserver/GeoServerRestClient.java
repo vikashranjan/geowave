@@ -25,6 +25,8 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import mil.nga.giat.geowave.adapter.raster.adapter.RasterDataAdapter;
+import mil.nga.giat.geowave.adapter.vector.GeotoolsFeatureDataAdapter;
+import mil.nga.giat.geowave.cli.geoserver.GeoServerAddLayerCommand.AddOption;
 import mil.nga.giat.geowave.core.store.CloseableIterator;
 import mil.nga.giat.geowave.core.store.adapter.AdapterStore;
 import mil.nga.giat.geowave.core.store.adapter.DataAdapter;
@@ -87,19 +89,17 @@ public class GeoServerRestClient
 		ArrayList<DataAdapterInfo> adapterInfoList = getStoreAdapterInfo(
 				storeName,
 				adapterId);
-		
-		logger.debug("Finished retrieving adapter list");
-		
-		boolean addAll = (adapterId != null && adapterId.equals("addAll"));
 
-		if (adapterInfoList.size() > 1 && !addAll) {
+		logger.debug("Finished retrieving adapter list");
+
+		if (adapterInfoList.size() > 1 && adapterId == null) {
 			logger.debug("addlayer doesn't know how to deal with multiple adapters");
-			
+
 			String descr = "Please use -a, or choose one of these with -id:";
 			JSONObject jsonObj = getJsonFromAdapters(
 					adapterInfoList,
 					descr);
-			
+
 			logger.debug(jsonObj);
 
 			return Response.ok(
@@ -109,13 +109,13 @@ public class GeoServerRestClient
 		// verify the workspace exists
 		if (!workspaceExists(workspaceName)) {
 			logger.debug("addlayer needs to create the " + workspaceName + " workspace");
-			
+
 			Response addWsResponse = addWorkspace(workspaceName);
 			if (addWsResponse.getStatus() != Status.CREATED.getStatusCode()) {
 				return addWsResponse;
 			}
 		}
-		
+
 		String cvgStoreName = storeName + GeoServerConfig.DEFAULT_CS;
 		String dataStoreName = storeName + GeoServerConfig.DEFAULT_DS;
 
@@ -139,6 +139,16 @@ public class GeoServerRestClient
 				}
 				else if (getCsResponse.getStatus() != Status.OK.getStatusCode()) {
 					return getCsResponse;
+				}
+
+				// See if the coverage already exists
+				Response getCvResponse = getCoverage(
+						workspaceName,
+						cvgStoreName,
+						dataAdapterInfo.adapterId);
+				if (getCvResponse.getStatus() == Status.OK.getStatusCode()) {
+					logger.debug(dataAdapterInfo.adapterId + " layer already exists");
+					continue;
 				}
 
 				// We have a coverage store. Add the layer per the adapter ID
@@ -167,6 +177,16 @@ public class GeoServerRestClient
 				}
 				else if (getDsResponse.getStatus() != Status.OK.getStatusCode()) {
 					return getDsResponse;
+				}
+
+				// See if the feature layer already exists
+				Response getFlResponse = getCoverage(
+						workspaceName,
+						dataStoreName,
+						dataAdapterInfo.adapterId);
+				if (getFlResponse.getStatus() == Status.OK.getStatusCode()) {
+					logger.debug(dataAdapterInfo.adapterId + " layer already exists");
+					continue;
 				}
 
 				// We have a datastore. Add the layer per the adapter ID
@@ -335,9 +355,9 @@ public class GeoServerRestClient
 	public Response addDatastore(
 			String workspaceName,
 			String datastoreName,
-			String gwStoreName) {
+			String gwStoreName ) {
 		DataStorePluginOptions inputStoreOptions = getStorePlugin(gwStoreName);
-		
+
 		if (datastoreName == null || datastoreName.isEmpty()) {
 			datastoreName = gwStoreName + GeoServerConfig.DEFAULT_DS;
 		}
@@ -637,9 +657,9 @@ public class GeoServerRestClient
 	public Response addCoverageStore(
 			String workspaceName,
 			String cvgStoreName,
-			String gwStoreName) {
+			String gwStoreName ) {
 		DataStorePluginOptions inputStoreOptions = getStorePlugin(gwStoreName);
-		
+
 		if (cvgStoreName == null || cvgStoreName.isEmpty()) {
 			cvgStoreName = gwStoreName + GeoServerConfig.DEFAULT_CS;
 		}
@@ -989,7 +1009,7 @@ public class GeoServerRestClient
 		ArrayList<DataAdapterInfo> adapterInfoList = getStoreAdapterInfo(
 				storeName,
 				adapterId);
-		
+
 		ArrayList<String> adapterIdList = new ArrayList<String>();
 
 		for (DataAdapterInfo info : adapterInfoList) {
@@ -1008,27 +1028,22 @@ public class GeoServerRestClient
 
 		ArrayList<DataAdapterInfo> adapterInfoList = new ArrayList<DataAdapterInfo>();
 
-		logger.debug("Adapter list for " + storeName + ":");
+		logger.debug("Adapter list for " + storeName + " with adapterId = " + adapterId + ": ");
 
 		try (final CloseableIterator<DataAdapter<?>> it = adapterStore.getAdapters()) {
 			while (it.hasNext()) {
 				final DataAdapter<?> adapter = it.next();
 
-				if (adapterId == null || adapterId.equals("addAll") || adapterId.equals(adapter.getAdapterId().getString())) {
-					DataAdapterInfo info = new DataAdapterInfo();
-					info.adapterId = adapter.getAdapterId().getString();
+				DataAdapterInfo info = getAdapterInfo(
+						adapterId,
+						adapter);
 
-					logger.debug("> Adapter ID: " + info.adapterId);
-					logger.debug("> Adapter Type: " + adapter.getClass().getSimpleName());
+				logger.debug("> Adapter ID: " + info.adapterId);
+				logger.debug("> Adapter Type: " + adapter.getClass().getSimpleName());
 
-					if (adapter instanceof RasterDataAdapter) {
-						info.isRaster = true;
-					}
-					else { // must be a feature layer
-						info.isRaster = false;
-					}
-
+				if (info != null) {
 					adapterInfoList.add(info);
+					logger.debug("> Adapter passed filter");
 				}
 			}
 
@@ -1040,6 +1055,36 @@ public class GeoServerRestClient
 		logger.debug("getStoreAdapterInfo(" + storeName + ") got " + adapterInfoList.size() + " ids");
 
 		return adapterInfoList;
+	}
+
+	private DataAdapterInfo getAdapterInfo(
+			String adapterId,
+			DataAdapter adapter ) {
+		DataAdapterInfo info = new DataAdapterInfo();
+		info.adapterId = adapter.getAdapterId().getString();
+		info.isRaster = false;
+
+		if (adapter instanceof RasterDataAdapter) {
+			info.isRaster = true;
+		}
+
+		if (adapterId == null || adapterId.equals(AddOption.ALL.name())) {
+			return info;
+		}
+
+		if (adapterId.equals(adapter.getAdapterId().getString())) {
+			return info;
+		}
+
+		if (adapterId.equals(AddOption.RASTER.name()) && adapter instanceof RasterDataAdapter) {
+			return info;
+		}
+
+		if (adapterId.equals(AddOption.VECTOR.name()) && adapter instanceof GeotoolsFeatureDataAdapter) {
+			return info;
+		}
+
+		return null;
 	}
 
 	private void writeConfigXml(

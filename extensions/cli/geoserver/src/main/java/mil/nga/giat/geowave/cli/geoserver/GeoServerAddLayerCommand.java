@@ -13,6 +13,9 @@ import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
 import net.sf.json.JSONObject;
 
+import org.apache.commons.lang3.StringUtils;
+
+import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
@@ -24,6 +27,12 @@ public class GeoServerAddLayerCommand implements
 {
 	private GeoServerRestClient geoserverClient = null;
 
+	public static enum AddOption {
+		ALL,
+		RASTER,
+		VECTOR;
+	}
+
 	@Parameter(names = {
 		"-ws",
 		"--workspace"
@@ -32,9 +41,9 @@ public class GeoServerAddLayerCommand implements
 
 	@Parameter(names = {
 		"-a",
-		"--addAll"
-	}, required = false, description = "Add all layers for the given store")
-	private Boolean addAll = false;
+		"--add"
+	}, required = false, converter = AddOptionConverter.class, description = "For multiple layers, add (all | raster | vector)")
+	private AddOption addOption = null;
 
 	@Parameter(names = {
 		"-id",
@@ -81,8 +90,8 @@ public class GeoServerAddLayerCommand implements
 			workspace = geoserverClient.getConfig().getWorkspace();
 		}
 
-		if (addAll) { // add all supercedes specific adapter selection
-			adapterId = "addAll";
+		if (addOption != null) { // add all supercedes specific adapter selection
+			adapterId = addOption.name();
 		}
 
 		Response addLayerResponse = geoserverClient.addLayer(
@@ -98,6 +107,24 @@ public class GeoServerAddLayerCommand implements
 		}
 		else {
 			System.err.println("Error adding GeoServer layer for store '" + gwStore + "; code = " + addLayerResponse.getStatus());
+		}
+	}
+
+	public static class AddOptionConverter implements
+			IStringConverter<AddOption>
+	{
+		@Override
+		public AddOption convert(
+				final String value ) {
+			final AddOption convertedValue = AddOption.valueOf(value.toUpperCase());
+
+			if (convertedValue == null) {
+				throw new ParameterException(
+						"Value " + value + "can not be converted to an add option. " + "Available values are: " + StringUtils.join(
+								AddOption.values(),
+								", ").toLowerCase());
+			}
+			return convertedValue;
 		}
 	}
 }
