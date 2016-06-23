@@ -1060,6 +1060,8 @@ public class GeoServerRestClient
 	private DataAdapterInfo getAdapterInfo(
 			String adapterId,
 			DataAdapter adapter ) {
+		logger.debug("getAdapterInfo for id = " + adapterId + ", adapter = " + adapter.getAdapterId().getString());
+		
 		DataAdapterInfo info = new DataAdapterInfo();
 		info.adapterId = adapter.getAdapterId().getString();
 		info.isRaster = false;
@@ -1069,21 +1071,27 @@ public class GeoServerRestClient
 		}
 
 		if (adapterId == null || adapterId.equals(AddOption.ALL.name())) {
+			logger.debug("id is null or all");
 			return info;
 		}
 
 		if (adapterId.equals(adapter.getAdapterId().getString())) {
+			logger.debug("id matches adapter id");
 			return info;
 		}
 
 		if (adapterId.equals(AddOption.RASTER.name()) && adapter instanceof RasterDataAdapter) {
+			logger.debug("id is all-raster and adapter is raster type");
 			return info;
 		}
 
 		if (adapterId.equals(AddOption.VECTOR.name()) && adapter instanceof GeotoolsFeatureDataAdapter) {
+			logger.debug("id is all-vector and adapter is vector type");
 			return info;
 		}
 
+		logger.debug("No match!");
+		
 		return null;
 	}
 
