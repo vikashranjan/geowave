@@ -89,10 +89,14 @@ public class GeoServerRestClient
 				adapterId);
 
 		if (adapterInfoList.size() > 1 && !adapterId.equals("addAll")) {
+			logger.debug("addlayer doesn't know how to deal with multiple adapters");
+			
 			String descr = "Please use -a, or choose one of these with -id:";
 			JSONObject jsonObj = getJsonFromAdapters(
 					adapterInfoList,
 					descr);
+			
+			logger.debug(jsonObj);
 
 			return Response.ok(
 					jsonObj.toString(defaultIndentation)).build();
@@ -100,6 +104,8 @@ public class GeoServerRestClient
 
 		// verify the workspace exists
 		if (!workspaceExists(workspaceName)) {
+			logger.debug("addlayer needs to create the " + workspaceName + " workspace");
+			
 			Response addWsResponse = addWorkspace(workspaceName);
 			if (addWsResponse.getStatus() != Status.CREATED.getStatusCode()) {
 				return addWsResponse;
