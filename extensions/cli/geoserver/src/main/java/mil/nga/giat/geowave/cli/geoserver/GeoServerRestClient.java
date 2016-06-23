@@ -87,8 +87,12 @@ public class GeoServerRestClient
 		ArrayList<DataAdapterInfo> adapterInfoList = getStoreAdapterInfo(
 				storeName,
 				adapterId);
+		
+		logger.debug("Finished retrieving adapter list");
+		
+		boolean addAll = (adapterId != null && adapterId.equals("addAll"));
 
-		if (adapterInfoList.size() > 1 && !adapterId.equals("addAll")) {
+		if (adapterInfoList.size() > 1 && !addAll) {
 			logger.debug("addlayer doesn't know how to deal with multiple adapters");
 			
 			String descr = "Please use -a, or choose one of these with -id:";
@@ -1010,10 +1014,9 @@ public class GeoServerRestClient
 			while (it.hasNext()) {
 				final DataAdapter<?> adapter = it.next();
 
-				DataAdapterInfo info = new DataAdapterInfo();
-				info.adapterId = adapter.getAdapterId().getString();
-
-				if (adapterId == null || adapterId.equals("addAll") || adapterId.equals(info.adapterId)) {
+				if (adapterId == null || adapterId.equals("addAll") || adapterId.equals(adapter.getAdapterId().getString())) {
+					DataAdapterInfo info = new DataAdapterInfo();
+					info.adapterId = adapter.getAdapterId().getString();
 
 					logger.debug("> Adapter ID: " + info.adapterId);
 					logger.debug("> Adapter Type: " + adapter.getClass().getSimpleName());
