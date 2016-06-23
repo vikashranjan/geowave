@@ -1038,12 +1038,9 @@ public class GeoServerRestClient
 						adapterId,
 						adapter);
 
-				logger.debug("> Adapter ID: " + info.adapterId);
-				logger.debug("> Adapter Type: " + adapter.getClass().getSimpleName());
-
 				if (info != null) {
 					adapterInfoList.add(info);
-					logger.debug("> Adapter passed filter");
+					logger.debug("> '" + info.adapterId + "' adapter passed filter");
 				}
 			}
 
@@ -1060,7 +1057,7 @@ public class GeoServerRestClient
 	private DataAdapterInfo getAdapterInfo(
 			String adapterId,
 			DataAdapter adapter ) {
-		logger.debug("getAdapterInfo for id = " + adapterId + ", adapter = " + adapter.getAdapterId().getString());
+		logger.debug("getAdapterInfo for id = " + adapterId);
 		
 		DataAdapterInfo info = new DataAdapterInfo();
 		info.adapterId = adapter.getAdapterId().getString();
@@ -1069,6 +1066,9 @@ public class GeoServerRestClient
 		if (adapter instanceof RasterDataAdapter) {
 			info.isRaster = true;
 		}
+		
+		logger.debug("> Adapter ID: " + info.adapterId);
+		logger.debug("> Adapter Type: " + adapter.getClass().getSimpleName());
 
 		if (adapterId == null || adapterId.equals(AddOption.ALL.name())) {
 			logger.debug("id is null or all");
