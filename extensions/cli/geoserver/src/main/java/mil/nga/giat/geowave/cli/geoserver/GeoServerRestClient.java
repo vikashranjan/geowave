@@ -78,7 +78,7 @@ public class GeoServerRestClient
 		return webTarget;
 	}
 
-	// Convenience - add a layer generically for the given store
+	// Convenience - add layer(s) for the given store by type
 	public Response addLayer(
 			String workspaceName,
 			final String storeName,
@@ -89,12 +89,12 @@ public class GeoServerRestClient
 				adapterId);
 
 		if (adapterInfoList.size() > 1 && !adapterId.equals("addAll")) {
-			String descr = "Please use --addAll, or choose one of these with --adapterId:";
+			String descr = "Please use -a, or choose one of these with -id:";
 			JSONObject jsonObj = getJsonFromAdapters(
 					adapterInfoList,
 					descr);
 
-			return Response.notModified(
+			return Response.ok(
 					jsonObj.toString(defaultIndentation)).build();
 		}
 
@@ -105,6 +105,9 @@ public class GeoServerRestClient
 				return addWsResponse;
 			}
 		}
+		
+		String cvgStoreName = storeName + GeoServerConfig.DEFAULT_CS;
+		String dataStoreName = storeName + GeoServerConfig.DEFAULT_DS;
 
 		// iterate through data adapters
 		for (DataAdapterInfo dataAdapterInfo : adapterInfoList) {
@@ -113,10 +116,11 @@ public class GeoServerRestClient
 				// verify coverage store exists
 				Response getCsResponse = getCoverageStore(
 						workspaceName,
-						storeName);
+						cvgStoreName);
 				if (getCsResponse.getStatus() == Status.NOT_FOUND.getStatusCode()) {
 					Response addCsResponse = addCoverageStore(
 							workspaceName,
+							cvgStoreName,
 							storeName);
 
 					if (addCsResponse.getStatus() != Status.CREATED.getStatusCode()) {
@@ -130,7 +134,7 @@ public class GeoServerRestClient
 				// We have a coverage store. Add the layer per the adapter ID
 				Response addCvResponse = addCoverage(
 						workspaceName,
-						storeName,
+						cvgStoreName,
 						dataAdapterInfo.adapterId);
 				if (addCvResponse.getStatus() != Status.CREATED.getStatusCode()) {
 					return addCvResponse;
@@ -141,10 +145,11 @@ public class GeoServerRestClient
 				// verify datastore exists
 				Response getDsResponse = getDatastore(
 						workspaceName,
-						storeName);
+						dataStoreName);
 				if (getDsResponse.getStatus() == Status.NOT_FOUND.getStatusCode()) {
 					Response addDsResponse = addDatastore(
 							workspaceName,
+							dataStoreName,
 							storeName);
 					if (addDsResponse.getStatus() != Status.CREATED.getStatusCode()) {
 						return addDsResponse;
@@ -157,7 +162,7 @@ public class GeoServerRestClient
 				// We have a datastore. Add the layer per the adapter ID
 				Response addFlResponse = addFeatureLayer(
 						workspaceName,
-						storeName,
+						dataStoreName,
 						dataAdapterInfo.adapterId);
 				if (addFlResponse.getStatus() != Status.CREATED.getStatusCode()) {
 					return addFlResponse;
@@ -319,8 +324,13 @@ public class GeoServerRestClient
 
 	public Response addDatastore(
 			String workspaceName,
-			String datastoreName ) {
-		DataStorePluginOptions inputStoreOptions = getStorePlugin(datastoreName);
+			String datastoreName,
+			String gwStoreName) {
+		DataStorePluginOptions inputStoreOptions = getStorePlugin(gwStoreName);
+		
+		if (datastoreName == null || datastoreName.isEmpty()) {
+			datastoreName = gwStoreName + GeoServerConfig.DEFAULT_DS;
+		}
 
 		String lockMgmt = "memory";
 		String authMgmtPrvdr = "empty";
@@ -616,8 +626,13 @@ public class GeoServerRestClient
 
 	public Response addCoverageStore(
 			String workspaceName,
-			String cvgStoreName ) {
-		DataStorePluginOptions inputStoreOptions = getStorePlugin(cvgStoreName);
+			String cvgStoreName,
+			String gwStoreName) {
+		DataStorePluginOptions inputStoreOptions = getStorePlugin(gwStoreName);
+		
+		if (cvgStoreName == null || cvgStoreName.isEmpty()) {
+			cvgStoreName = gwStoreName + GeoServerConfig.DEFAULT_CS;
+		}
 
 		// Get the store's accumulo config
 		Map<String, String> storeConfigMap = inputStoreOptions.getFactoryOptionsAsMap();
@@ -628,7 +643,11 @@ public class GeoServerRestClient
 				workspaceName);
 
 		storeConfigMap.put(
-				"geoserver.coverageStore",
+				"gwNamespace",
+				gwStoreName);
+
+		storeConfigMap.put(
+				GeoServerConfig.GEOSERVER_CS,
 				cvgStoreName);
 
 		final String cvgStoreXml = createCoverageXml(storeConfigMap);
@@ -852,9 +871,7 @@ public class GeoServerRestClient
 		String coverageXml = null;
 
 		String workspace = geowaveStoreConfig.get(GeoServerConfig.GEOSERVER_WORKSPACE);
-		String cvgstoreName = geowaveStoreConfig.get("geoserver.coverageStore");
-		// String storeConfigUrl = geowaveStoreConfig.get(GeoServerConfig.GS_STORE_URL);
-		// String storeConfigPath = geowaveStoreConfig.get(GeoServerConfig.GS_STORE_PATH);
+		String cvgstoreName = geowaveStoreConfig.get(GeoServerConfig.GEOSERVER_CS);
 
 		try {
 			// create the post XML
@@ -926,12 +943,10 @@ public class GeoServerRestClient
 		String pass = geowaveStoreConfig.get("password");
 		String zookeeper = geowaveStoreConfig.get("zookeeper");
 		String instance = geowaveStoreConfig.get("instance");
-		String gwNamespace = geowaveStoreConfig.get("geoserver.coverageStore");
+		String gwNamespace = geowaveStoreConfig.get("gwNamespace");
 
 		// Create the custom geowave url w/ params
 		StringBuffer buf = new StringBuffer();
-		// buf.append(GeoWaveUrlStreamHandler.GW_PROTOCOL);
-		// buf.append(":");
 		buf.append("user=");
 		buf.append(user);
 		buf.append(";password=");

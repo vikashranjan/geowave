@@ -29,9 +29,15 @@ public class GeoServerAddDatastoreCommand implements
 	}, required = false, description = "<workspace name>")
 	private String workspace = null;
 
-	@Parameter(description = "<datastore name>")
-	private List<String> parameters = new ArrayList<String>();
+	@Parameter(names = {
+		"-ds",
+		"--datastore"
+	}, required = false, description = "<datastore name>")
 	private String datastore = null;
+
+	@Parameter(description = "<GeoWave store name>")
+	private List<String> parameters = new ArrayList<String>();
+	private String gwStore = null;
 
 	@Override
 	public boolean prepare(
@@ -62,7 +68,7 @@ public class GeoServerAddDatastoreCommand implements
 					"Requires argument: <datastore name>");
 		}
 
-		datastore = parameters.get(0);
+		gwStore = parameters.get(0);
 
 		if (workspace == null || workspace.isEmpty()) {
 			workspace = geoserverClient.getConfig().getWorkspace();
@@ -70,13 +76,14 @@ public class GeoServerAddDatastoreCommand implements
 
 		Response addStoreResponse = geoserverClient.addDatastore(
 				workspace,
-				datastore);
+				datastore,
+				gwStore);
 
 		if (addStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() == Status.CREATED.getStatusCode()) {
-			System.out.println("Add store '" + datastore + "' to workspace '" + workspace + "' on GeoServer: OK");
+			System.out.println("Add datastore for '" + gwStore + "' to workspace '" + workspace + "' on GeoServer: OK");
 		}
 		else {
-			System.err.println("Error adding store '" + datastore + "' to workspace '" + workspace + "' on GeoServer; code = " + addStoreResponse.getStatus());
+			System.err.println("Error adding datastore for '" + gwStore + "' to workspace '" + workspace + "' on GeoServer; code = " + addStoreResponse.getStatus());
 		}
 	}
 }

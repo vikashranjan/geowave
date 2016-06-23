@@ -27,11 +27,17 @@ public class GeoServerAddCoverageStoreCommand implements
 		"-ws",
 		"--workspace"
 	}, required = false, description = "<workspace name>")
-	private String workspace;
+	private String workspace = null;
 
-	@Parameter(description = "<coverage store name>")
+	@Parameter(names = {
+		"-cs",
+		"--coverageStore"
+	}, required = false, description = "<coverage store name>")
+	private String coverageStore = null;
+
+	@Parameter(description = "<GeoWave store name>")
 	private List<String> parameters = new ArrayList<String>();
-	private String cvgstore = null;
+	private String gwStore = null;
 
 	@Override
 	public boolean prepare(
@@ -59,10 +65,10 @@ public class GeoServerAddCoverageStoreCommand implements
 			throws Exception {
 		if (parameters.size() != 1) {
 			throw new ParameterException(
-					"Requires argument: <coverage store name>");
+					"Requires argument: <GeoWave store name>");
 		}
 
-		cvgstore = parameters.get(0);
+		gwStore = parameters.get(0);
 
 		if (workspace == null || workspace.isEmpty()) {
 			workspace = geoserverClient.getConfig().getWorkspace();
@@ -70,13 +76,14 @@ public class GeoServerAddCoverageStoreCommand implements
 
 		Response addStoreResponse = geoserverClient.addCoverageStore(
 				workspace,
-				cvgstore);
+				coverageStore,
+				gwStore);
 
 		if (addStoreResponse.getStatus() == Status.OK.getStatusCode() || addStoreResponse.getStatus() == Status.CREATED.getStatusCode()) {
-			System.out.println("Add store '" + cvgstore + "' to workspace '" + workspace + "' on GeoServer: OK");
+			System.out.println("Add coverage store for '" + gwStore + "' to workspace '" + workspace + "' on GeoServer: OK");
 		}
 		else {
-			System.err.println("Error adding store '" + cvgstore + "' to workspace '" + workspace + "' on GeoServer; code = " + addStoreResponse.getStatus());
+			System.err.println("Error adding coverage store for '" + gwStore + "' to workspace '" + workspace + "' on GeoServer; code = " + addStoreResponse.getStatus());
 		}
 	}
 }
