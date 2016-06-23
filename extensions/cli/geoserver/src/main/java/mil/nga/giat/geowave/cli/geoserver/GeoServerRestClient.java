@@ -180,9 +180,7 @@ public class GeoServerRestClient
 				}
 
 				// See if the feature layer already exists
-				Response getFlResponse = getCoverage(
-						workspaceName,
-						dataStoreName,
+				Response getFlResponse = getFeatureLayer(
 						dataAdapterInfo.adapterId);
 				if (getFlResponse.getStatus() == Status.OK.getStatusCode()) {
 					logger.debug(dataAdapterInfo.adapterId + " layer already exists");

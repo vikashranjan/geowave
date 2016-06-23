@@ -116,7 +116,14 @@ public class GeoServerAddLayerCommand implements
 		@Override
 		public AddOption convert(
 				final String value ) {
-			final AddOption convertedValue = AddOption.valueOf(value.toUpperCase());
+			AddOption convertedValue = null;
+			
+			try {
+				convertedValue = AddOption.valueOf(value.toUpperCase());
+			}
+			catch (Exception e) {
+				// Nothing to do. Exception thrown below.
+			}
 
 			if (convertedValue == null) {
 				throw new ParameterException(
