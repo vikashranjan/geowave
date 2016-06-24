@@ -18,7 +18,6 @@ import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 @Path("/geoserver")
 public interface GeoserverService
 {
-
 	@GET
 	@Path("/workspaces")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -66,6 +65,12 @@ public interface GeoserverService
 	@Path("/datastores")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getDatastores(
+			@DefaultValue("") @QueryParam("workspace") String customWorkspace );
+
+	@GET
+	@Path("/gwdatastores")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response getGeoWaveDatastores(
 			@DefaultValue("") @QueryParam("workspace") String customWorkspace );
 
 	@GET
