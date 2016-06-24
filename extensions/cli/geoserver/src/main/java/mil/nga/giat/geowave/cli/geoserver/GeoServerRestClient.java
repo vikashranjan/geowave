@@ -178,6 +178,8 @@ public class GeoServerRestClient
 				else if (getDsResponse.getStatus() != Status.OK.getStatusCode()) {
 					return getDsResponse;
 				}
+				
+				logger.debug("Checking for existing feature layer: " + dataAdapterInfo.adapterId);
 
 				// See if the feature layer already exists
 				Response getFlResponse = getFeatureLayer(
@@ -187,6 +189,8 @@ public class GeoServerRestClient
 					continue;
 				}
 
+				logger.debug("Get feature layer: " + dataAdapterInfo.adapterId + " returned " + getFlResponse.getStatus());
+				
 				// We have a datastore. Add the layer per the adapter ID
 				Response addFlResponse = addFeatureLayer(
 						workspaceName,
