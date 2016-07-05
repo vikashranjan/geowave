@@ -14,7 +14,6 @@ import mil.nga.giat.geowave.analytic.PropertyManagement;
 import mil.nga.giat.geowave.analytic.ScopedJobConfiguration;
 import mil.nga.giat.geowave.analytic.model.IndexModelBuilder;
 import mil.nga.giat.geowave.analytic.model.SpatialIndexModelBuilder;
-import mil.nga.giat.geowave.analytic.param.ClusteringParameters;
 import mil.nga.giat.geowave.analytic.param.CommonParameters;
 import mil.nga.giat.geowave.analytic.param.ParameterEnum;
 import mil.nga.giat.geowave.analytic.param.PartitionParameters;
@@ -207,8 +206,7 @@ public abstract class AbstractPartitioner<T> implements
 			if (model.getDimensions().length > distancePerDimension.length) {
 				final double[] newDistancePerDimension = new double[model.getDimensions().length];
 				for (int j = 0; j < newDistancePerDimension.length; j++) {
-					newDistancePerDimension[j] = distancePerDimension[j < distancePerDimension.length ? j
-							: (distancePerDimension.length - 1)];
+					newDistancePerDimension[j] = distancePerDimension[j < distancePerDimension.length ? j : (distancePerDimension.length - 1)];
 				}
 				distancePerDimension = newDistancePerDimension;
 			}
@@ -253,8 +251,7 @@ public abstract class AbstractPartitioner<T> implements
 			final double distance = distancePerDimensionForIndex[i] * 2.0; // total
 			// width...(radius)
 			// adjust by precision factory (0 to 1.0)
-			dimensionPrecision[i] = (int) (precisionFactor * Math.abs((int) (Math.log(dimensions[i].getRange()
-					/ distance) / Math.log(2))));
+			dimensionPrecision[i] = (int) (precisionFactor * Math.abs((int) (Math.log(dimensions[i].getRange() / distance) / Math.log(2))));
 
 			totalRequestedPrecision += dimensionPrecision[i];
 		}

@@ -25,35 +25,28 @@ import org.slf4j.Logger;
 
 /**
  * 
- * A helper class that finds the closest centroid to a point at a specific zoom
- * level.
+ * A helper class that finds the closest centroid to a point at a specific zoom level.
  * 
- * If the starting level does match the specified level, then the centroid tree
- * is 'walked' down. Walking up to higher levels is not supported.
+ * If the starting level does match the specified level, then the centroid tree is 'walked' down. Walking up to higher
+ * levels is not supported.
  * 
- * Levels are number 1 to n where 1 is the top tier. The current tier being
- * computed may have a different batch ID (temporary) than all upper level
- * tiers. In this case, a parent batch id is provided to resolve groups for
- * those tiers. This approach is often used in speculative computation at each
- * tier.
+ * Levels are number 1 to n where 1 is the top tier. The current tier being computed may have a different batch ID
+ * (temporary) than all upper level tiers. In this case, a parent batch id is provided to resolve groups for those
+ * tiers. This approach is often used in speculative computation at each tier.
  * 
  * Parameters include:
  * 
  * @formatter:off
  * 
- *                "NestedGroupCentroidAssignment.Global.ParentBatchId" -> Parent
- *                Tier Batch IDs. If not present then assume value
- *                NestedGroupCentroidAssignment.Global.BatchId
+ *                "NestedGroupCentroidAssignment.Global.ParentBatchId" -> Parent Tier Batch IDs. If not present then
+ *                assume value NestedGroupCentroidAssignment.Global.BatchId
  * 
- *                "NestedGroupCentroidAssignment.Global.BatchId" -> batch id for
- *                current tier.
+ *                "NestedGroupCentroidAssignment.Global.BatchId" -> batch id for current tier.
  * 
- *                "NestedGroupCentroidAssignment.Global.ZoomLevel" -> current
- *                tier (level)
+ *                "NestedGroupCentroidAssignment.Global.ZoomLevel" -> current tier (level)
  * 
- *                "NestedGroupCentroidAssignment.Common.DistanceFunctionClass"
- *                -> distance function used for association of data points to
- *                centroid.
+ *                "NestedGroupCentroidAssignment.Common.DistanceFunctionClass" -> distance function used for association
+ *                of data points to centroid.
  * 
  * @see mil.nga.giat.geowave.analytic.clustering.CentroidManagerGeoWave
  * @formatter:on
@@ -99,7 +92,7 @@ public class NestedGroupCentroidAssignment<T>
 						GlobalParameters.Global.BATCH_ID,
 						null));
 		@SuppressWarnings("unchecked")
-		final DistanceFn<T> distanceFunction = config.getInstance(
+		final DistanceFn<T> distanceFunction = (DistanceFn<T>) config.getInstance(
 				CommonParameters.Common.DISTANCE_FUNCTION_CLASS,
 				DistanceFn.class,
 				FeatureCentroidDistanceFn.class);
@@ -213,8 +206,7 @@ public class NestedGroupCentroidAssignment<T>
 
 			// only use the parent batch ID for upper levels, otherwise use the
 			// current batch ID.
-			final List<AnalyticItemWrapper<T>> centroids = (currentLevel == endZoomLevel) ? centroidManager
-					.getCentroidsForGroup(group.getGroupID()) : centroidManager.getCentroidsForGroup(
+			final List<AnalyticItemWrapper<T>> centroids = (currentLevel == endZoomLevel) ? centroidManager.getCentroidsForGroup(group.getGroupID()) : centroidManager.getCentroidsForGroup(
 					parentBatchID,
 					group.getGroupID());
 			if (centroids.size() == 0) {

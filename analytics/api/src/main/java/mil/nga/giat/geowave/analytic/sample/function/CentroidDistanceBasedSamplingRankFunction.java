@@ -28,31 +28,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Rank objects using their distance to the closest centroid of a set of
- * centroids. The specific rank is determined by the probability of the point
- * meeting being a centroid, modeled in the implementation of
- * {@link SampleProbabilityFn}.
+ * Rank objects using their distance to the closest centroid of a set of centroids. The specific rank is determined by
+ * the probability of the point meeting being a centroid, modeled in the implementation of {@link SampleProbabilityFn}.
  * 
  * The farther the distance, the higher the rank.
  * 
  * @formatter:off Properties:
  * 
- *                "CentroidDistanceBasedSamplingRankFunction.KMeansConfig.data_store_configuration"
- *                - The class used to determine the prefix class name for te
- *                GeoWave Data Store parameters for a connection to collect the
- *                starting set of centroids. Defaults to
- *                {@link CentroidDistanceBasedSamplingRankFunction}.
+ *                "CentroidDistanceBasedSamplingRankFunction.KMeansConfig.data_store_configuration" - The class used to
+ *                determine the prefix class name for te GeoWave Data Store parameters for a connection to collect the
+ *                starting set of centroids. Defaults to {@link CentroidDistanceBasedSamplingRankFunction}.
  * 
  * 
- *                "CentroidDistanceBasedSamplingRankFunction.KMeansConfig.probability_function"
- *                - implementation of {@link SampleProbabilityFn}
+ *                "CentroidDistanceBasedSamplingRankFunction.KMeansConfig.probability_function" - implementation of
+ *                {@link SampleProbabilityFn}
  * 
- *                "CentroidDistanceBasedSamplingRankFunction.KMeansConfig.distance_function"
- *                - {@link DistanceFn}
+ *                "CentroidDistanceBasedSamplingRankFunction.KMeansConfig.distance_function" - {@link DistanceFn}
  * 
- *                "CentroidDistanceBasedSamplingRankFunction.KMeansConfig.centroid_factory"
- *                - {@link AnalyticItemWrapperFactory} to wrap the centroid data
- *                with the appropriate centroid wrapper
+ *                "CentroidDistanceBasedSamplingRankFunction.KMeansConfig.centroid_factory" -
+ *                {@link AnalyticItemWrapperFactory} to wrap the centroid data with the appropriate centroid wrapper
  *                {@link AnalyticItemWrapper}
  * 
  * @ee CentroidManagerGeoWave
@@ -60,9 +54,8 @@ import org.slf4j.LoggerFactory;
  * 
  * @formatter:on
  * 
- *               See {@link GeoWaveConfiguratorBase} for information for
- *               configuration GeoWave Data Store for consumption of starting
- *               set of centroids.
+ *               See {@link GeoWaveConfiguratorBase} for information for configuration GeoWave Data Store for
+ *               consumption of starting set of centroids.
  * 
  * @param <T>
  *            The data type for the object being sampled
@@ -117,7 +110,7 @@ public class CentroidDistanceBasedSamplingRankFunction<T> implements
 		}
 
 		try {
-			itemWrapperFactory = config.getInstance(
+			itemWrapperFactory = (AnalyticItemWrapperFactory<T>) config.getInstance(
 					CentroidParameters.Centroid.WRAPPER_FACTORY_CLASS,
 					AnalyticItemWrapperFactory.class,
 					SimpleFeatureItemWrapperFactory.class);
@@ -164,9 +157,7 @@ public class CentroidDistanceBasedSamplingRankFunction<T> implements
 						public void notify(
 								final CentroidPairing<T> pairing ) {
 							try {
-								centroids.addAll(nestedGroupCentroidAssigner.getCentroidsForGroup(pairing
-										.getCentroid()
-										.getGroupID()));
+								centroids.addAll(nestedGroupCentroidAssigner.getCentroidsForGroup(pairing.getCentroid().getGroupID()));
 							}
 							catch (final IOException e) {
 								throw new RuntimeException(

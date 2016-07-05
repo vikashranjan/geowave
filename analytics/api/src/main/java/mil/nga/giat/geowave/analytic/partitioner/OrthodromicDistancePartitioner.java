@@ -11,24 +11,11 @@ import javax.measure.quantity.Length;
 import javax.measure.unit.SI;
 import javax.measure.unit.Unit;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.geotools.referencing.CRS;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.Geometry;
-
 import mil.nga.giat.geowave.analytic.GeometryCalculations;
 import mil.nga.giat.geowave.analytic.PropertyManagement;
 import mil.nga.giat.geowave.analytic.ScopedJobConfiguration;
 import mil.nga.giat.geowave.analytic.extract.DimensionExtractor;
 import mil.nga.giat.geowave.analytic.extract.SimpleFeatureGeometryExtractor;
-import mil.nga.giat.geowave.analytic.param.ClusteringParameters;
 import mil.nga.giat.geowave.analytic.param.ExtractParameters;
 import mil.nga.giat.geowave.analytic.param.GlobalParameters;
 import mil.nga.giat.geowave.analytic.param.ParameterEnum;
@@ -42,6 +29,18 @@ import mil.nga.giat.geowave.core.index.sfc.data.NumericData;
 import mil.nga.giat.geowave.core.index.sfc.data.NumericRange;
 import mil.nga.giat.geowave.core.store.dimension.NumericDimensionField;
 import mil.nga.giat.geowave.core.store.index.CommonIndexModel;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.JobContext;
+import org.geotools.referencing.CRS;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
 
 /*
  * Calculates distance use orthodromic distance to calculate the bounding box around each
@@ -127,12 +126,8 @@ public class OrthodromicDistancePartitioner<T> extends
 		int otherIndex = 0;
 
 		for (int i = 0; i < dimensionFields.length; i++) {
-			final double minValue = (i == this.longDimensionPosition) ? geometry.getEnvelopeInternal().getMinX()
-					: (i == this.latDimensionPosition ? geometry.getEnvelopeInternal().getMinY()
-							: otherDimensionData[otherIndex] - distancePerDimension[i]);
-			final double maxValue = (i == this.longDimensionPosition) ? geometry.getEnvelopeInternal().getMaxX()
-					: (i == this.latDimensionPosition ? geometry.getEnvelopeInternal().getMaxY()
-							: otherDimensionData[otherIndex] + distancePerDimension[i]);
+			final double minValue = (i == this.longDimensionPosition) ? geometry.getEnvelopeInternal().getMinX() : (i == this.latDimensionPosition ? geometry.getEnvelopeInternal().getMinY() : otherDimensionData[otherIndex] - distancePerDimension[i]);
+			final double maxValue = (i == this.longDimensionPosition) ? geometry.getEnvelopeInternal().getMaxX() : (i == this.latDimensionPosition ? geometry.getEnvelopeInternal().getMaxY() : otherDimensionData[otherIndex] + distancePerDimension[i]);
 			if ((i != this.longDimensionPosition) && (i != latDimensionPosition)) {
 				otherIndex++;
 			}
@@ -226,8 +221,7 @@ public class OrthodromicDistancePartitioner<T> extends
 		// set up the distances based on geometry (orthodromic distance)
 		final double[] distancePerDimensionForIndex = new double[distancePerDimension.length];
 		for (int i = 0; i < distancePerDimension.length; i++) {
-			distancePerDimensionForIndex[i] = (i == longDimensionPosition) ? envelope.getWidth() / 2.0
-					: (i == latDimensionPosition ? envelope.getHeight() / 2.0 : distancePerDimension[i]);
+			distancePerDimensionForIndex[i] = (i == longDimensionPosition) ? envelope.getWidth() / 2.0 : (i == latDimensionPosition ? envelope.getHeight() / 2.0 : distancePerDimension[i]);
 			LOGGER.info(
 					"Dimension size {} is {} ",
 					i,
@@ -279,7 +273,7 @@ public class OrthodromicDistancePartitioner<T> extends
 		}
 
 		try {
-			dimensionExtractor = config.getInstance(
+			dimensionExtractor = (DimensionExtractor<T>) config.getInstance(
 					ExtractParameters.Extract.DIMENSION_EXTRACT_CLASS,
 					DimensionExtractor.class,
 					SimpleFeatureGeometryExtractor.class);
