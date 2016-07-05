@@ -35,13 +35,13 @@ import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
 import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
 import mil.nga.giat.geowave.core.store.query.aggregate.Aggregation;
 import mil.nga.giat.geowave.datastore.accumulo.encoding.AccumuloFieldInfo;
+import mil.nga.giat.geowave.datastore.accumulo.encoding.AccumuloUnreadData;
 import mil.nga.giat.geowave.datastore.accumulo.util.AccumuloUtils;
 
 public class AggregationIterator extends
 		Filter
 {
-	private static final Logger LOGGER = Logger.getLogger(
-			AggregationIterator.class);
+	private static final Logger LOGGER = Logger.getLogger(AggregationIterator.class);
 	public static final String AGGREGATION_QUERY_ITERATOR_NAME = "GEOWAVE_AGGREGATION_ITERATOR";
 	public static final String AGGREGATION_OPTION_NAME = "AGGREGATION";
 	public static final String PARAMETER_OPTION_NAME = "PARAMETER";
@@ -105,8 +105,7 @@ public class AggregationIterator extends
 		@Override
 		public SortedKeyValueIterator<Key, Value> deepCopy(
 				final IteratorEnvironment env ) {
-			return AggregationIterator.super.deepCopy(
-					env);
+			return AggregationIterator.super.deepCopy(env);
 		}
 	};
 	private TreeSet<Range> ranges;
@@ -117,22 +116,19 @@ public class AggregationIterator extends
 			final Value value ) {
 		if ((queryFilterIterator != null) && queryFilterIterator.isSet()) {
 			final PersistentDataset<CommonIndexValue> commonData = new PersistentDataset<CommonIndexValue>();
-			final List<AccumuloFieldInfo> unknownData = new ArrayList<AccumuloFieldInfo>();
 			final Text currentRow = key.getRow();
-			queryFilterIterator.aggregateFieldData(
+			AccumuloUnreadData unreadData = queryFilterIterator.aggregateFieldData(
 					key,
 					value,
-					commonData,
-					unknownData);
+					commonData);
 			final CommonIndexedPersistenceEncoding encoding = QueryFilterIterator.getEncoding(
 					currentRow,
 					commonData,
-					unknownData);
+					unreadData);
 
 			boolean queryFilterResult = true;
 			if (queryFilterIterator.isSet()) {
-				queryFilterResult = queryFilterIterator.applyRowFilter(
-						encoding);
+				queryFilterResult = queryFilterIterator.applyRowFilter(encoding);
 			}
 			if (queryFilterResult) {
 				aggregateRow(
@@ -165,8 +161,7 @@ public class AggregationIterator extends
 						.getAdapterExtendedData();
 				if (existingExtValues != null) {
 					for (final PersistentValue<Object> val : existingExtValues.getValues()) {
-						adapterExtendedValues.addValue(
-								val);
+						adapterExtendedValues.addValue(val);
 					}
 				}
 			}
@@ -192,8 +187,7 @@ public class AggregationIterator extends
 							model));
 			if (row != null) {
 				// for now ignore field info
-				aggregationFunction.aggregate(
-						row);
+				aggregationFunction.aggregate(row);
 				if (startRowOfAggregation == null) {
 					startRowOfAggregation = currentRow;
 				}
@@ -204,26 +198,20 @@ public class AggregationIterator extends
 	public void setOptions(
 			final Map<String, String> options ) {
 		try {
-			final String className = options.get(
-					AGGREGATION_OPTION_NAME);
+			final String className = options.get(AGGREGATION_OPTION_NAME);
 			aggregationFunction = PersistenceUtils.classFactory(
 					className,
 					Aggregation.class);
-			final String parameterStr = options.get(
-					PARAMETER_OPTION_NAME);
+			final String parameterStr = options.get(PARAMETER_OPTION_NAME);
 			if ((parameterStr != null) && parameterStr.isEmpty()) {
-				final byte[] parameterBytes = ByteArrayUtils.byteArrayFromString(
-						parameterStr);
+				final byte[] parameterBytes = ByteArrayUtils.byteArrayFromString(parameterStr);
 				final Persistable aggregationParams = PersistenceUtils.fromBinary(
 						parameterBytes,
 						Persistable.class);
-				aggregationFunction.setParameters(
-						aggregationParams);
+				aggregationFunction.setParameters(aggregationParams);
 			}
-			final String adapterStr = options.get(
-					ADAPTER_OPTION_NAME);
-			final byte[] adapterBytes = ByteArrayUtils.byteArrayFromString(
-					adapterStr);
+			final String adapterStr = options.get(ADAPTER_OPTION_NAME);
+			final byte[] adapterBytes = ByteArrayUtils.byteArrayFromString(adapterStr);
 			adapter = PersistenceUtils.fromBinary(
 					adapterBytes,
 					DataAdapter.class);
@@ -231,27 +219,20 @@ public class AggregationIterator extends
 			// now go from index strategy, constraints, and max decomp to a set
 			// of accumulo ranges
 
-			final String indexStrategyStr = options.get(
-					INDEX_STRATEGY_OPTION_NAME);
-			final byte[] indexStrategyBytes = ByteArrayUtils.byteArrayFromString(
-					indexStrategyStr);
+			final String indexStrategyStr = options.get(INDEX_STRATEGY_OPTION_NAME);
+			final byte[] indexStrategyBytes = ByteArrayUtils.byteArrayFromString(indexStrategyStr);
 			final NumericIndexStrategy strategy = PersistenceUtils.fromBinary(
 					indexStrategyBytes,
 					NumericIndexStrategy.class);
 
-			final String contraintsStr = options.get(
-					CONSTRAINTS_OPTION_NAME);
-			final byte[] constraintsBytes = ByteArrayUtils.byteArrayFromString(
-					contraintsStr);
-			final List constraints = PersistenceUtils.fromBinary(
-					constraintsBytes);
-			final String maxDecomp = options.get(
-					MAX_DECOMPOSITION_OPTION_NAME);
+			final String contraintsStr = options.get(CONSTRAINTS_OPTION_NAME);
+			final byte[] constraintsBytes = ByteArrayUtils.byteArrayFromString(contraintsStr);
+			final List constraints = PersistenceUtils.fromBinary(constraintsBytes);
+			final String maxDecomp = options.get(MAX_DECOMPOSITION_OPTION_NAME);
 			Integer maxDecompInt = AccumuloConstraintsQuery.MAX_RANGE_DECOMPOSITION;
 			if (maxDecomp != null) {
 				try {
-					maxDecompInt = Integer.parseInt(
-							maxDecomp);
+					maxDecompInt = Integer.parseInt(maxDecomp);
 				}
 				catch (final Exception e) {
 					LOGGER.warn(
@@ -259,11 +240,10 @@ public class AggregationIterator extends
 							e);
 				}
 			}
-			ranges = AccumuloUtils.byteArrayRangesToAccumuloRanges(
-					DataStoreUtils.constraintsToByteArrayRanges(
-							constraints,
-							strategy,
-							maxDecompInt));
+			ranges = AccumuloUtils.byteArrayRangesToAccumuloRanges(DataStoreUtils.constraintsToByteArrayRanges(
+					constraints,
+					strategy,
+					maxDecompInt));
 		}
 		catch (final Exception e) {
 			throw new IllegalArgumentException(
@@ -322,11 +302,9 @@ public class AggregationIterator extends
 			final Map<String, String> options,
 			final IteratorEnvironment env )
 			throws IOException {
-		setOptions(
-				options);
+		setOptions(options);
 		queryFilterIterator = new QueryFilterIterator();
-		queryFilterIterator.setOptions(
-				options);
+		queryFilterIterator.setOptions(options);
 		parent.init(
 				source,
 				options,
@@ -360,8 +338,7 @@ public class AggregationIterator extends
 				return null;
 			}
 			return new Value(
-					PersistenceUtils.toBinary(
-							result));
+					PersistenceUtils.toBinary(result));
 		}
 		return null;
 	}
@@ -373,10 +350,8 @@ public class AggregationIterator extends
 	@Override
 	public SortedKeyValueIterator<Key, Value> deepCopy(
 			final IteratorEnvironment env ) {
-		final SortedKeyValueIterator<Key, Value> iterator = parent.deepCopy(
-				env);
-		deepCopyIterator(
-				iterator);
+		final SortedKeyValueIterator<Key, Value> iterator = parent.deepCopy(env);
+		deepCopyIterator(iterator);
 		return iterator;
 	}
 
@@ -409,16 +384,14 @@ public class AggregationIterator extends
 					return;
 				}
 				else {
-					internalRanges.add(
-							new Range(
-									internalRange.getStartKey(),
-									seekRange.getEndKey()));
+					internalRanges.add(new Range(
+							internalRange.getStartKey(),
+							seekRange.getEndKey()));
 					return;
 				}
 			}
 			else {
-				internalRanges.add(
-						internalRange);
+				internalRanges.add(internalRange);
 			}
 		}
 	}
@@ -435,15 +408,13 @@ public class AggregationIterator extends
 					seekRange.getStartKey()) > 0)) {
 				if ((internalRange.getStartKey() != null) && (internalRange.getStartKey().compareTo(
 						seekRange.getStartKey()) > 0)) {
-					internalRanges.add(
-							internalRange);
+					internalRanges.add(internalRange);
 					return;
 				}
 				else {
-					internalRanges.add(
-							new Range(
-									seekRange.getStartKey(),
-									internalRange.getEndKey()));
+					internalRanges.add(new Range(
+							seekRange.getStartKey(),
+							internalRange.getEndKey()));
 					return;
 				}
 			}
@@ -478,8 +449,7 @@ public class AggregationIterator extends
 					internalRanges,
 					seekRange);
 			while (rangeIt.hasNext()) {
-				internalRanges.add(
-						rangeIt.next());
+				internalRanges.add(rangeIt.next());
 			}
 		}
 		else {

@@ -75,10 +75,11 @@ import mil.nga.giat.geowave.datastore.accumulo.RowMergingAdapterOptionProvider;
 import mil.nga.giat.geowave.datastore.accumulo.RowMergingCombiner;
 import mil.nga.giat.geowave.datastore.accumulo.RowMergingVisibilityCombiner;
 import mil.nga.giat.geowave.datastore.accumulo.Writer;
+import mil.nga.giat.geowave.datastore.accumulo.encoding.AccumuloDataSet;
 import mil.nga.giat.geowave.datastore.accumulo.encoding.AccumuloFieldInfo;
+import mil.nga.giat.geowave.datastore.accumulo.encoding.AccumuloUnreadDataSingleRow;
 import mil.nga.giat.geowave.datastore.accumulo.metadata.AbstractAccumuloPersistence;
 import mil.nga.giat.geowave.datastore.accumulo.metadata.AccumuloAdapterStore;
-import mil.nga.giat.geowave.datastore.accumulo.metadata.AccumuloDataStatisticsStore;
 import mil.nga.giat.geowave.datastore.accumulo.metadata.AccumuloIndexStore;
 import mil.nga.giat.geowave.datastore.accumulo.query.AccumuloConstraintsQuery;
 
@@ -86,7 +87,7 @@ import mil.nga.giat.geowave.datastore.accumulo.query.AccumuloConstraintsQuery;
  * A set of convenience methods for common operations on Accumulo within
  * GeoWave, such as conversions between GeoWave objects and corresponding
  * Accumulo objects.
- * 
+ *
  */
 public class AccumuloUtils
 {
@@ -146,7 +147,7 @@ public class AccumuloUtils
 	public static <T> T decodeRow(
 			final Key key,
 			final Value value,
-			boolean wholeRowEncoding,
+			final boolean wholeRowEncoding,
 			final AdapterStore adapterStore,
 			final QueryFilter clientFilter,
 			final PrimaryIndex index,
@@ -168,7 +169,7 @@ public class AccumuloUtils
 	public static Object decodeRow(
 			final Key key,
 			final Value value,
-			boolean wholeRowEncoding,
+			final boolean wholeRowEncoding,
 			final AccumuloRowId rowId,
 			final AdapterStore adapterStore,
 			final QueryFilter clientFilter,
@@ -188,7 +189,7 @@ public class AccumuloUtils
 	private static <T> Object decodeRowObj(
 			final Key key,
 			final Value value,
-			boolean wholeRowEncoding,
+			final boolean wholeRowEncoding,
 			final AccumuloRowId rowId,
 			final DataAdapter<T> dataAdapter,
 			final AdapterStore adapterStore,
@@ -213,7 +214,7 @@ public class AccumuloUtils
 	public static <T> Pair<T, DataStoreEntryInfo> decodeRow(
 			final Key k,
 			final Value v,
-			boolean wholeRowEncoding,
+			final boolean wholeRowEncoding,
 			final AccumuloRowId rowId,
 			final DataAdapter<T> dataAdapter,
 			final AdapterStore adapterStore,
@@ -291,7 +292,8 @@ public class AccumuloUtils
 			final List<AccumuloFieldInfo> fieldInfos = decomposeFlattenedFields(
 					compositeFieldId.getBytes(),
 					byteValue,
-					entry.getKey().getColumnVisibilityData().getBackingArray());
+					entry.getKey().getColumnVisibilityData().getBackingArray(),
+					-1).getFieldsRead();
 			for (final AccumuloFieldInfo fieldInfo : fieldInfos) {
 				final ByteArrayId fieldId = adapter.getFieldIdForPosition(
 						indexModel,
@@ -370,11 +372,11 @@ public class AccumuloUtils
 	}
 
 	/**
-	 * 
+	 *
 	 * Takes a byte array representing a serialized composite group of
 	 * FieldInfos sharing a common visibility and returns a List of the
 	 * individual FieldInfos
-	 * 
+	 *
 	 * @param compositeFieldId
 	 *            the composite bitmask representing the fields contained within
 	 *            the flattenedValue
@@ -382,19 +384,32 @@ public class AccumuloUtils
 	 *            the serialized composite FieldInfo
 	 * @param commonVisibility
 	 *            the shared visibility
-	 * @return
+	 * @param maxFieldPosition
+	 *            can short-circuit read and defer decomposition of fields after
+	 *            a given position
+	 * @return the dataset that has been read
 	 */
-	public static <T> List<AccumuloFieldInfo> decomposeFlattenedFields(
+	public static <T> AccumuloDataSet decomposeFlattenedFields(
 			final byte[] bitmask,
 			final byte[] flattenedValue,
-			final byte[] commonVisibility ) {
+			final byte[] commonVisibility,
+			final int maxFieldPosition ) {
 		final List<AccumuloFieldInfo> fieldInfoList = new ArrayList<AccumuloFieldInfo>();
 		final List<Integer> fieldPositions = BitmaskUtils.getFieldPositions(bitmask);
 
-		final ByteBuffer input = ByteBuffer.wrap(flattenedValue);
 		final boolean sharedVisibility = fieldPositions.size() > 1;
 		if (sharedVisibility) {
-			for (final Integer fieldPosition : fieldPositions) {
+			final ByteBuffer input = ByteBuffer.wrap(flattenedValue);
+			for (int i = 0; i < fieldPositions.size(); i++) {
+				final Integer fieldPosition = fieldPositions.get(i);
+				if ((maxFieldPosition > -1) && (fieldPosition > maxFieldPosition)) {
+					return new AccumuloDataSet(
+							fieldInfoList,
+							new AccumuloUnreadDataSingleRow(
+									input,
+									i,
+									fieldPositions));
+				}
 				final int fieldLength = input.getInt();
 				final byte[] fieldValueBytes = new byte[fieldLength];
 				input.get(fieldValueBytes);
@@ -409,7 +424,9 @@ public class AccumuloUtils
 					flattenedValue));
 
 		}
-		return fieldInfoList;
+		return new AccumuloDataSet(
+				fieldInfoList,
+				null);
 	}
 
 	public static <T> DataStoreEntryInfo write(
@@ -428,8 +445,8 @@ public class AccumuloUtils
 					entry,
 					customFieldVisibilityWriter);
 			if (customFieldVisibilityWriter != DataStoreUtils.UNCONSTRAINED_VISIBILITY) {
-				for (FieldInfo field : ingestInfo.getFieldInfo()) {
-					if (field.getVisibility() != null && field.getVisibility().length > 0) {
+				for (final FieldInfo field : ingestInfo.getFieldInfo()) {
+					if ((field.getVisibility() != null) && (field.getVisibility().length > 0)) {
 						operations.insureAuthorization(
 								null,
 								StringUtils.stringFromBinary(field.getVisibility()));
@@ -564,7 +581,7 @@ public class AccumuloUtils
 	/**
 	 * This method combines all FieldInfos that share a common visibility into a
 	 * single FieldInfo
-	 * 
+	 *
 	 * @param originalList
 	 * @return a new list of composite FieldInfos
 	 */
@@ -655,7 +672,7 @@ public class AccumuloUtils
 	}
 
 	/**
-	 * 
+	 *
 	 * @param dataWriter
 	 * @param index
 	 * @param entry
@@ -686,7 +703,7 @@ public class AccumuloUtils
 
 	/**
 	 * Get Namespaces
-	 * 
+	 *
 	 * @param connector
 	 */
 	public static List<String> getNamespaces(
@@ -706,7 +723,7 @@ public class AccumuloUtils
 
 	/**
 	 * Get list of data adapters associated with the given namespace
-	 * 
+	 *
 	 * @param connector
 	 * @param namespace
 	 */
@@ -737,7 +754,7 @@ public class AccumuloUtils
 
 	/**
 	 * Get list of indices associated with the given namespace
-	 * 
+	 *
 	 * @param connector
 	 * @param namespace
 	 */
@@ -768,7 +785,7 @@ public class AccumuloUtils
 
 	/**
 	 * Set splits on a table based on a partition ID
-	 * 
+	 *
 	 * @param namespace
 	 * @param index
 	 * @param randomParitions
@@ -810,7 +827,7 @@ public class AccumuloUtils
 	/**
 	 * Set splits on a table based on quantile distribution and fixed number of
 	 * splits
-	 * 
+	 *
 	 * @param namespace
 	 * @param index
 	 * @param quantile
@@ -874,7 +891,7 @@ public class AccumuloUtils
 	/**
 	 * Set splits on table based on equal interval distribution and fixed number
 	 * of splits.
-	 * 
+	 *
 	 * @param namespace
 	 * @param index
 	 * @param numberSplits
@@ -956,7 +973,7 @@ public class AccumuloUtils
 
 	/**
 	 * Set splits on table based on fixed number of rows per split.
-	 * 
+	 *
 	 * @param namespace
 	 * @param index
 	 * @param numberRows
@@ -1013,7 +1030,7 @@ public class AccumuloUtils
 
 	/**
 	 * Check if locality group is set.
-	 * 
+	 *
 	 * @param namespace
 	 * @param index
 	 * @param adapter
@@ -1044,7 +1061,7 @@ public class AccumuloUtils
 
 	/**
 	 * Set locality group.
-	 * 
+	 *
 	 * @param namespace
 	 * @param index
 	 * @param adapter
@@ -1074,7 +1091,7 @@ public class AccumuloUtils
 
 	/**
 	 * Get number of entries for a data adapter in an index.
-	 * 
+	 *
 	 * @param namespace
 	 * @param index
 	 * @param adapter
@@ -1131,7 +1148,7 @@ public class AccumuloUtils
 
 	/**
 	 * * Get number of entries per index.
-	 * 
+	 *
 	 * @param namespace
 	 * @param index
 	 * @return

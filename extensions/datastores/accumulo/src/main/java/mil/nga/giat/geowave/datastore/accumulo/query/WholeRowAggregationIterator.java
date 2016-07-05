@@ -17,7 +17,8 @@ import org.apache.hadoop.io.Text;
 import mil.nga.giat.geowave.core.store.data.CommonIndexedPersistenceEncoding;
 import mil.nga.giat.geowave.core.store.data.PersistentDataset;
 import mil.nga.giat.geowave.core.store.index.CommonIndexValue;
-import mil.nga.giat.geowave.datastore.accumulo.encoding.AccumuloFieldInfo;
+import mil.nga.giat.geowave.datastore.accumulo.encoding.AccumuloUnreadData;
+import mil.nga.giat.geowave.datastore.accumulo.encoding.AccumuloUnreadDataList;
 
 public class WholeRowAggregationIterator extends
 		WholeRowQueryFilterIterator
@@ -35,20 +36,23 @@ public class WholeRowAggregationIterator extends
 			final List<Value> values ) {
 		if ((aggregationIterator != null) && (aggregationIterator.queryFilterIterator != null)) {
 			final PersistentDataset<CommonIndexValue> commonData = new PersistentDataset<CommonIndexValue>();
-			final List<AccumuloFieldInfo> unknownData = new ArrayList<AccumuloFieldInfo>();
+			final List<AccumuloUnreadData> unreadData = new ArrayList<>();
 			for (int i = 0; (i < keys.size()) && (i < values.size()); i++) {
 				final Key key = keys.get(i);
 				final Value value = values.get(i);
-				aggregationIterator.queryFilterIterator.aggregateFieldData(
+				final AccumuloUnreadData singleRow = aggregationIterator.queryFilterIterator.aggregateFieldData(
 						key,
 						value,
-						commonData,
-						unknownData);
+						commonData);
+				if (singleRow != null) {
+					unreadData.add(singleRow);
+				}
 			}
 			final CommonIndexedPersistenceEncoding encoding = QueryFilterIterator.getEncoding(
 					currentRow,
 					commonData,
-					unknownData);
+					unreadData.isEmpty() ? null : new AccumuloUnreadDataList(
+							unreadData));
 			boolean queryFilterResult = true;
 			if (aggregationIterator.queryFilterIterator.isSet()) {
 				queryFilterResult = aggregationIterator.queryFilterIterator.applyRowFilter(encoding);
