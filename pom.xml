@@ -592,6 +592,7 @@
 				<version>2.9.1</version>
 				<configuration>
 					<notimestamp>true</notimestamp>
+					<additionalparam>-Xdoclint:none</additionalparam>
 				</configuration>
 				<executions>
 					<execution>
