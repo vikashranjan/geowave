@@ -66,7 +66,8 @@
 		<jacoco.version>0.7.4.201502262128</jacoco.version>
 		<sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
 		<sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
-		<test.args>-Xms256m -Xmx1024m -XX:CompressedClassSpaceSize=192m -XX:MetaspaceSize=192m</test.args>
+		<test.args>-Xms256m -Xmx512m -XX:CompressedClassSpaceSize=192m
+			-XX:MetaspaceSize=192m</test.args>
 		<findbugs.version>3.0.1</findbugs.version>
 		<findbugs.omitVisitors>MutableStaticFields,FindReturnRef</findbugs.omitVisitors>
 		<findbugs.effort>Max</findbugs.effort>
@@ -693,6 +694,8 @@
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>findbugs-maven-plugin</artifactId>
 				<configuration>
+					<maxHeap>256</maxHeap>
+					<jvmArgs>${test.args}</jvmArgs>
 					<failOnError>${findbugs.failOnError}</failOnError>
 					<threshold>${findbugs.threshold}</threshold>
 					<effort>${findbugs.effort}</effort>
@@ -707,28 +710,24 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!-- for incrementing version numbers and tagging repositories 
-			To Use:
-			0. Ensure all files checked into master (clean environment).  Make sure
-			   you have access to both mvn and git on your command line, and you are
-			   in a terminal that has push access (credentials are setup and correct).
-			   Make sure you have the branch active in git you want to tag.
-			   If something goes wrong pushing, you will most likely have outstanding
-			   commits in your local repo you will have to revert/remove.
-			1. mvn release:prepare -DdryRun=true 
-			2. Inspect and ensure the correct pom.xml files will be modified
-			3. mvn release:prepare
-			4. mvn release:clean
-			-->
+			<!-- for incrementing version numbers and tagging repositories To Use: 
+				0. Ensure all files checked into master (clean environment). Make sure you 
+				have access to both mvn and git on your command line, and you are in a terminal 
+				that has push access (credentials are setup and correct). Make sure you have 
+				the branch active in git you want to tag. If something goes wrong pushing, 
+				you will most likely have outstanding commits in your local repo you will 
+				have to revert/remove. 1. mvn release:prepare -DdryRun=true 2. Inspect and 
+				ensure the correct pom.xml files will be modified 3. mvn release:prepare 
+				4. mvn release:clean -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>
 				<version>2.5.3</version>
 				<configuration>
-			        <tagNameFormat>v@{project.version}</tagNameFormat>
+					<tagNameFormat>v@{project.version}</tagNameFormat>
 					<autoVersionSubmodules>true</autoVersionSubmodules>
 				</configuration>
-			</plugin>			
+			</plugin>
 		</plugins>
 	</build>
 	<modules>
