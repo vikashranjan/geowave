@@ -3,6 +3,7 @@ package mil.nga.giat.geowave.test;
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 
@@ -49,8 +50,12 @@ public class HBaseStoreTestEnvironment implements
 
 	@Override
 	public void setup() {
+		LOGGER.setLevel(Level.DEBUG);
+		LOGGER.debug("HBASE TEST SETUP!");
+		
 		if (!TestUtils.isSet(zookeeper)) {
 			zookeeper = System.getProperty("zookeeperUrl");
+			
 			if (!TestUtils.isSet(zookeeper)) {
 
 				PropertyParser propertyParser = null;
@@ -91,6 +96,8 @@ public class HBaseStoreTestEnvironment implements
 				}
 
 				zookeeper = zookeeperLocalCluster.getZookeeperConnectionString();
+				
+				LOGGER.debug("Using local zookeeper URL: " + zookeeper);
 
 				try {
 					hbaseLocalCluster = new HbaseLocalCluster.Builder()
@@ -123,6 +130,12 @@ public class HBaseStoreTestEnvironment implements
 					Assert.fail();
 				}
 			}
+			else {
+				LOGGER.debug("Using system zookeeper URL: " + zookeeper);
+			}
+		}
+		else {
+			LOGGER.debug("Using system zookeeper URL: " + zookeeper);
 		}
 	}
 
