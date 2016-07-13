@@ -124,8 +124,7 @@ public abstract class HBaseFilteredIndexQuery extends
 			adapters = adapterStore.getAdapters();
 		}
 
-		// final List<Scan> scanners = getScanners(limit, distributableFilters,
-		// adapters);
+		// final List<Scan> scanners = getScanners(limit, distributableFilters, adapters);
 		final List<Scan> scanners = getMultiScanner(
 				limit,
 				distributableFilters,
@@ -134,8 +133,6 @@ public abstract class HBaseFilteredIndexQuery extends
 		final List<Iterator<Result>> resultsIterators = new ArrayList<Iterator<Result>>();
 		final List<ResultScanner> results = new ArrayList<ResultScanner>();
 
-		// TODO Consider parallelization as list of scanners can be long and
-		// getScannedResults might be slow?
 		for (final Scan scanner : scanners) {
 			try {
 				final ResultScanner rs = operations.getScannedResults(
@@ -169,7 +166,7 @@ public abstract class HBaseFilteredIndexQuery extends
 
 			long queryDur = (System.currentTimeMillis() - queryStart);
 			if (scanners.size() > 0) {
-				LOGGER.debug(scanners.size() + " range(s); query duration = " + queryDur + " milliseconds.");
+				LOGGER.debug("Query duration = " + queryDur + " milliseconds.");
 			}
 
 			return new CloseableIteratorWrapper(
@@ -250,6 +247,9 @@ public abstract class HBaseFilteredIndexQuery extends
 			final Integer limit,
 			final List<Filter> distributableFilters,
 			final CloseableIterator<DataAdapter<?>> adapters ) {
+		final List<Scan> scanners = new ArrayList<Scan>();
+		final Scan scanner = new Scan();
+
 		FilterList filterList = null;
 		if ((distributableFilters != null) && (distributableFilters.size() > 0)) {
 			filterList = new FilterList();
@@ -258,15 +258,7 @@ public abstract class HBaseFilteredIndexQuery extends
 			}
 		}
 
-		List<ByteArrayRange> ranges = getRanges();
-		if ((ranges == null) || ranges.isEmpty()) {
-			ranges = Collections.singletonList(new ByteArrayRange(
-					null,
-					null));
-		}
-
-		final List<Scan> scanners = new ArrayList<Scan>();
-		final Scan scanner = new Scan();
+		scanner.setFilter(filterList);
 
 		if ((adapterIds != null) && !adapterIds.isEmpty()) {
 			for (final ByteArrayId adapterId : adapterIds) {
@@ -288,6 +280,15 @@ public abstract class HBaseFilteredIndexQuery extends
 
 		// create the multi-row filter
 		final List<RowRange> rowRanges = new ArrayList<RowRange>();
+		
+		List<ByteArrayRange> ranges = getRanges();
+		if ((ranges == null) || ranges.isEmpty()) {
+			ranges = Collections.singletonList(new ByteArrayRange(
+					null,
+					null));
+			
+			LOGGER.debug("Query has " + ranges.size() + " ranges.");
+		}
 
 		if ((ranges != null) && (ranges.size() > 0)) {
 			for (final ByteArrayRange range : ranges) {
@@ -307,10 +308,9 @@ public abstract class HBaseFilteredIndexQuery extends
 							true,
 							stopRow,
 							true);
+					
+					rowRanges.add(rowRange);
 				}
-
-				scanner.setFilter(filterList);
-
 			}
 		}
 
