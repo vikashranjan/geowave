@@ -212,6 +212,8 @@ public abstract class HBaseFilteredIndexQuery extends
 					null,
 					null));
 		}
+		LOGGER.debug("Query has " + ranges.size() + " filters w/ single range.");
+
 		final List<Scan> scanners = new ArrayList<Scan>();
 		if ((ranges != null) && (ranges.size() > 0)) {
 
@@ -302,7 +304,7 @@ public abstract class HBaseFilteredIndexQuery extends
 					null));
 		}
 
-		LOGGER.debug("Query has " + ranges.size() + " ranges.");
+		LOGGER.debug("Query has " + ranges.size() + " ranges in one multi-filter.");
 
 		if ((ranges != null) && (ranges.size() > 0)) {
 			for (final ByteArrayRange range : ranges) {
