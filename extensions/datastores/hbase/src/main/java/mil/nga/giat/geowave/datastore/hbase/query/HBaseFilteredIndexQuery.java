@@ -48,6 +48,10 @@ public abstract class HBaseFilteredIndexQuery extends
 	protected List<QueryFilter> clientFilters;
 	private final static Logger LOGGER = Logger.getLogger(HBaseFilteredIndexQuery.class);
 	private Collection<String> fieldIds = null;
+	
+	static {
+		LOGGER.setLevel(Level.DEBUG);
+	}
 
 	public HBaseFilteredIndexQuery(
 			final List<ByteArrayId> adapterIds,
@@ -98,7 +102,6 @@ public abstract class HBaseFilteredIndexQuery extends
 			final BasicHBaseOperations operations,
 			final AdapterStore adapterStore,
 			final Integer limit ) {
-		LOGGER.setLevel(Level.DEBUG);
 		long queryStart = System.currentTimeMillis();
 
 		try {
@@ -286,9 +289,9 @@ public abstract class HBaseFilteredIndexQuery extends
 			ranges = Collections.singletonList(new ByteArrayRange(
 					null,
 					null));
-			
-			LOGGER.debug("Query has " + ranges.size() + " ranges.");
 		}
+		
+		LOGGER.debug("Query has " + ranges.size() + " ranges.");
 
 		if ((ranges != null) && (ranges.size() > 0)) {
 			for (final ByteArrayRange range : ranges) {
