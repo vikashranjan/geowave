@@ -48,10 +48,11 @@ public abstract class HBaseFilteredIndexQuery extends
 	protected List<QueryFilter> clientFilters;
 	private final static Logger LOGGER = Logger.getLogger(HBaseFilteredIndexQuery.class);
 	private Collection<String> fieldIds = null;
-	
+
 	static {
 		LOGGER.setLevel(Level.DEBUG);
 	}
+	private final static boolean MULTI_FILTER = true;
 
 	public HBaseFilteredIndexQuery(
 			final List<ByteArrayId> adapterIds,
@@ -127,11 +128,21 @@ public abstract class HBaseFilteredIndexQuery extends
 			adapters = adapterStore.getAdapters();
 		}
 
-		// final List<Scan> scanners = getScanners(limit, distributableFilters, adapters);
-		final List<Scan> scanners = getMultiScanner(
-				limit,
-				distributableFilters,
-				adapters);
+		// Decide which config to use for multi-ranges
+		List<Scan> scanners;
+
+		if (MULTI_FILTER) {
+			scanners = getMultiScanner(
+					limit,
+					distributableFilters,
+					adapters);
+		}
+		else {
+			scanners = getScanners(
+					limit,
+					distributableFilters,
+					adapters);
+		}
 
 		final List<Iterator<Result>> resultsIterators = new ArrayList<Iterator<Result>>();
 		final List<ResultScanner> results = new ArrayList<ResultScanner>();
@@ -283,14 +294,14 @@ public abstract class HBaseFilteredIndexQuery extends
 
 		// create the multi-row filter
 		final List<RowRange> rowRanges = new ArrayList<RowRange>();
-		
+
 		List<ByteArrayRange> ranges = getRanges();
 		if ((ranges == null) || ranges.isEmpty()) {
 			ranges = Collections.singletonList(new ByteArrayRange(
 					null,
 					null));
 		}
-		
+
 		LOGGER.debug("Query has " + ranges.size() + " ranges.");
 
 		if ((ranges != null) && (ranges.size() > 0)) {
@@ -311,7 +322,7 @@ public abstract class HBaseFilteredIndexQuery extends
 							true,
 							stopRow,
 							true);
-					
+
 					rowRanges.add(rowRange);
 				}
 			}
