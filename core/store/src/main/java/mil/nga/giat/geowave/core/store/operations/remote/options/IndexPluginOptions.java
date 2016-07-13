@@ -44,7 +44,7 @@ public class IndexPluginOptions extends
 		"-np",
 		"--numPartitions"
 	}, description = "The number of partitions.  Default partitions will be 1.")
-	protected int numPartitions = 1;
+	protected int numPartitions = 16;
 
 	@Parameter(names = {
 		"-ps",
