@@ -124,6 +124,9 @@ public class HBaseStoreTestEnvironment implements
 				}
 			}
 		}
+		else {
+			LOGGER.info("Using zookeeper URL: " + zookeeper);
+		}
 	}
 
 	@Override
