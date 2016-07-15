@@ -51,6 +51,7 @@ public class HBaseStoreTestEnvironment implements
 	public void setup() {
 		if (!TestUtils.isSet(zookeeper)) {
 			zookeeper = System.getProperty("zookeeperUrl");
+			
 			if (!TestUtils.isSet(zookeeper)) {
 
 				PropertyParser propertyParser = null;
@@ -124,6 +125,9 @@ public class HBaseStoreTestEnvironment implements
 					e.printStackTrace();
 					Assert.fail();
 				}
+			}
+			else {
+				LOGGER.info("Using system zookeeper URL: " + zookeeper);
 			}
 		}
 		else {
