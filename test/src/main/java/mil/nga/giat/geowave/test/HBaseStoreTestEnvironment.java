@@ -91,6 +91,8 @@ public class HBaseStoreTestEnvironment implements
 				}
 
 				zookeeper = zookeeperLocalCluster.getZookeeperConnectionString();
+				
+				LOGGER.info("Using local zookeeper URL: " + zookeeper);
 
 				try {
 					hbaseLocalCluster = new HbaseLocalCluster.Builder()
@@ -125,7 +127,7 @@ public class HBaseStoreTestEnvironment implements
 			}
 		}
 		else {
-			LOGGER.info("Using zookeeper URL: " + zookeeper);
+			LOGGER.info("Using system zookeeper URL: " + zookeeper);
 		}
 	}
 
