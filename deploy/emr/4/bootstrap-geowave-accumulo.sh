@@ -50,8 +50,9 @@ if [ ! -f "$RUN_FLAG" ]; then
 	exit 0 # Bail and let EMR finish initializing
 fi
 
-# Step #3: Get zookeeper running
-configure_zookeeper
+# Step #3: Get Accumulo running
+os_tweaks && configure_zookeeper
+create_accumulo_user && install_accumulo && configure_accumulo
 
 # Step #4: Install imagery libs then GeoWave components on master node
 install_image_libs

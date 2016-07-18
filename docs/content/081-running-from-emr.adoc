@@ -32,7 +32,7 @@ aws emr create-cluster \
   --applications Name=Ganglia Name=Hadoop Name=Hue Name=Spark \
   --use-default-roles \
   --no-auto-terminate \
-  --bootstrap-actions Path=s3://YOUR_S3_BUCKET/emr/4/bootstrap-geowave.sh,Name=Bootstrap_GeoWave_Node \
+  --bootstrap-actions Path=s3://YOUR_S3_BUCKET/emr/4/bootstrap-accumulo-geowave.sh,Name=Bootstrap_GeoWave_Node \
   --tags "Name=geowave-emr-worker"
 ----
 
@@ -65,7 +65,7 @@ Example: Master public DNS: ec2-52-91-31-196.compute-1.amazonaws.com
 === Configuration
 
 After the cluster has finished initializing you should be able to ssh into the master node and perform the final bits of
-project specific GeoWave configuration. The root password for Accumulo is set at the top of the bootstrap-geowave.sh script.
-You'd want to log into Accumulo and perform steps listed in the Accumulo Configuration section of the documentation. The
-latest iterator built for Apache Hadoop will have been uploaded into HDFS but no user accounts, namespaces or VFS contexts
-will have been configured. All of these are described with examples in both the GeoWave and Accumulo documentation.
+project specific GeoWave configuration. The root password for Accumulo is set at the top of the bootstrap-accumulo-geowave.sh
+script. You'd want to log into Accumulo and perform steps listed in the Accumulo Configuration section of the documentation.
+The latest iterator built for Apache Hadoop will have been uploaded into HDFS but no user accounts, namespaces or VFS
+contexts will have been configured. All of these are described with examples in both the GeoWave and Accumulo documentation.
