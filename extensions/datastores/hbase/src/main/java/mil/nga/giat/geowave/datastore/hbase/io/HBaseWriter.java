@@ -3,6 +3,8 @@ package mil.nga.giat.geowave.datastore.hbase.io;
 import java.io.IOException;
 import java.util.List;
 
+import mil.nga.giat.geowave.core.store.Writer;
+
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
@@ -12,14 +14,10 @@ import org.apache.hadoop.hbase.client.RowMutations;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.log4j.Logger;
 
-import mil.nga.giat.geowave.core.store.Writer;
-import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
-
 /**
  * Functionality similar to <code> BatchWriterWrapper </code>
  *
- * This class directly writes to the HBase table instead of using any existing
- * Writer API provided by HBase.
+ * This class directly writes to the HBase table instead of using any existing Writer API provided by HBase.
  *
  */
 public class HBaseWriter implements
@@ -96,11 +94,27 @@ public class HBaseWriter implements
 		final HColumnDescriptor cfDesciptor = new HColumnDescriptor(
 				columnFamilyName);
 		// Instead of an object lock, we need to switch to async disable/enable w/ wait loops.
-//		synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-			if (admin.tableExists(name)) {
-				if (!admin.isTableEnabled(name)) {
-					admin.enableTableAsync(name);
-					while (!admin.isTableEnabled(name)) {
+		// synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
+		if (admin.tableExists(name)) {
+			if (!admin.isTableEnabled(name)) {
+				admin.enableTableAsync(name);
+				while (!admin.isTableEnabled(name)) {
+					try {
+						Thread.sleep(250);
+					}
+					catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+
+			final HTableDescriptor tableDescriptor = admin.getTableDescriptor(name);
+			
+			if (!tableDescriptor.hasFamily(columnFamilyName.getBytes())) {
+				// Disable table
+				if (admin.isTableEnabled(name)) {
+					admin.disableTableAsync(name);
+					while (!admin.isTableDisabled(name)) {
 						try {
 							Thread.sleep(250);
 						}
@@ -109,46 +123,26 @@ public class HBaseWriter implements
 						}
 					}
 				}
-				final HTableDescriptor descriptor = admin.getTableDescriptor(name);
-				boolean found = false;
-				for (final HColumnDescriptor hColumnDescriptor : descriptor.getColumnFamilies()) {
-					if (hColumnDescriptor.getNameAsString().equalsIgnoreCase(
-							columnFamilyName)) {
-						found = true;
+
+				// Add column family
+				tableDescriptor.addFamily(cfDesciptor);
+
+				// Enable table
+				admin.enableTableAsync(name);
+				while (!admin.isTableEnabled(name)) {
+					try {
+						Thread.sleep(250);
 					}
-				}
-				if (!found) {
-					if (admin.isTableEnabled(name)) {
-						admin.disableTableAsync(name);
-						while (!admin.isTableDisabled(name)) {
-							try {
-								Thread.sleep(250);
-							}
-							catch (InterruptedException e) {
-								e.printStackTrace();
-							}
-						}
-					}
-					admin.addColumn(
-							name,
-							cfDesciptor);
-					// Enable table once done
-					admin.enableTableAsync(name);
-					while (!admin.isTableEnabled(name)) {
-						try {
-							Thread.sleep(250);
-						}
-						catch (InterruptedException e) {
-							e.printStackTrace();
-						}
+					catch (InterruptedException e) {
+						e.printStackTrace();
 					}
 				}
 			}
-			else {
-				LOGGER.warn("Table " + name.getNameAsString()
-						+ " doesn't exist! Unable to add column family " + columnFamilyName);
-			}
-//		}
+		}
+		else {
+			LOGGER.warn("Table " + name.getNameAsString() + " doesn't exist! Unable to add column family " + columnFamilyName);
+		}
+		// }
 	}
 
 	public void delete(
