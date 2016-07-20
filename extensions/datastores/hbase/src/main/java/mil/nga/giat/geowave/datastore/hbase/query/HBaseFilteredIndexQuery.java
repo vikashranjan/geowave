@@ -265,6 +265,10 @@ public abstract class HBaseFilteredIndexQuery extends
 			final CloseableIterator<DataAdapter<?>> adapters ) {
 		final List<Scan> scanners = new ArrayList<Scan>();
 		final Scan scanner = new Scan();
+		
+		// Performance recommendations
+		scanner.setCaching(1000);
+		scanner.setCacheBlocks(false);
 
 		FilterList filterList = null;
 		if ((distributableFilters != null) && (distributableFilters.size() > 0)) {
@@ -292,6 +296,7 @@ public abstract class HBaseFilteredIndexQuery extends
 
 		if ((limit != null) && (limit > 0) && (limit < scanner.getBatch())) {
 			scanner.setBatch(limit);
+			LOGGER.debug("Scanner batch set to " + limit);
 		}
 
 		// create the multi-row filter

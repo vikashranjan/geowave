@@ -1,28 +1,23 @@
 package mil.nga.giat.geowave.datastore.hbase.operations;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+
+import mil.nga.giat.geowave.core.store.DataStoreOperations;
+import mil.nga.giat.geowave.datastore.hbase.io.HBaseWriter;
+import mil.nga.giat.geowave.datastore.hbase.operations.config.HBaseRequiredOptions;
+import mil.nga.giat.geowave.datastore.hbase.util.ConnectionPool;
+import mil.nga.giat.geowave.datastore.hbase.util.HBaseUtils;
 
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.RegionLocator;
-import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.RowMutations;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.security.visibility.Authorizations;
 import org.apache.log4j.Logger;
-
-import mil.nga.giat.geowave.core.index.ByteArrayId;
-import mil.nga.giat.geowave.core.store.DataStoreOperations;
-import mil.nga.giat.geowave.datastore.hbase.io.HBaseWriter;
-import mil.nga.giat.geowave.datastore.hbase.operations.config.HBaseRequiredOptions;
-import mil.nga.giat.geowave.datastore.hbase.util.ConnectionPool;
-import mil.nga.giat.geowave.datastore.hbase.util.HBaseUtils;
 
 public class BasicHBaseOperations implements
 		DataStoreOperations
@@ -232,24 +227,4 @@ public class BasicHBaseOperations implements
 	public String getTableNameSpace() {
 		return tableNamespace;
 	}
-
-	// public void addColumnFamily(
-	// final String tableName,
-	// final String columnFamily )
-	// throws IOException {
-	//
-	// final TableName tn = getTableName(
-	// getQualifiedTableName(
-	// tableName));
-	// final HBaseWriter writer = new HBaseWriter(
-	// conn.getAdmin(),
-	// getTable(
-	// false,
-	// null,
-	// tn));
-	//
-	// writer.addColumnFamilyToTable(
-	// tn,
-	// columnFamily);
-	// }
 }

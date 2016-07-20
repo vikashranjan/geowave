@@ -1,7 +1,11 @@
 package mil.nga.giat.geowave.datastore.hbase.io;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+
+import mil.nga.giat.geowave.core.store.Writer;
+import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
 
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -12,29 +16,29 @@ import org.apache.hadoop.hbase.client.RowMutations;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.log4j.Logger;
 
-import mil.nga.giat.geowave.core.store.Writer;
-import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
-
 /**
  * Functionality similar to <code> BatchWriterWrapper </code>
  *
- * This class directly writes to the HBase table instead of using any existing
- * Writer API provided by HBase.
+ * This class directly writes to the HBase table instead of using any existing Writer API provided by HBase.
  *
  */
 public class HBaseWriter implements
 		Writer<RowMutations>
 {
-
 	private final static Logger LOGGER = Logger.getLogger(HBaseWriter.class);
 	private final Table table;
 	private final Admin admin;
+
+	private final HashMap<String, Boolean> cfMap;
+	private HTableDescriptor tableDescriptor = null;
 
 	public HBaseWriter(
 			final Admin admin,
 			final Table table ) {
 		this.admin = admin;
 		this.table = table;
+
+		this.cfMap = new HashMap<String, Boolean>();
 	}
 
 	@Override
@@ -65,9 +69,12 @@ public class HBaseWriter implements
 			final Iterable<RowMutations> iterable,
 			final String columnFamily )
 			throws IOException {
-		addColumnFamilyToTable(
-				table.getName(),
-				columnFamily);
+		if (!columnFamilyExists(columnFamily)) {
+			addColumnFamilyToTable(
+					table.getName(),
+					columnFamily);
+		}
+
 		for (final RowMutations rowMutation : iterable) {
 			write(rowMutation);
 		}
@@ -77,9 +84,12 @@ public class HBaseWriter implements
 			final RowMutations mutation,
 			final String columnFamily ) {
 		try {
-			addColumnFamilyToTable(
-					table.getName(),
-					columnFamily);
+			if (!columnFamilyExists(columnFamily)) {
+				addColumnFamilyToTable(
+						table.getName(),
+						columnFamily);
+			}
+
 			write(mutation);
 		}
 		catch (final IOException e) {
@@ -89,44 +99,63 @@ public class HBaseWriter implements
 		}
 	}
 
+	private boolean columnFamilyExists(
+			final String columnFamily ) {
+		Boolean found = false;
+
+		try {
+			found = cfMap.get(columnFamily);
+
+			if (found == null) {
+				found = Boolean.FALSE;
+			}
+
+			if (!found) {
+				synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
+					if (!admin.isTableEnabled(table.getName())) {
+						admin.enableTable(table.getName());
+					}
+
+					// update the table descriptor
+					tableDescriptor = admin.getTableDescriptor(table.getName());
+
+					found = tableDescriptor.hasFamily(columnFamily.getBytes());
+				}
+				
+				cfMap.put(
+						columnFamily,
+						found);
+			}
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return found;
+	}
+
 	private void addColumnFamilyToTable(
-			final TableName name,
+			final TableName tableName,
 			final String columnFamilyName )
 			throws IOException {
-		final HColumnDescriptor cfDesciptor = new HColumnDescriptor(
+		final HColumnDescriptor cfDescriptor = new HColumnDescriptor(
 				columnFamilyName);
+
 		synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-			if (admin.tableExists(name)) {
-				// TODO: tableenabling/diabling is not very friendly with
-				// concurrency
-				// Before any modification to table schema, it's necessary to
-				// disable it
-				if (!admin.isTableEnabled(name)) {
-					admin.enableTable(name);
-				}
-				final HTableDescriptor descriptor = admin.getTableDescriptor(name);
-				boolean found = false;
-				for (final HColumnDescriptor hColumnDescriptor : descriptor.getColumnFamilies()) {
-					if (hColumnDescriptor.getNameAsString().equalsIgnoreCase(
-							columnFamilyName)) {
-						found = true;
-					}
-				}
-				if (!found) {
-					if (admin.isTableEnabled(name)) {
-						admin.disableTable(name);
-					}
-					admin.addColumn(
-							name,
-							cfDesciptor);
-					// Enable table once done
-					admin.enableTable(name);
-				}
+			if (!admin.isTableDisabled(tableName)) {
+				admin.disableTable(tableName);
 			}
-			else {
-				LOGGER.warn("Table " + name.getNameAsString()
-						+ " doesn't exist, so no question of adding column family " + columnFamilyName + " to it!");
-			}
+
+			admin.addColumn(
+					tableName,
+					cfDescriptor);
+
+			cfMap.put(
+					columnFamilyName,
+					Boolean.TRUE);
+
+			// Enable table once done
+			admin.enableTable(tableName);
 		}
 	}
 
