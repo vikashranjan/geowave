@@ -95,7 +95,8 @@ public class HBaseWriter implements
 			throws IOException {
 		final HColumnDescriptor cfDesciptor = new HColumnDescriptor(
 				columnFamilyName);
-		synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
+		// Instead of an object lock, we probably need to switch to async disable/enable w/ wait loops.
+//		synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
 			if (admin.tableExists(name)) {
 				// TODO: tableenabling/diabling is not very friendly with
 				// concurrency
@@ -127,7 +128,7 @@ public class HBaseWriter implements
 				LOGGER.warn("Table " + name.getNameAsString()
 						+ " doesn't exist, so no question of adding column family " + columnFamilyName + " to it!");
 			}
-		}
+//		}
 	}
 
 	public void delete(
