@@ -25,7 +25,6 @@ import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
 public class HBaseWriter implements
 		Writer<RowMutations>
 {
-
 	private final static Logger LOGGER = Logger.getLogger(HBaseWriter.class);
 	private final Table table;
 	private final Admin admin;
@@ -106,8 +105,10 @@ public class HBaseWriter implements
 		Boolean found = false;
 
 		try {
-			if (tableExists == null) {
-				tableExists = admin.tableExists(table.getName());
+			synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
+				if (tableExists == null) {
+					tableExists = admin.tableExists(table.getName());
+				}
 			}
 
 			if (!tableExists) {
@@ -121,12 +122,17 @@ public class HBaseWriter implements
 			}
 
 			if (!found) {
-				// need to enable table here?
-				if (tableDescriptor == null) {
-					tableDescriptor = admin.getTableDescriptor(table.getName());
-				}
+				synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
+					if (tableDescriptor == null) {
+						if (!admin.isTableEnabled(table.getName())) {
+							admin.enableTable(table.getName());
+						}
 
-				found = tableDescriptor.hasFamily(columnFamily.getBytes());
+						tableDescriptor = admin.getTableDescriptor(table.getName());
+					}
+
+					found = tableDescriptor.hasFamily(columnFamily.getBytes());
+				}
 
 				cfMap.put(
 						columnFamily,
@@ -147,22 +153,25 @@ public class HBaseWriter implements
 		final HColumnDescriptor cfDescriptor = new HColumnDescriptor(
 				columnFamilyName);
 
-		synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-			if (tableExists) {
-				if (!admin.isTableDisabled(tableName)) {
-					admin.disableTable(tableName);
+		if (tableExists) {
+			synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
+				if (!tableDescriptor.hasFamily(columnFamilyName.getBytes())) {
+
+					if (!admin.isTableDisabled(tableName)) {
+						admin.disableTable(tableName);
+					}
+
+					admin.addColumn(
+							tableName,
+							cfDescriptor);
+
+					// Enable table once done
+					admin.enableTable(tableName);
 				}
-
-				admin.addColumn(
-						tableName,
-						cfDescriptor);
-
-				// Enable table once done
-				admin.enableTable(tableName);
 			}
-			else {
-				LOGGER.warn("Table " + tableName.getNameAsString() + " doesn't exist! Unable to add column family " + columnFamilyName);
-			}
+		}
+		else {
+			LOGGER.warn("Table " + tableName.getNameAsString() + " doesn't exist! Unable to add column family " + columnFamilyName);
 		}
 	}
 
