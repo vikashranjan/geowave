@@ -95,15 +95,19 @@ public class HBaseWriter implements
 			throws IOException {
 		final HColumnDescriptor cfDesciptor = new HColumnDescriptor(
 				columnFamilyName);
-		// Instead of an object lock, we probably need to switch to async disable/enable w/ wait loops.
+		// Instead of an object lock, we need to switch to async disable/enable w/ wait loops.
 //		synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
 			if (admin.tableExists(name)) {
-				// TODO: tableenabling/diabling is not very friendly with
-				// concurrency
-				// Before any modification to table schema, it's necessary to
-				// disable it
 				if (!admin.isTableEnabled(name)) {
-					admin.enableTable(name);
+					admin.enableTableAsync(name);
+					while (!admin.isTableEnabled(name)) {
+						try {
+							Thread.sleep(250);
+						}
+						catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
 				}
 				final HTableDescriptor descriptor = admin.getTableDescriptor(name);
 				boolean found = false;
@@ -115,18 +119,34 @@ public class HBaseWriter implements
 				}
 				if (!found) {
 					if (admin.isTableEnabled(name)) {
-						admin.disableTable(name);
+						admin.disableTableAsync(name);
+						while (!admin.isTableDisabled(name)) {
+							try {
+								Thread.sleep(250);
+							}
+							catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						}
 					}
 					admin.addColumn(
 							name,
 							cfDesciptor);
 					// Enable table once done
-					admin.enableTable(name);
+					admin.enableTableAsync(name);
+					while (!admin.isTableEnabled(name)) {
+						try {
+							Thread.sleep(250);
+						}
+						catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
 				}
 			}
 			else {
 				LOGGER.warn("Table " + name.getNameAsString()
-						+ " doesn't exist, so no question of adding column family " + columnFamilyName + " to it!");
+						+ " doesn't exist! Unable to add column family " + columnFamilyName);
 			}
 //		}
 	}
