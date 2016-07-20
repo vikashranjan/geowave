@@ -141,7 +141,7 @@ public class GeoWaveBasicIT
 
 	@Test
 	public void testSingleThreadedIngestAndQuerySpatialPointsAndLines() {
-		testIngestAndQuerySpatialPointsAndLines(1);
+		//testIngestAndQuerySpatialPointsAndLines(1);
 	}
 
 	public void testIngestAndQuerySpatialPointsAndLines(
@@ -157,7 +157,7 @@ public class GeoWaveBasicIT
 				nthreads);
 		
 		long queryDur = (System.currentTimeMillis() - queryStart);
-		LOGGER.debug("Ingest (points) duration = " + queryDur + " milliseconds.");
+		LOGGER.debug("Ingest (points) duration = " + queryDur + " ms with " + nthreads + " thread(s).");
 		
 		queryStart = System.currentTimeMillis();
 		
@@ -168,7 +168,7 @@ public class GeoWaveBasicIT
 				nthreads);
 		
 		queryDur = (System.currentTimeMillis() - queryStart);
-		LOGGER.debug("Ingest (lines) duration = " + queryDur + " milliseconds.");
+		LOGGER.debug("Ingest (lines) duration = " + queryDur + " ms with " + nthreads + " thread(s).");
 
 		try {
 			testQuery(

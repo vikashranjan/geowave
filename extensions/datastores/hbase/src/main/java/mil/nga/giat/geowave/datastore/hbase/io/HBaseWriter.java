@@ -1,10 +1,8 @@
 package mil.nga.giat.geowave.datastore.hbase.io;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
-
-import mil.nga.giat.geowave.core.store.Writer;
-import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
 
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -13,8 +11,10 @@ import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.RowMutations;
 import org.apache.hadoop.hbase.client.Table;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+
+import mil.nga.giat.geowave.core.store.Writer;
+import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
 
 /**
  * Functionality similar to <code> BatchWriterWrapper </code>
@@ -30,13 +30,17 @@ public class HBaseWriter implements
 	private final Table table;
 	private final Admin admin;
 
+	private final HashMap<String, Boolean> cfMap;
+	private Boolean tableExists = null;
+	private HTableDescriptor tableDescriptor = null;
+
 	public HBaseWriter(
 			final Admin admin,
 			final Table table ) {
 		this.admin = admin;
 		this.table = table;
 
-		LOGGER.setLevel(Level.INFO);
+		this.cfMap = new HashMap<String, Boolean>();
 	}
 
 	@Override
@@ -67,9 +71,12 @@ public class HBaseWriter implements
 			final Iterable<RowMutations> iterable,
 			final String columnFamily )
 			throws IOException {
-		addColumnFamilyToTable(
-				table.getName(),
-				columnFamily);
+		if (!columnFamilyExists(columnFamily)) {
+			addColumnFamilyToTable(
+					table.getName(),
+					columnFamily);
+		}
+
 		for (final RowMutations rowMutation : iterable) {
 			write(rowMutation);
 		}
@@ -79,9 +86,12 @@ public class HBaseWriter implements
 			final RowMutations mutation,
 			final String columnFamily ) {
 		try {
-			addColumnFamilyToTable(
-					table.getName(),
-					columnFamily);
+			if (!columnFamilyExists(columnFamily)) {
+				addColumnFamilyToTable(
+						table.getName(),
+						columnFamily);
+			}
+
 			write(mutation);
 		}
 		catch (final IOException e) {
@@ -91,6 +101,45 @@ public class HBaseWriter implements
 		}
 	}
 
+	private boolean columnFamilyExists(
+			final String columnFamily ) {
+		Boolean found = false;
+
+		try {
+			if (tableExists == null) {
+				tableExists = admin.tableExists(table.getName());
+			}
+
+			if (!tableExists) {
+				return false;
+			}
+
+			found = cfMap.get(columnFamily);
+
+			if (found == null) {
+				found = Boolean.FALSE;
+			}
+
+			if (!found) {
+				// need to enable table here?
+				if (tableDescriptor == null) {
+					tableDescriptor = admin.getTableDescriptor(table.getName());
+				}
+
+				found = tableDescriptor.hasFamily(columnFamily.getBytes());
+
+				cfMap.put(
+						columnFamily,
+						found);
+			}
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return found;
+	}
+
 	private void addColumnFamilyToTable(
 			final TableName tableName,
 			final String columnFamilyName )
@@ -98,66 +147,22 @@ public class HBaseWriter implements
 		final HColumnDescriptor cfDescriptor = new HColumnDescriptor(
 				columnFamilyName);
 
-		// Instead of an object lock, we need to switch to async disable/enable w/ wait loops.
-		if (admin.tableExists(tableName)) {
-			if (!admin.isTableEnabled(tableName)) {
-				admin.enableTableAsync(tableName);
-				while (!admin.isTableEnabled(tableName)) {
-					try {
-						Thread.sleep(250);
-					}
-					catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-
-			final HTableDescriptor tableDescriptor = admin.getTableDescriptor(tableName);
-
-			if (!tableDescriptor.hasFamily(columnFamilyName.getBytes())) {
-				LOGGER.info("Table " + tableName.getNameAsString() + " adding column family " + columnFamilyName);
-
-				// Disable the table before adding the cf
-				if (admin.isTableEnabled(tableName)) {
-					admin.disableTableAsync(tableName);
-					while (!admin.isTableDisabled(tableName)) {
-						try {
-							Thread.sleep(250);
-						}
-						catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-					}
+		synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
+			if (tableExists) {
+				if (!admin.isTableDisabled(tableName)) {
+					admin.disableTable(tableName);
 				}
 
-				// Add the column family (thread-safe?)
-				// synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-					try {
-						admin.addColumn(
-								tableName,
-								cfDescriptor);
-					}
-					catch (IOException e) {
-					}
-				//}
+				admin.addColumn(
+						tableName,
+						cfDescriptor);
 
 				// Enable table once done
-				admin.enableTableAsync(tableName);
-				while (!admin.isTableEnabled(tableName)) {
-					try {
-						Thread.sleep(250);
-					}
-					catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
+				admin.enableTable(tableName);
 			}
 			else {
-				LOGGER.debug("Table " + tableName.getNameAsString() + " already has column family " + columnFamilyName);
+				LOGGER.warn("Table " + tableName.getNameAsString() + " doesn't exist! Unable to add column family " + columnFamilyName);
 			}
-		}
-		else {
-			LOGGER.warn("Table " + tableName.getNameAsString() + " doesn't exist! Unable to add column family " + columnFamilyName);
 		}
 	}
 
