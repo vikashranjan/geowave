@@ -9,15 +9,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.filter.Filter;
-import org.apache.hadoop.hbase.filter.FilterList;
-import org.apache.log4j.Logger;
-
-import com.google.common.collect.Iterators;
-
 import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.index.ByteArrayRange;
 import mil.nga.giat.geowave.core.index.StringUtils;
@@ -36,6 +27,18 @@ import mil.nga.giat.geowave.datastore.hbase.util.HBaseEntryIteratorWrapper;
 import mil.nga.giat.geowave.datastore.hbase.util.HBaseUtils;
 import mil.nga.giat.geowave.datastore.hbase.util.HBaseUtils.MultiScannerClosableWrapper;
 
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.filter.MultiRowRangeFilter;
+import org.apache.hadoop.hbase.filter.MultiRowRangeFilter.RowRange;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
+import com.google.common.collect.Iterators;
+
 public abstract class HBaseFilteredIndexQuery extends
 		HBaseQuery implements
 		FilteredIndexQuery
@@ -45,6 +48,11 @@ public abstract class HBaseFilteredIndexQuery extends
 	protected List<QueryFilter> clientFilters;
 	private final static Logger LOGGER = Logger.getLogger(HBaseFilteredIndexQuery.class);
 	private Collection<String> fieldIds = null;
+
+	static {
+		LOGGER.setLevel(Level.DEBUG);
+	}
+	private final static boolean MULTI_FILTER = true;
 
 	public HBaseFilteredIndexQuery(
 			final List<ByteArrayId> adapterIds,
@@ -95,6 +103,8 @@ public abstract class HBaseFilteredIndexQuery extends
 			final BasicHBaseOperations operations,
 			final AdapterStore adapterStore,
 			final Integer limit ) {
+		long queryStart = System.currentTimeMillis();
+
 		try {
 			if (!validateAdapters(operations)) {
 				LOGGER.warn("Query contains no valid adapters.");
@@ -106,9 +116,7 @@ public abstract class HBaseFilteredIndexQuery extends
 			}
 		}
 		catch (final IOException ex) {
-			LOGGER
-					.warn("Unabe to check if " + StringUtils.stringFromBinary(index.getId().getBytes())
-							+ " table exists");
+			LOGGER.warn("Unabe to check if " + StringUtils.stringFromBinary(index.getId().getBytes()) + " table exists");
 			return new CloseableIterator.Empty();
 		}
 		final String tableName = StringUtils.stringFromBinary(index.getId().getBytes());
@@ -120,16 +128,25 @@ public abstract class HBaseFilteredIndexQuery extends
 			adapters = adapterStore.getAdapters();
 		}
 
-		final List<Scan> scanners = getScanners(
-				limit,
-				distributableFilters,
-				adapters);
+		// Decide which config to use for multi-ranges
+		List<Scan> scanners;
+
+		if (MULTI_FILTER) {
+			scanners = getMultiScanner(
+					limit,
+					distributableFilters,
+					adapters);
+		}
+		else {
+			scanners = getScanners(
+					limit,
+					distributableFilters,
+					adapters);
+		}
 
 		final List<Iterator<Result>> resultsIterators = new ArrayList<Iterator<Result>>();
 		final List<ResultScanner> results = new ArrayList<ResultScanner>();
 
-		// TODO Consider parallelization as list of scanners can be long and
-		// getScannedResults might be slow?
 		for (final Scan scanner : scanners) {
 			try {
 				final ResultScanner rs = operations.getScannedResults(
@@ -160,6 +177,12 @@ public abstract class HBaseFilteredIndexQuery extends
 						it,
 						limit);
 			}
+
+			long queryDur = (System.currentTimeMillis() - queryStart);
+			if (scanners.size() > 0) {
+				LOGGER.debug("Query duration = " + queryDur + " milliseconds.");
+			}
+
 			return new CloseableIteratorWrapper(
 					new MultiScannerClosableWrapper(
 							results),
@@ -189,6 +212,8 @@ public abstract class HBaseFilteredIndexQuery extends
 					null,
 					null));
 		}
+		LOGGER.debug("Query has " + ranges.size() + " filters w/ single range.");
+
 		final List<Scan> scanners = new ArrayList<Scan>();
 		if ((ranges != null) && (ranges.size() > 0)) {
 
@@ -228,6 +253,94 @@ public abstract class HBaseFilteredIndexQuery extends
 
 				scanners.add(scanner);
 			}
+		}
+
+		return scanners;
+	}
+
+	// experiment to test a single multi-scanner vs multiple single-range scanners
+	protected List<Scan> getMultiScanner(
+			final Integer limit,
+			final List<Filter> distributableFilters,
+			final CloseableIterator<DataAdapter<?>> adapters ) {
+		final List<Scan> scanners = new ArrayList<Scan>();
+		final Scan scanner = new Scan();
+
+		FilterList filterList = null;
+		if ((distributableFilters != null) && (distributableFilters.size() > 0)) {
+			filterList = new FilterList();
+			for (final Filter filter : distributableFilters) {
+				filterList.addFilter(filter);
+			}
+		}
+
+		scanner.setFilter(filterList);
+
+		if ((adapterIds != null) && !adapterIds.isEmpty()) {
+			for (final ByteArrayId adapterId : adapterIds) {
+				scanner.addFamily(adapterId.getBytes());
+			}
+		}
+
+		// a subset of fieldIds is being requested
+		if ((fieldIds != null) && !fieldIds.isEmpty()) {
+			// configure scanner to fetch only the fieldIds specified
+			handleSubsetOfFieldIds(
+					scanner,
+					adapters);
+		}
+
+		if ((limit != null) && (limit > 0) && (limit < scanner.getBatch())) {
+			scanner.setBatch(limit);
+		}
+
+		// create the multi-row filter
+		final List<RowRange> rowRanges = new ArrayList<RowRange>();
+
+		List<ByteArrayRange> ranges = getRanges();
+		if ((ranges == null) || ranges.isEmpty()) {
+			ranges = Collections.singletonList(new ByteArrayRange(
+					null,
+					null));
+		}
+
+		LOGGER.debug("Query has " + ranges.size() + " ranges in one multi-filter.");
+
+		if ((ranges != null) && (ranges.size() > 0)) {
+			for (final ByteArrayRange range : ranges) {
+
+				if (range.getStart() != null) {
+					byte[] startRow = range.getStart().getBytes();
+					byte[] stopRow;
+					if (!range.isSingleValue()) {
+						stopRow = HBaseUtils.getNextPrefix(range.getEnd().getBytes());
+					}
+					else {
+						stopRow = HBaseUtils.getNextPrefix(range.getStart().getBytes());
+					}
+
+					RowRange rowRange = new RowRange(
+							startRow,
+							true,
+							stopRow,
+							true);
+
+					rowRanges.add(rowRange);
+				}
+			}
+		}
+
+		// The list will contain a single scanner if successful
+		try {
+			Filter filter = new MultiRowRangeFilter(
+					rowRanges);
+
+			scanner.setFilter(filter);
+
+			scanners.add(scanner);
+		}
+		catch (IOException e) {
+			e.printStackTrace();
 		}
 
 		return scanners;
@@ -282,9 +395,8 @@ public abstract class HBaseFilteredIndexQuery extends
 				adapterStore,
 				index,
 				resultsIterator,
-				filters.isEmpty() ? null : filters.size() == 1 ? filters.get(0)
-						: new mil.nga.giat.geowave.core.store.filter.FilterList<QueryFilter>(
-								filters),
+				filters.isEmpty() ? null : filters.size() == 1 ? filters.get(0) : new mil.nga.giat.geowave.core.store.filter.FilterList<QueryFilter>(
+						filters),
 				scanCallback);
 	}
 
