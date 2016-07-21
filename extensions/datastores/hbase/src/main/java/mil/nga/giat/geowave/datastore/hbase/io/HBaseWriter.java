@@ -123,13 +123,12 @@ public class HBaseWriter implements
 
 			if (!found) {
 				synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-					if (tableDescriptor == null) {
-						if (!admin.isTableEnabled(table.getName())) {
-							admin.enableTable(table.getName());
-						}
-
-						tableDescriptor = admin.getTableDescriptor(table.getName());
+					if (!admin.isTableEnabled(table.getName())) {
+						admin.enableTable(table.getName());
 					}
+
+					// update the table descriptor
+					tableDescriptor = admin.getTableDescriptor(table.getName());
 
 					found = tableDescriptor.hasFamily(columnFamily.getBytes());
 				}
@@ -155,19 +154,20 @@ public class HBaseWriter implements
 
 		if (tableExists) {
 			synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-				if (!tableDescriptor.hasFamily(columnFamilyName.getBytes())) {
-
-					if (!admin.isTableDisabled(tableName)) {
-						admin.disableTable(tableName);
-					}
-
-					admin.addColumn(
-							tableName,
-							cfDescriptor);
-
-					// Enable table once done
-					admin.enableTable(tableName);
+				if (!admin.isTableDisabled(tableName)) {
+					admin.disableTable(tableName);
 				}
+
+				admin.addColumn(
+						tableName,
+						cfDescriptor);
+
+				cfMap.put(
+						columnFamilyName,
+						Boolean.TRUE);
+
+				// Enable table once done
+				admin.enableTable(tableName);
 			}
 		}
 		else {
