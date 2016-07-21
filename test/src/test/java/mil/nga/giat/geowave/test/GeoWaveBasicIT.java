@@ -136,7 +136,7 @@ public class GeoWaveBasicIT
 
 	@Test
 	public void testMultiThreadedIngestAndQuerySpatialPointsAndLines() {
-		//testIngestAndQuerySpatialPointsAndLines(4);
+		testIngestAndQuerySpatialPointsAndLines(4);
 	}
 
 	@Test
