@@ -1,7 +1,9 @@
 package mil.nga.giat.geowave.datastore.hbase.operations;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import mil.nga.giat.geowave.core.store.DataStoreOperations;
 import mil.nga.giat.geowave.datastore.hbase.io.HBaseWriter;
@@ -31,7 +33,7 @@ public class BasicHBaseOperations implements
 	private final Admin admin;
 
 	private final String tableNamespace;
-	private final HashMap<String, String> tableCfMap;
+	private final HashMap<String, List<String>> tableCfMap;
 
 	public BasicHBaseOperations(
 			final String zookeeperInstances,
@@ -44,7 +46,7 @@ public class BasicHBaseOperations implements
 
 		tableNamespace = geowaveNamespace;
 
-		tableCfMap = new HashMap<String, String>();
+		tableCfMap = new HashMap<String, List<String>>();
 	}
 
 	public static BasicHBaseOperations createOperations(
@@ -86,15 +88,13 @@ public class BasicHBaseOperations implements
 			final String columnFamily,
 			final TableName tableName )
 			throws IOException {
-		if (create) {
+		if (create && !admin.tableExists(tableName)) {
 			synchronized (ADMIN_MUTEX) {
-				if (!admin.isTableAvailable(tableName)) {
-					final HTableDescriptor desc = new HTableDescriptor(
-							tableName);
-					desc.addFamily(new HColumnDescriptor(
-							columnFamily));
-					admin.createTable(desc);
-				}
+				final HTableDescriptor desc = new HTableDescriptor(
+						tableName);
+				desc.addFamily(new HColumnDescriptor(
+						columnFamily));
+				admin.createTable(desc);
 			}
 		}
 
@@ -130,7 +130,7 @@ public class BasicHBaseOperations implements
 			final String tableName )
 			throws IOException {
 		final String qName = getQualifiedTableName(tableName);
-		
+
 		return admin.tableExists(getTableName(qName));
 	}
 
@@ -140,17 +140,27 @@ public class BasicHBaseOperations implements
 			throws IOException {
 		final String qName = getQualifiedTableName(tableName);
 
-		String checkIt = tableCfMap.get(qName);
+		List<String> cfList = tableCfMap.get(qName);
 
-		if (checkIt != null) {
-			return true;
+		if (cfList != null) {
+			if (cfList.contains(columnFamily)) {
+				return true;
+			}
+		}
+		else {
+			cfList = new ArrayList<String>();
 		}
 
 		final HTableDescriptor descriptor = admin.getTableDescriptor(getTableName(qName));
 
 		if (descriptor != null) {
 			if (descriptor.hasFamily(columnFamily.getBytes())) {
-				tableCfMap.put(qName, columnFamily);
+				cfList.add(columnFamily);
+				
+				tableCfMap.put(
+						qName,
+						cfList);
+				
 				return true;
 			}
 		}
@@ -176,8 +186,7 @@ public class BasicHBaseOperations implements
 			final String tableName ) {
 		final String qName = getQualifiedTableName(tableName);
 		try {
-			admin.deleteTable(
-					getTableName(qName));
+			admin.deleteTable(getTableName(qName));
 			return true;
 		}
 		catch (final IOException ex) {
