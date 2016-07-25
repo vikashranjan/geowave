@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.math.util.MathUtils;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.geotools.feature.AttributeTypeBuilder;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
@@ -145,17 +146,29 @@ public class GeoWaveBasicIT
 
 	public void testIngestAndQuerySpatialPointsAndLines(
 			final int nthreads ) {
+		LOGGER.setLevel(Level.DEBUG);
+		long queryStart = System.currentTimeMillis();
+
 		// ingest both lines and points
 		TestUtils.testLocalIngest(
 				dataStore,
 				DimensionalityType.SPATIAL,
 				HAIL_SHAPEFILE_FILE,
 				nthreads);
+		
+		long queryDur = (System.currentTimeMillis() - queryStart);
+		LOGGER.debug("Ingest (points) duration = " + queryDur + " ms with " + nthreads + " thread(s).");
+		
+		queryStart = System.currentTimeMillis();
+		
 		TestUtils.testLocalIngest(
 				dataStore,
 				DimensionalityType.SPATIAL,
 				TORNADO_TRACKS_SHAPEFILE_FILE,
 				nthreads);
+		
+		queryDur = (System.currentTimeMillis() - queryStart);
+		LOGGER.debug("Ingest (lines) duration = " + queryDur + " ms with " + nthreads + " thread(s).");
 
 		try {
 			testQuery(
