@@ -105,10 +105,8 @@ public class HBaseWriter implements
 		Boolean found = false;
 
 		try {
-			synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-				if (tableExists == null) {
-					tableExists = admin.tableExists(table.getName());
-				}
+			if (tableExists == null) {
+				tableExists = admin.tableExists(table.getName());
 			}
 
 			if (!tableExists) {
@@ -122,16 +120,14 @@ public class HBaseWriter implements
 			}
 
 			if (!found) {
-				synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-					if (!admin.isTableEnabled(table.getName())) {
-						admin.enableTable(table.getName());
-					}
-
-					// update the table descriptor
-					tableDescriptor = admin.getTableDescriptor(table.getName());
-
-					found = tableDescriptor.hasFamily(columnFamily.getBytes());
+				if (!admin.isTableEnabled(table.getName())) {
+					admin.enableTable(table.getName());
 				}
+
+				// update the table descriptor
+				tableDescriptor = admin.getTableDescriptor(table.getName());
+
+				found = tableDescriptor.hasFamily(columnFamily.getBytes());
 
 				cfMap.put(
 						columnFamily,

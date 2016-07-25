@@ -1,39 +1,37 @@
 package mil.nga.giat.geowave.datastore.hbase.operations;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.RegionLocator;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.RowMutations;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.client.Table;
-import org.apache.hadoop.hbase.security.visibility.Authorizations;
-import org.apache.log4j.Logger;
-
-import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.store.DataStoreOperations;
 import mil.nga.giat.geowave.datastore.hbase.io.HBaseWriter;
 import mil.nga.giat.geowave.datastore.hbase.operations.config.HBaseRequiredOptions;
 import mil.nga.giat.geowave.datastore.hbase.util.ConnectionPool;
 import mil.nga.giat.geowave.datastore.hbase.util.HBaseUtils;
 
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.RegionLocator;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.security.visibility.Authorizations;
+import org.apache.log4j.Logger;
+
 public class BasicHBaseOperations implements
 		DataStoreOperations
 {
-
 	private final static Logger LOGGER = Logger.getLogger(BasicHBaseOperations.class);
-	private static final String DEFAULT_TABLE_NAMESPACE = "";
 	public static final Object ADMIN_MUTEX = new Object();
 
 	private final Connection conn;
+	private final Admin admin;
+
 	private final String tableNamespace;
+	private final HashMap<String, String> tableCfMap;
 
 	public BasicHBaseOperations(
 			final String zookeeperInstances,
@@ -41,29 +39,12 @@ public class BasicHBaseOperations implements
 			throws IOException {
 		conn = ConnectionPool.getInstance().getConnection(
 				zookeeperInstances);
+
+		admin = conn.getAdmin();
+
 		tableNamespace = geowaveNamespace;
-	}
 
-	public BasicHBaseOperations(
-			final String zookeeperInstances )
-			throws IOException {
-		this(
-				zookeeperInstances,
-				DEFAULT_TABLE_NAMESPACE);
-	}
-
-	public BasicHBaseOperations(
-			final Connection connector ) {
-		this(
-				DEFAULT_TABLE_NAMESPACE,
-				connector);
-	}
-
-	public BasicHBaseOperations(
-			final String tableNamespace,
-			final Connection connector ) {
-		this.tableNamespace = tableNamespace;
-		conn = connector;
+		tableCfMap = new HashMap<String, String>();
 	}
 
 	public static BasicHBaseOperations createOperations(
@@ -72,16 +53,6 @@ public class BasicHBaseOperations implements
 		return new BasicHBaseOperations(
 				options.getZookeeper(),
 				options.getGeowaveNamespace());
-	}
-
-	public HBaseWriter createWriter(
-			final String tableName,
-			final String columnFamily )
-			throws IOException {
-		return createWriter(
-				tableName,
-				columnFamily,
-				true);
 	}
 
 	private TableName getTableName(
@@ -95,40 +66,39 @@ public class BasicHBaseOperations implements
 			final boolean createTable )
 			throws IOException {
 		final TableName tName = getTableName(getQualifiedTableName(sTableName));
-		Table table = null;
-		table = getTable(
+		Table table = getTable(
 				createTable,
 				columnFamily,
 				tName);
+
 		return new HBaseWriter(
-				conn.getAdmin(),
+				admin,
 				table);
 	}
 
 	/*
-	 * private Table getTable( final boolean create, TableName name ) throws
-	 * IOException { return getTable( create, DEFAULT_COLUMN_FAMILY, name); }
+	 * private Table getTable( final boolean create, TableName name ) throws IOException { return getTable( create,
+	 * DEFAULT_COLUMN_FAMILY, name); }
 	 */
 
 	private Table getTable(
 			final boolean create,
 			final String columnFamily,
-			final TableName name )
+			final TableName tableName )
 			throws IOException {
-		Table table;
-		synchronized (ADMIN_MUTEX) {
-			if (create && !conn.getAdmin().isTableAvailable(
-					name)) {
-				final HTableDescriptor desc = new HTableDescriptor(
-						name);
-				desc.addFamily(new HColumnDescriptor(
-						columnFamily));
-				conn.getAdmin().createTable(
-						desc);
+		if (create) {
+			synchronized (ADMIN_MUTEX) {
+				if (!admin.isTableAvailable(tableName)) {
+					final HTableDescriptor desc = new HTableDescriptor(
+							tableName);
+					desc.addFamily(new HColumnDescriptor(
+							columnFamily));
+					admin.createTable(desc);
+				}
 			}
 		}
-		table = conn.getTable(name);
-		return table;
+
+		return conn.getTable(tableName);
 	}
 
 	public String getQualifiedTableName(
@@ -141,17 +111,14 @@ public class BasicHBaseOperations implements
 	@Override
 	public void deleteAll()
 			throws IOException {
-		final TableName[] tableNamesArr = conn.getAdmin().listTableNames();
+		final TableName[] tableNamesArr = admin.listTableNames();
 		for (final TableName tableName : tableNamesArr) {
 			if ((tableNamespace == null) || tableName.getNameAsString().startsWith(
 					tableNamespace)) {
 				synchronized (ADMIN_MUTEX) {
-					if (conn.getAdmin().isTableAvailable(
-							tableName)) {
-						conn.getAdmin().disableTable(
-								tableName);
-						conn.getAdmin().deleteTable(
-								tableName);
+					if (admin.isTableAvailable(tableName)) {
+						admin.disableTable(tableName);
+						admin.deleteTable(tableName);
 					}
 				}
 			}
@@ -163,11 +130,8 @@ public class BasicHBaseOperations implements
 			final String tableName )
 			throws IOException {
 		final String qName = getQualifiedTableName(tableName);
-		synchronized (ADMIN_MUTEX) {
-			return conn.getAdmin().isTableAvailable(
-					getTableName(qName));
-		}
-
+		
+		return admin.tableExists(getTableName(qName));
 	}
 
 	public boolean columnFamilyExists(
@@ -175,19 +139,22 @@ public class BasicHBaseOperations implements
 			final String columnFamily )
 			throws IOException {
 		final String qName = getQualifiedTableName(tableName);
-		synchronized (ADMIN_MUTEX) {
-			final HTableDescriptor descriptor = conn.getAdmin().getTableDescriptor(
-					getTableName(qName));
 
-			if (descriptor != null) {
-				for (final HColumnDescriptor hColumnDescriptor : descriptor.getColumnFamilies()) {
-					if (hColumnDescriptor.getNameAsString().equalsIgnoreCase(
-							columnFamily)) {
-						return true;
-					}
-				}
+		String checkIt = tableCfMap.get(qName);
+
+		if (checkIt != null) {
+			return true;
+		}
+
+		final HTableDescriptor descriptor = admin.getTableDescriptor(getTableName(qName));
+
+		if (descriptor != null) {
+			if (descriptor.hasFamily(columnFamily.getBytes())) {
+				tableCfMap.put(qName, columnFamily);
+				return true;
 			}
 		}
+
 		return false;
 	}
 
@@ -209,7 +176,7 @@ public class BasicHBaseOperations implements
 			final String tableName ) {
 		final String qName = getQualifiedTableName(tableName);
 		try {
-			conn.getAdmin().deleteTable(
+			admin.deleteTable(
 					getTableName(qName));
 			return true;
 		}
@@ -232,24 +199,4 @@ public class BasicHBaseOperations implements
 	public String getTableNameSpace() {
 		return tableNamespace;
 	}
-
-	// public void addColumnFamily(
-	// final String tableName,
-	// final String columnFamily )
-	// throws IOException {
-	//
-	// final TableName tn = getTableName(
-	// getQualifiedTableName(
-	// tableName));
-	// final HBaseWriter writer = new HBaseWriter(
-	// conn.getAdmin(),
-	// getTable(
-	// false,
-	// null,
-	// tn));
-	//
-	// writer.addColumnFamilyToTable(
-	// tn,
-	// columnFamily);
-	// }
 }
