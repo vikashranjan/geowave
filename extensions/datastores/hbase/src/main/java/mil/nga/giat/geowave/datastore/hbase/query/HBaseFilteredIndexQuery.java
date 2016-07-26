@@ -32,6 +32,7 @@ import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.filter.FirstKeyOnlyFilter;
 import org.apache.hadoop.hbase.filter.MultiRowRangeFilter;
 import org.apache.hadoop.hbase.filter.MultiRowRangeFilter.RowRange;
 import org.apache.log4j.Level;
@@ -165,6 +166,9 @@ public abstract class HBaseFilteredIndexQuery extends
 			catch (final IOException e) {
 				LOGGER.warn("Could not get the results from scanner " + e);
 			}
+			finally {
+				
+			}
 		}
 
 		if (results.iterator().hasNext()) {
@@ -270,9 +274,12 @@ public abstract class HBaseFilteredIndexQuery extends
 		scanner.setCaching(1000);
 		scanner.setCacheBlocks(false);
 
-		FilterList filterList = null;
-		if ((distributableFilters != null) && (distributableFilters.size() > 0)) {
-			filterList = new FilterList();
+		
+		// always add the must pass all and key only filter
+		FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ALL);
+		filterList.addFilter(new FirstKeyOnlyFilter());
+		
+		if ((distributableFilters != null) && (distributableFilters.size() > 0)) {			
 			for (final Filter filter : distributableFilters) {
 				filterList.addFilter(filter);
 			}
