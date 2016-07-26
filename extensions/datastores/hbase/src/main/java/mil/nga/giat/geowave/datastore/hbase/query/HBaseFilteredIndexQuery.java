@@ -292,6 +292,7 @@ public abstract class HBaseFilteredIndexQuery extends
 
 		if ((limit != null) && (limit > 0) && (limit < scanner.getBatch())) {
 			scanner.setBatch(limit);
+			LOGGER.debug("Scanner batch set to " + limit);
 		}
 
 		// create the multi-row filter

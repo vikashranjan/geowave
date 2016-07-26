@@ -88,7 +88,7 @@ public class BasicHBaseOperations implements
 			final String columnFamily,
 			final TableName tableName )
 			throws IOException {
-		if (create && !admin.tableExists(tableName)) {
+		if (create && !admin.isTableAvailable(tableName)) {
 			synchronized (ADMIN_MUTEX) {
 				final HTableDescriptor desc = new HTableDescriptor(
 						tableName);
@@ -131,7 +131,7 @@ public class BasicHBaseOperations implements
 			throws IOException {
 		final String qName = getQualifiedTableName(tableName);
 
-		return admin.tableExists(getTableName(qName));
+		return admin.isTableAvailable(getTableName(qName));
 	}
 
 	public boolean columnFamilyExists(
