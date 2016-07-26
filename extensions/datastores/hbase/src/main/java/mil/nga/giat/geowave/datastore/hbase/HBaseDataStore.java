@@ -72,7 +72,8 @@ public class HBaseDataStore extends
 		BaseDataStore implements
 		MapReduceDataStore
 {
-
+	public final static String TYPE = "hbase";
+	
 	private final static Logger LOGGER = Logger.getLogger(HBaseDataStore.class);
 
 	private final BasicHBaseOperations operations;
