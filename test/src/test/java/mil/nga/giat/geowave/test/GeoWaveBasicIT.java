@@ -119,7 +119,7 @@ public class GeoWaveBasicIT
 	private static final String TEST_BASE_EXPORT_FILE_NAME = "basicIT-export.avro";
 
 	@GeoWaveTestStore({
-		GeoWaveStoreType.ACCUMULO,
+//		GeoWaveStoreType.ACCUMULO,
 		GeoWaveStoreType.HBASE
 	})
 	protected DataStorePluginOptions dataStore;
@@ -149,7 +149,7 @@ public class GeoWaveBasicIT
 		LOGGER.setLevel(Level.DEBUG);
 		long mark = System.currentTimeMillis();
 		
-		LOGGER.debug("Testing " + dataStore.getClass().getName());
+		LOGGER.debug("Testing DataStore Type: " + dataStore.getType());
 
 		// ingest both lines and points
 		TestUtils.testLocalIngest(
@@ -197,6 +197,8 @@ public class GeoWaveBasicIT
 					+ e.getLocalizedMessage() + "'");
 		}
 		try {
+			mark = System.currentTimeMillis();
+
 			testQuery(
 					new File(
 							TEST_POLYGON_FILTER_FILE).toURI().toURL(),
@@ -208,6 +210,9 @@ public class GeoWaveBasicIT
 					},
 					TestUtils.DEFAULT_SPATIAL_INDEX,
 					"polygon constraint only");
+			
+			dur = (System.currentTimeMillis() - mark);
+			LOGGER.debug("POLY query duration = " + dur + " ms.");
 		}
 		catch (final Exception e) {
 			e.printStackTrace();
