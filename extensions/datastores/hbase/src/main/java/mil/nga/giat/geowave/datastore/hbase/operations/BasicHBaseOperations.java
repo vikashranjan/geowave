@@ -30,7 +30,6 @@ public class BasicHBaseOperations implements
 	public static final Object ADMIN_MUTEX = new Object();
 
 	private final Connection conn;
-	private final Admin admin;
 
 	private final String tableNamespace;
 	private final HashMap<String, List<String>> tableCfMap;
@@ -41,8 +40,6 @@ public class BasicHBaseOperations implements
 			throws IOException {
 		conn = ConnectionPool.getInstance().getConnection(
 				zookeeperInstances);
-
-		admin = conn.getAdmin();
 
 		tableNamespace = geowaveNamespace;
 
@@ -74,7 +71,7 @@ public class BasicHBaseOperations implements
 				tName);
 
 		return new HBaseWriter(
-				admin,
+				conn.getAdmin(),
 				table);
 	}
 
@@ -88,13 +85,13 @@ public class BasicHBaseOperations implements
 			final String columnFamily,
 			final TableName tableName )
 			throws IOException {
-		if (create && !admin.isTableAvailable(tableName)) {
+		if (create && !conn.getAdmin().tableExists(tableName)) {
 			synchronized (ADMIN_MUTEX) {
 				final HTableDescriptor desc = new HTableDescriptor(
 						tableName);
 				desc.addFamily(new HColumnDescriptor(
 						columnFamily));
-				admin.createTable(desc);
+				conn.getAdmin().createTable(desc);
 			}
 		}
 
@@ -111,14 +108,14 @@ public class BasicHBaseOperations implements
 	@Override
 	public void deleteAll()
 			throws IOException {
-		final TableName[] tableNamesArr = admin.listTableNames();
+		final TableName[] tableNamesArr = conn.getAdmin().listTableNames();
 		for (final TableName tableName : tableNamesArr) {
 			if ((tableNamespace == null) || tableName.getNameAsString().startsWith(
 					tableNamespace)) {
 				synchronized (ADMIN_MUTEX) {
-					if (admin.isTableAvailable(tableName)) {
-						admin.disableTable(tableName);
-						admin.deleteTable(tableName);
+					if (conn.getAdmin().isTableAvailable(tableName)) {
+						conn.getAdmin().disableTable(tableName);
+						conn.getAdmin().deleteTable(tableName);
 					}
 				}
 			}
@@ -131,7 +128,7 @@ public class BasicHBaseOperations implements
 			throws IOException {
 		final String qName = getQualifiedTableName(tableName);
 
-		return admin.isTableAvailable(getTableName(qName));
+		return conn.getAdmin().tableExists(getTableName(qName));
 	}
 
 	public boolean columnFamilyExists(
@@ -151,7 +148,7 @@ public class BasicHBaseOperations implements
 			cfList = new ArrayList<String>();
 		}
 
-		final HTableDescriptor descriptor = admin.getTableDescriptor(getTableName(qName));
+		final HTableDescriptor descriptor = conn.getAdmin().getTableDescriptor(getTableName(qName));
 
 		if (descriptor != null) {
 			if (descriptor.hasFamily(columnFamily.getBytes())) {
@@ -186,7 +183,7 @@ public class BasicHBaseOperations implements
 			final String tableName ) {
 		final String qName = getQualifiedTableName(tableName);
 		try {
-			admin.deleteTable(getTableName(qName));
+			conn.getAdmin().deleteTable(getTableName(qName));
 			return true;
 		}
 		catch (final IOException ex) {
