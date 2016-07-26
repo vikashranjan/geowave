@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
+import mil.nga.giat.geowave.core.store.Writer;
+import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
+
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
@@ -12,9 +15,6 @@ import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.RowMutations;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.log4j.Logger;
-
-import mil.nga.giat.geowave.core.store.Writer;
-import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
 
 /**
  * Functionality similar to <code> BatchWriterWrapper </code>
@@ -30,7 +30,6 @@ public class HBaseWriter implements
 	private final Admin admin;
 
 	private final HashMap<String, Boolean> cfMap;
-	private Boolean tableExists = null;
 	private HTableDescriptor tableDescriptor = null;
 
 	public HBaseWriter(
@@ -105,14 +104,6 @@ public class HBaseWriter implements
 		Boolean found = false;
 
 		try {
-			if (tableExists == null) {
-				tableExists = admin.tableExists(table.getName());
-			}
-
-			if (!tableExists) {
-				return false;
-			}
-
 			found = cfMap.get(columnFamily);
 
 			if (found == null) {
@@ -120,15 +111,17 @@ public class HBaseWriter implements
 			}
 
 			if (!found) {
-				if (!admin.isTableEnabled(table.getName())) {
-					admin.enableTable(table.getName());
+				synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
+					if (!admin.isTableEnabled(table.getName())) {
+						admin.enableTable(table.getName());
+					}
+
+					// update the table descriptor
+					tableDescriptor = admin.getTableDescriptor(table.getName());
+
+					found = tableDescriptor.hasFamily(columnFamily.getBytes());
 				}
-
-				// update the table descriptor
-				tableDescriptor = admin.getTableDescriptor(table.getName());
-
-				found = tableDescriptor.hasFamily(columnFamily.getBytes());
-
+				
 				cfMap.put(
 						columnFamily,
 						found);
@@ -148,26 +141,21 @@ public class HBaseWriter implements
 		final HColumnDescriptor cfDescriptor = new HColumnDescriptor(
 				columnFamilyName);
 
-		if (tableExists) {
-			synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-				if (!admin.isTableDisabled(tableName)) {
-					admin.disableTable(tableName);
-				}
-
-				admin.addColumn(
-						tableName,
-						cfDescriptor);
-
-				cfMap.put(
-						columnFamilyName,
-						Boolean.TRUE);
-
-				// Enable table once done
-				admin.enableTable(tableName);
+		synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
+			if (!admin.isTableDisabled(tableName)) {
+				admin.disableTable(tableName);
 			}
-		}
-		else {
-			LOGGER.warn("Table " + tableName.getNameAsString() + " doesn't exist! Unable to add column family " + columnFamilyName);
+
+			admin.addColumn(
+					tableName,
+					cfDescriptor);
+
+			cfMap.put(
+					columnFamilyName,
+					Boolean.TRUE);
+
+			// Enable table once done
+			admin.enableTable(tableName);
 		}
 	}
 
