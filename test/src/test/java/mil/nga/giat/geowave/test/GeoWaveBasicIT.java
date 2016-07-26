@@ -119,7 +119,7 @@ public class GeoWaveBasicIT
 	private static final String TEST_BASE_EXPORT_FILE_NAME = "basicIT-export.avro";
 
 	@GeoWaveTestStore({
-//		GeoWaveStoreType.ACCUMULO,
+		GeoWaveStoreType.ACCUMULO,
 		GeoWaveStoreType.HBASE
 	})
 	protected DataStorePluginOptions dataStore;
@@ -147,7 +147,9 @@ public class GeoWaveBasicIT
 	public void testIngestAndQuerySpatialPointsAndLines(
 			final int nthreads ) {
 		LOGGER.setLevel(Level.DEBUG);
-		long queryStart = System.currentTimeMillis();
+		long mark = System.currentTimeMillis();
+		
+		LOGGER.debug("Testing " + dataStore.getClass().getName());
 
 		// ingest both lines and points
 		TestUtils.testLocalIngest(
@@ -156,10 +158,10 @@ public class GeoWaveBasicIT
 				HAIL_SHAPEFILE_FILE,
 				nthreads);
 		
-		long queryDur = (System.currentTimeMillis() - queryStart);
-		LOGGER.debug("Ingest (points) duration = " + queryDur + " ms with " + nthreads + " thread(s).");
+		long dur = (System.currentTimeMillis() - mark);
+		LOGGER.debug("Ingest (points) duration = " + dur + " ms with " + nthreads + " thread(s).");
 		
-		queryStart = System.currentTimeMillis();
+		mark = System.currentTimeMillis();
 		
 		TestUtils.testLocalIngest(
 				dataStore,
@@ -167,10 +169,12 @@ public class GeoWaveBasicIT
 				TORNADO_TRACKS_SHAPEFILE_FILE,
 				nthreads);
 		
-		queryDur = (System.currentTimeMillis() - queryStart);
-		LOGGER.debug("Ingest (lines) duration = " + queryDur + " ms with " + nthreads + " thread(s).");
+		dur = (System.currentTimeMillis() - mark);
+		LOGGER.debug("Ingest (lines) duration = " + dur + " ms with " + nthreads + " thread(s).");
 
 		try {
+			mark = System.currentTimeMillis();
+
 			testQuery(
 					new File(
 							TEST_BOX_FILTER_FILE).toURI().toURL(),
@@ -182,6 +186,9 @@ public class GeoWaveBasicIT
 					},
 					TestUtils.DEFAULT_SPATIAL_INDEX,
 					"bounding box constraint only");
+			
+			dur = (System.currentTimeMillis() - mark);
+			LOGGER.debug("BBOX query duration = " + dur + " ms.");
 		}
 		catch (final Exception e) {
 			e.printStackTrace();
