@@ -268,24 +268,22 @@ public abstract class HBaseFilteredIndexQuery extends
 			final List<Filter> distributableFilters,
 			final CloseableIterator<DataAdapter<?>> adapters ) {
 		final List<Scan> scanners = new ArrayList<Scan>();
+		
+		// Single scan w/ multiple ranges
 		final Scan scanner = new Scan();
 		
 		// Performance recommendations
 		scanner.setCaching(1000);
 		scanner.setCacheBlocks(false);
 
-		
-		// always add the must pass all and key only filter
-		FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ALL);
-		filterList.addFilter(new FirstKeyOnlyFilter());
-		
-		if ((distributableFilters != null) && (distributableFilters.size() > 0)) {			
+		FilterList filterList = new FilterList();
+
+		// Add server-side filters (currently not implemented)
+		if ((distributableFilters != null) && (!distributableFilters.isEmpty())) {						
 			for (final Filter filter : distributableFilters) {
 				filterList.addFilter(filter);
 			}
 		}
-
-		scanner.setFilter(filterList);
 
 		if ((adapterIds != null) && !adapterIds.isEmpty()) {
 			for (final ByteArrayId adapterId : adapterIds) {
@@ -303,7 +301,6 @@ public abstract class HBaseFilteredIndexQuery extends
 
 		if ((limit != null) && (limit > 0) && (limit < scanner.getBatch())) {
 			scanner.setBatch(limit);
-			LOGGER.debug("Scanner batch set to " + limit);
 		}
 
 		// create the multi-row filter
@@ -318,9 +315,8 @@ public abstract class HBaseFilteredIndexQuery extends
 
 		LOGGER.debug("Query has " + ranges.size() + " ranges in one multi-filter.");
 
-		if ((ranges != null) && (ranges.size() > 0)) {
+		if (!ranges.isEmpty()) {
 			for (final ByteArrayRange range : ranges) {
-
 				if (range.getStart() != null) {
 					byte[] startRow = range.getStart().getBytes();
 					byte[] stopRow;
@@ -342,18 +338,20 @@ public abstract class HBaseFilteredIndexQuery extends
 			}
 		}
 
-		// The list will contain a single scanner if successful
+		// Create the multi-range filter
 		try {
 			Filter filter = new MultiRowRangeFilter(
 					rowRanges);
-
-			scanner.setFilter(filter);
-
-			scanners.add(scanner);
+			
+			filterList.addFilter(filter);
 		}
 		catch (IOException e) {
 			e.printStackTrace();
 		}
+
+		// Set the filter list for the scan and return the scan list (with the single multi-range scan)
+		scanner.setFilter(filterList);
+		scanners.add(scanner);
 
 		return scanners;
 	}
