@@ -97,20 +97,20 @@ public abstract class HBaseFilteredIndexQuery extends
 			final BasicHBaseOperations operations,
 			final AdapterStore adapterStore,
 			final Integer limit ) {
-		try {
-			if (!validateAdapters(operations)) {
-				LOGGER.warn("Query contains no valid adapters.");
-				return new CloseableIterator.Empty();
-			}
-			if (!operations.tableExists(StringUtils.stringFromBinary(index.getId().getBytes()))) {
-				LOGGER.warn("Table does not exist " + StringUtils.stringFromBinary(index.getId().getBytes()));
-				return new CloseableIterator.Empty();
-			}
-		}
-		catch (final IOException ex) {
-			LOGGER.warn("Unabe to check if " + StringUtils.stringFromBinary(index.getId().getBytes()) + " table exists");
-			return new CloseableIterator.Empty();
-		}
+//		try {
+//			if (!validateAdapters(operations)) {
+//				LOGGER.warn("Query contains no valid adapters.");
+//				return new CloseableIterator.Empty();
+//			}
+//			if (!operations.tableExists(StringUtils.stringFromBinary(index.getId().getBytes()))) {
+//				LOGGER.warn("Table does not exist " + StringUtils.stringFromBinary(index.getId().getBytes()));
+//				return new CloseableIterator.Empty();
+//			}
+//		}
+//		catch (final IOException ex) {
+//			LOGGER.warn("Unabe to check if " + StringUtils.stringFromBinary(index.getId().getBytes()) + " table exists");
+//			return new CloseableIterator.Empty();
+//		}
 		final String tableName = StringUtils.stringFromBinary(index.getId().getBytes());
 
 		final List<Filter> distributableFilters = getDistributableFilter();
