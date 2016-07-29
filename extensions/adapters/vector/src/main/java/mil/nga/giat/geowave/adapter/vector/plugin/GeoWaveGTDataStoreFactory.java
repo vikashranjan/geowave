@@ -71,8 +71,7 @@ public class GeoWaveGTDataStoreFactory implements
 			while (it.hasNext()) {
 				StoreFactoryFamilySpi currFactoryFamily = it.next();
 				if (currFactoryFamily.getName().equals(
-						"memory") || currFactoryFamily.getName().equals(
-						"hbase")) {
+						"memory")) {
 					memoryFactoryFamily = currFactoryFamily;
 				}
 				else {
