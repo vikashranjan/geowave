@@ -27,9 +27,11 @@ import mil.nga.giat.geowave.core.cli.api.DefaultOperation;
 import mil.nga.giat.geowave.core.cli.api.OperationParams;
 import mil.nga.giat.geowave.core.cli.operations.config.options.ConfigOptions;
 import mil.nga.giat.geowave.core.store.operations.remote.options.StoreLoader;
+import mil.nga.giat.geowave.datastore.accumulo.AccumuloDataStore;
 import mil.nga.giat.geowave.datastore.accumulo.AccumuloOperations;
 import mil.nga.giat.geowave.datastore.accumulo.BasicAccumuloOperations;
 import mil.nga.giat.geowave.datastore.accumulo.operations.config.AccumuloRequiredOptions;
+import mil.nga.giat.geowave.datastore.hbase.HBaseDataStore;
 
 @GeowaveOperation(name = "fullscanMinimal", parentOperation = DebugSection.class)
 @Parameters(commandDescription = "full table scan without any iterators or deserialization")
@@ -71,7 +73,7 @@ public class MinimalFullTable extends
 		
 		String storeType = storeOptions.getDataStorePlugin().getType();
 		
-		if (storeType.equals("accumulo")) {
+		if (storeType.equals(AccumuloDataStore.TYPE)) {
 			try {
 				AccumuloRequiredOptions opts = (AccumuloRequiredOptions) storeOptions.getFactoryOptions();
 
@@ -102,7 +104,7 @@ public class MinimalFullTable extends
 				e.printStackTrace();
 			}	
 		}
-		else if (storeType.equals("hbase")) {
+		else if (storeType.equals(HBaseDataStore.TYPE)) {
 			throw new UnsupportedOperationException(
 					"full scan for store type " + storeType + " not yet implemented.");
 		}
