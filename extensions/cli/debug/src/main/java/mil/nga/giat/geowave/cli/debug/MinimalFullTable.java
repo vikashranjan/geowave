@@ -68,33 +68,47 @@ public class MinimalFullTable extends
 			throw new ParameterException(
 					"Cannot find store name: " + storeOptions.getStoreName());
 		}
+		
+		String storeType = storeOptions.getDataStorePlugin().getType();
+		
+		if (storeType.equals("accumulo")) {
+			try {
+				AccumuloRequiredOptions opts = (AccumuloRequiredOptions) storeOptions.getFactoryOptions();
 
-		try {
-			AccumuloRequiredOptions opts = (AccumuloRequiredOptions) storeOptions.getFactoryOptions();
+				final AccumuloOperations ops = new BasicAccumuloOperations(
+						opts.getZookeeper(),
+						opts.getInstance(),
+						opts.getUser(),
+						opts.getPassword(),
+						opts.getGeowaveNamespace());
 
-			final AccumuloOperations ops = new BasicAccumuloOperations(
-					opts.getZookeeper(),
-					opts.getInstance(),
-					opts.getUser(),
-					opts.getPassword(),
-					opts.getGeowaveNamespace());
-
-			long results = 0;
-			final BatchScanner scanner = ops.createBatchScanner(indexId);
-			scanner.setRanges(Collections.singleton(new Range()));
-			final Iterator<Entry<Key, Value>> it = scanner.iterator();
-			stopWatch.start();
-			while (it.hasNext()) {
-				it.next();
-				results++;
+				long results = 0;
+				final BatchScanner scanner = ops.createBatchScanner(indexId);
+				scanner.setRanges(Collections.singleton(new Range()));
+				Iterator<Entry<Key, Value>> it = scanner.iterator();
+				
+				stopWatch.start();
+				while (it.hasNext()) {
+					it.next();
+					results++;
+				}
+				stopWatch.stop();
+				
+				scanner.close();
+				System.out.println("Got " + results + " results in " + stopWatch.toString());
 			}
-			stopWatch.stop();
-			scanner.close();
-			System.out.println("Got " + results + " results in " + stopWatch.toString());
+			catch (AccumuloException | AccumuloSecurityException | TableNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}	
 		}
-		catch (AccumuloException | AccumuloSecurityException | TableNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		else if (storeType.equals("hbase")) {
+			throw new UnsupportedOperationException(
+					"full scan for store type " + storeType + " not yet implemented.");
+		}
+		else {
+			throw new UnsupportedOperationException(
+					"full scan for store type " + storeType + " not implemented.");
 		}
 	}
 }
