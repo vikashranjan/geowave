@@ -23,19 +23,34 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 public class BBOXQuery extends
 		AbstractGeoWaveQuery
 {
-	@Parameter(names = "--east, -e", required = true, description = "Max Longitude of BBOX")
+	@Parameter(names = {
+		"-e",
+		"--east"
+	}, required = true, description = "Max Longitude of BBOX")
 	private Double east;
 
-	@Parameter(names = "--west, -w", required = true, description = "Min Longitude of BBOX")
+	@Parameter(names = {
+		"-w",
+		"--west"
+	}, required = true, description = "Min Longitude of BBOX")
 	private Double west;
 
-	@Parameter(names = "--north, -n", required = true, description = "Max Latitude of BBOX")
+	@Parameter(names = {
+		"-n",
+		"--north"
+	}, required = true, description = "Max Latitude of BBOX")
 	private Double north;
 
-	@Parameter(names = "--south, -s", required = true, description = "Min Latitude of BBOX")
+	@Parameter(names = {
+		"-s",
+		"--south"
+	}, required = true, description = "Min Latitude of BBOX")
 	private Double south;
 
-	@Parameter(names = "--useAggregation, -agg", required = false, description = "Compute count on the server side")
+	@Parameter(names = {
+		"--useAggregation",
+		"-agg"
+	}, required = false, description = "Compute count on the server side")
 	private Boolean useAggregation = Boolean.FALSE;
 
 	private Geometry geom;
