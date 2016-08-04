@@ -1,6 +1,7 @@
 package mil.nga.giat.geowave.datastore.hbase.operations;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 import mil.nga.giat.geowave.core.store.DataStoreOperations;
 import mil.nga.giat.geowave.datastore.hbase.io.HBaseWriter;
@@ -11,6 +12,7 @@ import mil.nga.giat.geowave.datastore.hbase.util.HBaseUtils;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.RegionLocator;
 import org.apache.hadoop.hbase.client.ResultScanner;
@@ -29,6 +31,7 @@ public class BasicHBaseOperations implements
 
 	private final Connection conn;
 	private final String tableNamespace;
+	private final HashMap<String, BufferedMutator> mutatorMap;
 
 	public BasicHBaseOperations(
 			final String zookeeperInstances,
@@ -37,6 +40,7 @@ public class BasicHBaseOperations implements
 		conn = ConnectionPool.getInstance().getConnection(
 				zookeeperInstances);
 		tableNamespace = geowaveNamespace;
+		mutatorMap = new HashMap<String, BufferedMutator>();
 	}
 
 	public BasicHBaseOperations(
@@ -59,6 +63,7 @@ public class BasicHBaseOperations implements
 			final Connection connector ) {
 		this.tableNamespace = tableNamespace;
 		conn = connector;
+		mutatorMap = new HashMap<String, BufferedMutator>();
 	}
 
 	public static BasicHBaseOperations createOperations(
@@ -67,6 +72,19 @@ public class BasicHBaseOperations implements
 		return new BasicHBaseOperations(
 				options.getZookeeper(),
 				options.getGeowaveNamespace());
+	}
+
+	public BufferedMutator getBufferedMutator(
+			final String tableName )
+			throws IOException {
+		if (!mutatorMap.containsKey(tableName)) {
+			BufferedMutator mutator = conn.getBufferedMutator(TableName.valueOf(tableName));
+			mutatorMap.put(
+					tableName,
+					mutator);
+		}
+
+		return mutatorMap.get(tableName);
 	}
 
 	public HBaseWriter createWriter(
@@ -89,20 +107,17 @@ public class BasicHBaseOperations implements
 			final String columnFamily,
 			final boolean createTable )
 			throws IOException {
-		final TableName tName = getTableName(getQualifiedTableName(sTableName));
-		Table table = null;
-		table = getTable(
-				createTable,
-				columnFamily,
-				tName);
+		BufferedMutator mutator = getBufferedMutator(sTableName);
+
 		return new HBaseWriter(
 				conn.getAdmin(),
-				table);
+				sTableName,
+				mutator);
 	}
 
 	/*
-	 * private Table getTable( final boolean create, TableName name ) throws
-	 * IOException { return getTable( create, DEFAULT_COLUMN_FAMILY, name); }
+	 * private Table getTable( final boolean create, TableName name ) throws IOException { return getTable( create,
+	 * DEFAULT_COLUMN_FAMILY, name); }
 	 */
 
 	private Table getTable(

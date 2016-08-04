@@ -11,10 +11,10 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.RowMutations;
-import org.apache.hadoop.hbase.client.Table;
 import org.apache.log4j.Logger;
 
 /**
@@ -27,17 +27,20 @@ public class HBaseWriter implements
 		Writer<RowMutations>
 {
 	private final static Logger LOGGER = Logger.getLogger(HBaseWriter.class);
-	private final Table table;
+	private final TableName tableName;
 	private final Admin admin;
 
 	private final HashMap<String, Boolean> cfMap;
 	private HTableDescriptor tableDescriptor = null;
+	private final BufferedMutator mutator;
 
 	public HBaseWriter(
 			final Admin admin,
-			final Table table ) {
+			final String tableName,
+			final BufferedMutator mutator ) {
 		this.admin = admin;
-		this.table = table;
+		this.tableName = TableName.valueOf(tableName);
+		this.mutator = mutator;
 
 		this.cfMap = new HashMap<String, Boolean>();
 	}
@@ -46,7 +49,7 @@ public class HBaseWriter implements
 	public void write(
 			final RowMutations rowMutation ) {
 		try {
-			table.mutateRow(rowMutation);
+			mutator.mutate(rowMutation.getMutations());
 		}
 		catch (final IOException e) {
 			LOGGER.error(
@@ -72,7 +75,7 @@ public class HBaseWriter implements
 			throws IOException {
 		if (!columnFamilyExists(columnFamily)) {
 			addColumnFamilyToTable(
-					table.getName(),
+					tableName,
 					columnFamily);
 		}
 
@@ -87,11 +90,11 @@ public class HBaseWriter implements
 			throws IOException {
 		if (!columnFamilyExists(columnFamily)) {
 			addColumnFamilyToTable(
-					table.getName(),
+					tableName,
 					columnFamily);
 		}
 
-		table.put(puts);
+		mutator.mutate(puts);
 	}
 
 	public void write(
@@ -100,7 +103,7 @@ public class HBaseWriter implements
 		try {
 			if (!columnFamilyExists(columnFamily)) {
 				addColumnFamilyToTable(
-						table.getName(),
+						tableName,
 						columnFamily);
 			}
 
@@ -126,12 +129,12 @@ public class HBaseWriter implements
 
 			if (!found) {
 				synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-					if (!admin.isTableEnabled(table.getName())) {
-						admin.enableTable(table.getName());
+					if (!admin.isTableEnabled(tableName)) {
+						admin.enableTable(tableName);
 					}
 
 					// update the table descriptor
-					tableDescriptor = admin.getTableDescriptor(table.getName());
+					tableDescriptor = admin.getTableDescriptor(tableName);
 
 					found = tableDescriptor.hasFamily(columnFamily.getBytes());
 				}
@@ -184,13 +187,13 @@ public class HBaseWriter implements
 	public void delete(
 			final Delete delete )
 			throws IOException {
-		table.delete(delete);
+		mutator.mutate(delete);
 	}
 
 	public void delete(
 			final List<Delete> deletes )
 			throws IOException {
-		table.delete(deletes);
+		mutator.mutate(deletes);
 	}
 
 	@Override
