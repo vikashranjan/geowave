@@ -81,6 +81,8 @@ public class BasicHBaseOperations implements
 			final String tableName )
 			throws IOException {
 		if (!mutatorMap.containsKey(tableName)) {
+			LOGGER.warn("KAM *** Creating mutator for " + tableName);
+			
 			BufferedMutatorParams params = new BufferedMutatorParams(
 					TableName.valueOf(tableName));
 
