@@ -49,7 +49,7 @@ import org.apache.log4j.Logger;
 
 public class HBaseUtils
 {
-	private final static Boolean PUT_ONLY = Boolean.TRUE;
+	private final static Boolean PUT_ONLY = Boolean.FALSE;
 
 	private final static Logger LOGGER = Logger.getLogger(HBaseUtils.class);
 
