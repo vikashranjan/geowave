@@ -13,9 +13,12 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.BufferedMutator;
+import org.apache.hadoop.hbase.client.BufferedMutator.ExceptionListener;
+import org.apache.hadoop.hbase.client.BufferedMutatorParams;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.RegionLocator;
 import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.RetriesExhaustedWithDetailsException;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.security.visibility.Authorizations;
@@ -78,7 +81,24 @@ public class BasicHBaseOperations implements
 			final String tableName )
 			throws IOException {
 		if (!mutatorMap.containsKey(tableName)) {
-			BufferedMutator mutator = conn.getBufferedMutator(TableName.valueOf(tableName));
+			BufferedMutatorParams params = new BufferedMutatorParams(
+					TableName.valueOf(tableName));
+
+			// Just guessing. Default is 2M. Trying 16M here.
+			params.writeBufferSize(16L * 1024L & 1024L);
+
+			params.listener(new ExceptionListener() {
+				@Override
+				public void onException(
+						RetriesExhaustedWithDetailsException exception,
+						BufferedMutator mutator )
+						throws RetriesExhaustedWithDetailsException {
+					LOGGER.error(exception);
+				}
+			});
+
+			BufferedMutator mutator = conn.getBufferedMutator(params);
+
 			mutatorMap.put(
 					tableName,
 					mutator);
@@ -109,6 +129,12 @@ public class BasicHBaseOperations implements
 			throws IOException {
 		BufferedMutator mutator = getBufferedMutator(sTableName);
 
+		if (createTable) {
+			createTable(
+					columnFamily,
+					TableName.valueOf(sTableName));
+		}
+
 		return new HBaseWriter(
 				conn.getAdmin(),
 				sTableName,
@@ -123,11 +149,27 @@ public class BasicHBaseOperations implements
 	private Table getTable(
 			final boolean create,
 			final String columnFamily,
+			final String tableName )
+			throws IOException {
+		TableName name = TableName.valueOf(tableName);
+
+		synchronized (ADMIN_MUTEX) {
+			if (create) {
+				createTable(
+						columnFamily,
+						name);
+			}
+		}
+
+		return conn.getTable(name);
+	}
+
+	private void createTable(
+			final String columnFamily,
 			final TableName name )
 			throws IOException {
-		Table table;
 		synchronized (ADMIN_MUTEX) {
-			if (create && !conn.getAdmin().isTableAvailable(
+			if (!conn.getAdmin().isTableAvailable(
 					name)) {
 				final HTableDescriptor desc = new HTableDescriptor(
 						name);
@@ -137,8 +179,6 @@ public class BasicHBaseOperations implements
 						desc);
 			}
 		}
-		table = conn.getTable(name);
-		return table;
 	}
 
 	public String getQualifiedTableName(
