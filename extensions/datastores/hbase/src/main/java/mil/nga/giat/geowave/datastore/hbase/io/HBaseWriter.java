@@ -12,6 +12,7 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.RowMutations;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.log4j.Logger;
@@ -81,6 +82,19 @@ public class HBaseWriter implements
 	}
 
 	public void write(
+			final List<Put> puts,
+			final String columnFamily )
+			throws IOException {
+		if (!columnFamilyExists(columnFamily)) {
+			addColumnFamilyToTable(
+					table.getName(),
+					columnFamily);
+		}
+
+		table.put(puts);
+	}
+
+	public void write(
 			final RowMutations mutation,
 			final String columnFamily ) {
 		try {
@@ -121,7 +135,7 @@ public class HBaseWriter implements
 
 					found = tableDescriptor.hasFamily(columnFamily.getBytes());
 				}
-				
+
 				cfMap.put(
 						columnFamily,
 						found);

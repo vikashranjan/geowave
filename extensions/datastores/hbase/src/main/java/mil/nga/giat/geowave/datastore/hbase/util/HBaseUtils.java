@@ -9,18 +9,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.NavigableMap;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.CellUtil;
-import org.apache.hadoop.hbase.KeyValue;
-import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.RowMutations;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.log4j.Logger;
-
 import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.index.ByteArrayRange;
 import mil.nga.giat.geowave.core.index.NumericIndexStrategy;
@@ -47,8 +35,21 @@ import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
 import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
 import mil.nga.giat.geowave.datastore.hbase.io.HBaseWriter;
 
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.RowMutations;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.log4j.Logger;
+
 public class HBaseUtils
 {
+	private final static Boolean PUT_ONLY = Boolean.TRUE;
 
 	private final static Logger LOGGER = Logger.getLogger(HBaseUtils.class);
 
@@ -105,6 +106,28 @@ public class HBaseUtils
 		return mutations;
 	}
 
+	private static List<Put> buildPuts(
+			final byte[] adapterId,
+			final DataStoreEntryInfo ingestInfo ) {
+		final List<Put> puts = new ArrayList<Put>();
+
+		final List<FieldInfo<?>> fieldInfoList = ingestInfo.getFieldInfo();
+		for (final ByteArrayId rowId : ingestInfo.getRowIds()) {
+			final Put put = new Put(
+					rowId.getBytes());
+
+			for (final FieldInfo fieldInfo : fieldInfoList) {
+				put.addColumn(
+						adapterId,
+						fieldInfo.getDataValue().getId().getBytes(),
+						fieldInfo.getWrittenValue());
+			}
+			puts.add(put);
+		}
+
+		return puts;
+	}
+
 	private static <T> void addToRowIds(
 			final List<ByteArrayId> rowIds,
 			final List<ByteArrayId> insertionIds,
@@ -152,17 +175,34 @@ public class HBaseUtils
 				index,
 				entry,
 				customFieldVisibilityWriter);
-		final List<RowMutations> mutations = buildMutations(
-				writableAdapter.getAdapterId().getBytes(),
-				ingestInfo);
 
-		try {
-			writer.write(
-					mutations,
-					writableAdapter.getAdapterId().getString());
+		if (PUT_ONLY) {
+			final List<Put> puts = buildPuts(
+					writableAdapter.getAdapterId().getBytes(),
+					ingestInfo);
+
+			try {
+				writer.write(
+						puts,
+						writableAdapter.getAdapterId().getString());
+			}
+			catch (final IOException e) {
+				LOGGER.warn("Writing to table failed." + e);
+			}
 		}
-		catch (final IOException e) {
-			LOGGER.warn("Writing to table failed." + e);
+		else {
+			final List<RowMutations> mutations = buildMutations(
+					writableAdapter.getAdapterId().getBytes(),
+					ingestInfo);
+
+			try {
+				writer.write(
+						mutations,
+						writableAdapter.getAdapterId().getString());
+			}
+			catch (final IOException e) {
+				LOGGER.warn("Writing to table failed." + e);
+			}
 		}
 		return ingestInfo;
 	}
@@ -170,8 +210,7 @@ public class HBaseUtils
 	public static String getQualifiedTableName(
 			final String tableNamespace,
 			final String unqualifiedTableName ) {
-		return ((tableNamespace == null) || tableNamespace.isEmpty()) ? unqualifiedTableName : tableNamespace + "_"
-				+ unqualifiedTableName;
+		return ((tableNamespace == null) || tableNamespace.isEmpty()) ? unqualifiedTableName : tableNamespace + "_" + unqualifiedTableName;
 	}
 
 	public static <T> DataStoreEntryInfo write(
@@ -429,15 +468,12 @@ public class HBaseUtils
 			throws IOException {
 		final List<KeyValue> map = new ArrayList<KeyValue>();
 		/*
-		 * ByteArrayInputStream in = new
-		 * ByteArrayInputStream(v.getValueArray()); DataInputStream din = new
-		 * DataInputStream( in); int numKeys = din.readInt(); for (int i = 0; i
-		 * < numKeys; i++) { byte[] cf = readField(din); // read the col fam
-		 * byte[] cq = readField(din); // read the col qual byte[] cv =
-		 * readField(din); // read the col visibility long timestamp =
-		 * din.readLong(); // read the timestamp byte[] valBytes =
-		 * readField(din); // read the value map.add(new KeyValue(
-		 * CellUtil.cloneRow(v), cf, cq, timestamp, valBytes));
+		 * ByteArrayInputStream in = new ByteArrayInputStream(v.getValueArray()); DataInputStream din = new
+		 * DataInputStream( in); int numKeys = din.readInt(); for (int i = 0; i < numKeys; i++) { byte[] cf =
+		 * readField(din); // read the col fam byte[] cq = readField(din); // read the col qual byte[] cv =
+		 * readField(din); // read the col visibility long timestamp = din.readLong(); // read the timestamp byte[]
+		 * valBytes = readField(din); // read the value map.add(new KeyValue( CellUtil.cloneRow(v), cf, cq, timestamp,
+		 * valBytes));
 		 */
 		final NavigableMap<byte[], NavigableMap<byte[], byte[]>> noVersionMap = row.getNoVersionMap();
 		for (final byte[] family : noVersionMap.keySet()) {
