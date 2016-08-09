@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 public class BasicHBaseOperations implements
 		DataStoreOperations
 {
+	private static final long WRITE_BUFFER_SIZE = 32L * 1024L & 1024L; // (bytes) Default is 2M. Trying 32M here.
 
 	private final static Logger LOGGER = Logger.getLogger(BasicHBaseOperations.class);
 	private static final String DEFAULT_TABLE_NAMESPACE = "";
@@ -81,13 +82,10 @@ public class BasicHBaseOperations implements
 			final String tableName )
 			throws IOException {
 		if (!mutatorMap.containsKey(tableName)) {
-			LOGGER.warn("KAM *** Creating mutator for " + tableName);
-			
 			BufferedMutatorParams params = new BufferedMutatorParams(
 					TableName.valueOf(tableName));
 
-			// Just guessing. Default is 2M. Trying 16M here.
-			params.writeBufferSize(16L * 1024L & 1024L);
+			params.writeBufferSize(WRITE_BUFFER_SIZE);
 
 			params.listener(new ExceptionListener() {
 				@Override
