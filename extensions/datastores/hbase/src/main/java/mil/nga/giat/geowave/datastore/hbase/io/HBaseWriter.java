@@ -34,7 +34,7 @@ public class HBaseWriter implements
 	private final HashMap<String, Boolean> cfMap;
 	private HTableDescriptor tableDescriptor = null;
 	private final BufferedMutator mutator;
-	
+
 	static {
 		LOGGER.setLevel(Level.DEBUG);
 	}
@@ -85,12 +85,12 @@ public class HBaseWriter implements
 			final Iterable<RowMutations> iterable,
 			final String columnFamily )
 			throws IOException {
-//		if (!columnFamilyExists(columnFamily)) {
-//			addColumnFamilyToTable(
-//					tableName,
-//					columnFamily);
-//		}
-		
+		if (!columnFamilyExists(columnFamily)) {
+			addColumnFamilyToTable(
+					tableName,
+					columnFamily);
+		}
+
 		for (final RowMutations rowMutation : iterable) {
 			write(rowMutation);
 		}
@@ -100,11 +100,11 @@ public class HBaseWriter implements
 			final List<Put> puts,
 			final String columnFamily )
 			throws IOException {
-//		if (!columnFamilyExists(columnFamily)) {
-//			addColumnFamilyToTable(
-//					tableName,
-//					columnFamily);
-//		}
+		if (!columnFamilyExists(columnFamily)) {
+			addColumnFamilyToTable(
+					tableName,
+					columnFamily);
+		}
 
 		mutator.mutate(puts);
 	}
@@ -112,18 +112,18 @@ public class HBaseWriter implements
 	public void write(
 			final RowMutations mutation,
 			final String columnFamily ) {
-//		try {
-//			if (!columnFamilyExists(columnFamily)) {
-//				addColumnFamilyToTable(
-//						tableName,
-//						columnFamily);
-//			}
-//		}
-//		catch (final IOException e) {
-//			LOGGER.warn(
-//					"Unable to add column family " + columnFamily,
-//					e);
-//		}
+		try {
+			if (!columnFamilyExists(columnFamily)) {
+				addColumnFamilyToTable(
+						tableName,
+						columnFamily);
+			}
+		}
+		catch (final IOException e) {
+			LOGGER.warn(
+					"Unable to add column family " + columnFamily,
+					e);
+		}
 
 		write(mutation);
 	}
@@ -131,8 +131,7 @@ public class HBaseWriter implements
 	private boolean columnFamilyExists(
 			final String columnFamily ) {
 		Boolean found = false;
-		long hack = System.currentTimeMillis();
-		
+
 		try {
 			found = cfMap.get(columnFamily);
 
@@ -160,9 +159,6 @@ public class HBaseWriter implements
 		catch (IOException e) {
 			e.printStackTrace();
 		}
-		
-		long accumMs = (System.currentTimeMillis() - hack);
-		LOGGER.debug("Wasted time checking for column family: " + accumMs + " ms...");
 
 		return found;
 	}
