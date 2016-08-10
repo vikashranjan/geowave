@@ -15,6 +15,7 @@ import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.RowMutations;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 /**
@@ -33,6 +34,11 @@ public class HBaseWriter implements
 	private final HashMap<String, Boolean> cfMap;
 	private HTableDescriptor tableDescriptor = null;
 	private final BufferedMutator mutator;
+	private long accumMs = 0;
+	
+	static {
+		LOGGER.setLevel(Level.DEBUG);
+	}
 
 	public HBaseWriter(
 			final Admin admin,
@@ -73,11 +79,16 @@ public class HBaseWriter implements
 			final Iterable<RowMutations> iterable,
 			final String columnFamily )
 			throws IOException {
+		long hack = System.currentTimeMillis();
+		
 		if (!columnFamilyExists(columnFamily)) {
 			addColumnFamilyToTable(
 					tableName,
 					columnFamily);
 		}
+		
+		accumMs += (System.currentTimeMillis() - hack);
+		LOGGER.debug("Wasted time so far: " + accumMs + " ms...");
 
 		for (final RowMutations rowMutation : iterable) {
 			write(rowMutation);
@@ -129,6 +140,7 @@ public class HBaseWriter implements
 
 			if (!found) {
 				synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
+					LOGGER.debug("Creating column family: " + columnFamily);
 					if (!admin.isTableEnabled(tableName)) {
 						admin.enableTable(tableName);
 					}
