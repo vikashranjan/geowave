@@ -34,7 +34,6 @@ public class HBaseWriter implements
 	private final HashMap<String, Boolean> cfMap;
 	private HTableDescriptor tableDescriptor = null;
 	private final BufferedMutator mutator;
-	private long accumMs = 0;
 	
 	static {
 		LOGGER.setLevel(Level.DEBUG);
@@ -79,17 +78,12 @@ public class HBaseWriter implements
 			final Iterable<RowMutations> iterable,
 			final String columnFamily )
 			throws IOException {
-		long hack = System.currentTimeMillis();
-		
 		if (!columnFamilyExists(columnFamily)) {
 			addColumnFamilyToTable(
 					tableName,
 					columnFamily);
 		}
 		
-		accumMs += (System.currentTimeMillis() - hack);
-		LOGGER.debug("Wasted time so far: " + accumMs + " ms...");
-
 		for (final RowMutations rowMutation : iterable) {
 			write(rowMutation);
 		}
@@ -130,7 +124,8 @@ public class HBaseWriter implements
 	private boolean columnFamilyExists(
 			final String columnFamily ) {
 		Boolean found = false;
-
+		long hack = System.currentTimeMillis();
+		
 		try {
 			found = cfMap.get(columnFamily);
 
@@ -140,7 +135,6 @@ public class HBaseWriter implements
 
 			if (!found) {
 				synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-					LOGGER.debug("Creating column family: " + columnFamily);
 					if (!admin.isTableEnabled(tableName)) {
 						admin.enableTable(tableName);
 					}
@@ -159,6 +153,9 @@ public class HBaseWriter implements
 		catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		long accumMs = (System.currentTimeMillis() - hack);
+		LOGGER.debug("Wasted time checking for column family: " + accumMs + " ms...");
 
 		return found;
 	}
@@ -167,6 +164,8 @@ public class HBaseWriter implements
 			final TableName tableName,
 			final String columnFamilyName )
 			throws IOException {
+		LOGGER.debug("Creating column family: " + columnFamilyName);
+
 		final HColumnDescriptor cfDescriptor = new HColumnDescriptor(
 				columnFamilyName);
 
