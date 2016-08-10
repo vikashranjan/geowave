@@ -72,17 +72,24 @@ public class HBaseWriter implements
 	}
 
 	@Override
-	public void close() {}
+	public void close() {
+		try {
+			mutator.close();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	public void write(
 			final Iterable<RowMutations> iterable,
 			final String columnFamily )
 			throws IOException {
-		if (!columnFamilyExists(columnFamily)) {
-			addColumnFamilyToTable(
-					tableName,
-					columnFamily);
-		}
+//		if (!columnFamilyExists(columnFamily)) {
+//			addColumnFamilyToTable(
+//					tableName,
+//					columnFamily);
+//		}
 		
 		for (final RowMutations rowMutation : iterable) {
 			write(rowMutation);
@@ -93,11 +100,11 @@ public class HBaseWriter implements
 			final List<Put> puts,
 			final String columnFamily )
 			throws IOException {
-		if (!columnFamilyExists(columnFamily)) {
-			addColumnFamilyToTable(
-					tableName,
-					columnFamily);
-		}
+//		if (!columnFamilyExists(columnFamily)) {
+//			addColumnFamilyToTable(
+//					tableName,
+//					columnFamily);
+//		}
 
 		mutator.mutate(puts);
 	}
@@ -105,20 +112,20 @@ public class HBaseWriter implements
 	public void write(
 			final RowMutations mutation,
 			final String columnFamily ) {
-		try {
-			if (!columnFamilyExists(columnFamily)) {
-				addColumnFamilyToTable(
-						tableName,
-						columnFamily);
-			}
+//		try {
+//			if (!columnFamilyExists(columnFamily)) {
+//				addColumnFamilyToTable(
+//						tableName,
+//						columnFamily);
+//			}
+//		}
+//		catch (final IOException e) {
+//			LOGGER.warn(
+//					"Unable to add column family " + columnFamily,
+//					e);
+//		}
 
-			write(mutation);
-		}
-		catch (final IOException e) {
-			LOGGER.warn(
-					"Unable to add column family " + columnFamily,
-					e);
-		}
+		write(mutation);
 	}
 
 	private boolean columnFamilyExists(
