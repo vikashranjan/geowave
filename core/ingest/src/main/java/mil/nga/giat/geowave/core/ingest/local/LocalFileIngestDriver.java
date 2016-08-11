@@ -13,22 +13,24 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.ingest.GeoWaveData;
+import mil.nga.giat.geowave.core.store.AdapterToIndexMapping;
 import mil.nga.giat.geowave.core.store.CloseableIterator;
 import mil.nga.giat.geowave.core.store.DataStore;
+import mil.nga.giat.geowave.core.store.IndexWriter;
 import mil.nga.giat.geowave.core.store.adapter.WritableDataAdapter;
 import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
 import mil.nga.giat.geowave.core.store.operations.remote.options.DataStorePluginOptions;
 import mil.nga.giat.geowave.core.store.operations.remote.options.IndexPluginOptions;
 import mil.nga.giat.geowave.core.store.operations.remote.options.VisibilityOptions;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
- * This extends the local file driver to directly ingest data into GeoWave
- * utilizing the LocalFileIngestPlugin's that are discovered by the system.
+ * This extends the local file driver to directly ingest data into GeoWave utilizing the LocalFileIngestPlugin's that
+ * are discovered by the system.
  */
 public class LocalFileIngestDriver extends
 		AbstractLocalFileDriver<LocalFileIngestPlugin<?>, LocalIngestRunData>
@@ -114,16 +116,15 @@ public class LocalFileIngestDriver extends
 	}
 
 	/**
-	 * Create a basic thread pool to ingest file data. We limit it to the amount
-	 * of threads specified on the command line.
+	 * Create a basic thread pool to ingest file data. We limit it to the amount of threads specified on the command
+	 * line.
 	 */
 	private void startExecutor() {
 		ingestExecutor = Executors.newFixedThreadPool(threads);
 	}
 
 	/**
-	 * This function will wait for executing tasks to complete for up to 10
-	 * seconds.
+	 * This function will wait for executing tasks to complete for up to 10 seconds.
 	 */
 	private void shutdownExecutor() {
 		if (ingestExecutor != null) {
@@ -146,6 +147,102 @@ public class LocalFileIngestDriver extends
 
 	@Override
 	protected void processFile(
+			final File file,
+			final String typeName,
+			final LocalFileIngestPlugin<?> plugin,
+			final LocalIngestRunData ingestRunData )
+			throws IOException {
+
+		LOGGER.info(String.format(
+				"Beginning ingest for file: [%s]",
+				file.getName()));
+
+		// This loads up the primary indexes that are specified on the command
+		// line.
+		// Usually spatial or spatial-temporal
+		final Map<ByteArrayId, PrimaryIndex> specifiedPrimaryIndexes = new HashMap<ByteArrayId, PrimaryIndex>();
+		for (final IndexPluginOptions dimensionType : indexOptions) {
+			final PrimaryIndex primaryIndex = dimensionType.createPrimaryIndex();
+			if (primaryIndex == null) {
+				LOGGER.error("Could not get index instance, getIndex() returned null;");
+				throw new IOException(
+						"Could not get index instance, getIndex() returned null");
+			}
+			specifiedPrimaryIndexes.put(
+					primaryIndex.getId(),
+					primaryIndex);
+		}
+
+		// This gets the list of required indexes from the Plugin.
+		// If for some reason a GeoWaveData specifies an index that isn't
+		// originally
+		// in the specifiedPrimaryIndexes list, then this array is used to
+		// determine
+		// if the Plugin supports it. If it does, then we allow the creation of
+		// the
+		// index.
+		final Map<ByteArrayId, PrimaryIndex> requiredIndexMap = new HashMap<ByteArrayId, PrimaryIndex>();
+		final PrimaryIndex[] requiredIndices = plugin.getRequiredIndices();
+		if ((requiredIndices != null) && (requiredIndices.length > 0)) {
+			for (final PrimaryIndex requiredIndex : requiredIndices) {
+				requiredIndexMap.put(
+						requiredIndex.getId(),
+						requiredIndex);
+			}
+		}
+
+		// Create our Jobs. We submit as many jobs as we have executors for.
+		LOGGER.debug(String.format(
+				"Creating [%d] task to ingest file: [%s]",
+				threads,
+				file.getName()));
+
+		String id = String.format(
+				"%s-%d",
+				file.getName(),
+				0);
+		IngestTask task = new IngestTask(
+				id,
+				ingestRunData,
+				specifiedPrimaryIndexes,
+				requiredIndexMap,
+				null);
+
+		Map<AdapterToIndexMapping, IndexWriter> indexWriters = new HashMap<AdapterToIndexMapping, IndexWriter>();
+		Map<ByteArrayId, AdapterToIndexMapping> adapterMappings = new HashMap<ByteArrayId, AdapterToIndexMapping>();
+
+		// Read files until EOF from the command line.
+		try (CloseableIterator<?> geowaveDataIt = plugin.toGeoWaveData(
+				file,
+				specifiedPrimaryIndexes.keySet(),
+				ingestOptions.getVisibility())) {
+
+			while (geowaveDataIt.hasNext()) {
+				final GeoWaveData<?> geowaveData = (GeoWaveData<?>) geowaveDataIt.next();
+				final WritableDataAdapter adapter = ingestRunData.getDataAdapter(geowaveData);
+
+				task.ingestData(
+						geowaveData,
+						adapter,
+						indexWriters,
+						adapterMappings);
+
+			}
+		}
+		catch (Exception e) {
+			LOGGER.error(e.getMessage());
+		}
+		finally {
+			// Terminate our ingest tasks.
+			task.terminate();
+		}
+
+		LOGGER.info(String.format(
+				"Finished ingest for file: [%s]",
+				file.getName()));
+	}
+
+	protected void oldProcessFile(
 			final File file,
 			final String typeName,
 			final LocalFileIngestPlugin<?> plugin,
@@ -227,6 +324,7 @@ public class LocalFileIngestDriver extends
 
 				while (geowaveDataIt.hasNext()) {
 					final GeoWaveData<?> geowaveData = (GeoWaveData<?>) geowaveDataIt.next();
+
 					try {
 						while (!queue.offer(
 								geowaveData,
@@ -268,6 +366,10 @@ public class LocalFileIngestDriver extends
 					}
 				}
 			}
+		}
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		finally {
 			// Terminate our ingest tasks.

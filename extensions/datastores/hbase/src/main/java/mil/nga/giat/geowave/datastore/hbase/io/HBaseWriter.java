@@ -73,12 +73,6 @@ public class HBaseWriter implements
 
 	@Override
 	public void close() {
-		try {
-			mutator.close();
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
 	public void write(

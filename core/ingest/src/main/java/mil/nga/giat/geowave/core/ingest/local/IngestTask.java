@@ -8,9 +8,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.ingest.GeoWaveData;
 import mil.nga.giat.geowave.core.store.AdapterToIndexMapping;
@@ -18,11 +15,13 @@ import mil.nga.giat.geowave.core.store.IndexWriter;
 import mil.nga.giat.geowave.core.store.adapter.WritableDataAdapter;
 import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
- * An IngestTask is a thread which listens to items from a blocking queue, and
- * writes those items to IndexWriter objects obtained from LocalIngestRunData
- * (where they are constructed but also cached from the DataStore object). Read
- * items until isTerminated == true.
+ * An IngestTask is a thread which listens to items from a blocking queue, and writes those items to IndexWriter objects
+ * obtained from LocalIngestRunData (where they are constructed but also cached from the DataStore object). Read items
+ * until isTerminated == true.
  */
 public class IngestTask implements
 		Runnable
@@ -51,8 +50,7 @@ public class IngestTask implements
 	}
 
 	/**
-	 * This function is called by the thread placing items on the blocking
-	 * queue.
+	 * This function is called by the thread placing items on the blocking queue.
 	 */
 	public void terminate() {
 		isTerminated = true;
@@ -77,8 +75,7 @@ public class IngestTask implements
 	}
 
 	/**
-	 * This function will continue to read from the BlockingQueue until
-	 * isTerminated is true and the queue is empty.
+	 * This function will continue to read from the BlockingQueue until isTerminated is true and the queue is empty.
 	 */
 	@SuppressWarnings({
 		"unchecked",
@@ -114,7 +111,6 @@ public class IngestTask implements
 					continue;
 				}
 
-				// Ingest the data!
 				final WritableDataAdapter adapter = runData.getDataAdapter(geowaveData);
 				if (adapter == null) {
 					LOGGER.warn(String.format(
@@ -124,48 +120,12 @@ public class IngestTask implements
 					continue;
 				}
 
-				AdapterToIndexMapping mapping = adapterMappings.get(adapter.getAdapterId());
-
-				if (mapping == null) {
-
-					List<PrimaryIndex> indices = new ArrayList<PrimaryIndex>();
-					for (final ByteArrayId indexId : geowaveData.getIndexIds()) {
-						PrimaryIndex index = specifiedPrimaryIndexes.get(indexId);
-						if (index == null) {
-							index = requiredIndexMap.get(indexId);
-							if (index == null) {
-								LOGGER.warn(String.format(
-										"Index '%s' not found for %s; worker [%s]",
-										indexId.getString(),
-										geowaveData.getValue(),
-										this.getId()));
-								continue;
-							}
-						}
-						indices.add(index);
-					}
-					runData.addIndices(indices);
-					runData.addAdapter(adapter);
-
-					mapping = new AdapterToIndexMapping(
-							adapter.getAdapterId(),
-							indices.toArray(new PrimaryIndex[indices.size()]));
-					adapterMappings.put(
-							mapping.getAdapterId(),
-							mapping);
-
-					// If we have the index checked out already, use that.
-					if (!indexWriters.containsKey(mapping)) {
-						indexWriters.put(
-								mapping,
-								runData.getIndexWriter(mapping));
-					}
-				}
-
-				// Write the data to the data store.
-				IndexWriter writer = indexWriters.get(mapping);
-
-				writer.write(geowaveData.getValue());
+				// Ingest the data!
+				ingestData(
+						geowaveData,
+						adapter,
+						indexWriters,
+						adapterMappings);
 
 				count++;
 			}
@@ -208,4 +168,52 @@ public class IngestTask implements
 		}
 	}
 
+	public void ingestData(
+			GeoWaveData<?> geowaveData,
+			WritableDataAdapter adapter,
+			Map<AdapterToIndexMapping, IndexWriter> indexWriters,
+			Map<ByteArrayId, AdapterToIndexMapping> adapterMappings )
+			throws Exception {
+		AdapterToIndexMapping mapping = adapterMappings.get(adapter.getAdapterId());
+
+		if (mapping == null) {
+			List<PrimaryIndex> indices = new ArrayList<PrimaryIndex>();
+			for (final ByteArrayId indexId : geowaveData.getIndexIds()) {
+				PrimaryIndex index = specifiedPrimaryIndexes.get(indexId);
+				if (index == null) {
+					index = requiredIndexMap.get(indexId);
+					if (index == null) {
+						LOGGER.warn(String.format(
+								"Index '%s' not found for %s; worker [%s]",
+								indexId.getString(),
+								geowaveData.getValue(),
+								this.getId()));
+						continue;
+					}
+				}
+				indices.add(index);
+			}
+			runData.addIndices(indices);
+			runData.addAdapter(adapter);
+
+			mapping = new AdapterToIndexMapping(
+					adapter.getAdapterId(),
+					indices.toArray(new PrimaryIndex[indices.size()]));
+			adapterMappings.put(
+					mapping.getAdapterId(),
+					mapping);
+
+			// If we have the index checked out already, use that.
+			if (!indexWriters.containsKey(mapping)) {
+				indexWriters.put(
+						mapping,
+						runData.getIndexWriter(mapping));
+			}
+		}
+
+		// Write the data to the data store.
+		IndexWriter writer = indexWriters.get(mapping);
+
+		writer.write(geowaveData.getValue());
+	}
 }
