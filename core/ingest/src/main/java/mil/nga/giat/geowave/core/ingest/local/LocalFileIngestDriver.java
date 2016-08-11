@@ -15,10 +15,8 @@ import java.util.concurrent.TimeUnit;
 
 import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.ingest.GeoWaveData;
-import mil.nga.giat.geowave.core.store.AdapterToIndexMapping;
 import mil.nga.giat.geowave.core.store.CloseableIterator;
 import mil.nga.giat.geowave.core.store.DataStore;
-import mil.nga.giat.geowave.core.store.IndexWriter;
 import mil.nga.giat.geowave.core.store.adapter.WritableDataAdapter;
 import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
 import mil.nga.giat.geowave.core.store.operations.remote.options.DataStorePluginOptions;
@@ -43,10 +41,6 @@ public class LocalFileIngestDriver extends
 	protected Map<String, LocalFileIngestPlugin<?>> ingestPlugins;
 	protected int threads;
 	protected ExecutorService ingestExecutor;
-	protected Map<AdapterToIndexMapping, IndexWriter> indexWriters;
-	protected Map<ByteArrayId, AdapterToIndexMapping> adapterMappings;
-
-
 
 	public LocalFileIngestDriver(
 			DataStorePluginOptions storeOptions,
@@ -62,9 +56,6 @@ public class LocalFileIngestDriver extends
 		this.ingestOptions = ingestOptions;
 		this.ingestPlugins = ingestPlugins;
 		this.threads = threads;
-		
-		this.indexWriters = new HashMap<AdapterToIndexMapping, IndexWriter>();
-		this.adapterMappings = new HashMap<ByteArrayId, AdapterToIndexMapping>();
 	}
 
 	public boolean runOperation(
@@ -226,9 +217,7 @@ public class LocalFileIngestDriver extends
 
 				task.ingestData(
 						geowaveData,
-						adapter,
-						indexWriters,
-						adapterMappings);
+						adapter);
 
 			}
 		}

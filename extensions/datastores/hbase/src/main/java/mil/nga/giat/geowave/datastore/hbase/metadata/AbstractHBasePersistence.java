@@ -264,31 +264,31 @@ public abstract class AbstractHBasePersistence<T extends Persistable> extends
 				secondaryId) != null) {
 			return true;
 		}
-		try {
-			final Scan scanner = getScanner(
-					primaryId,
-					secondaryId);
-			final ResultScanner rS = operations.getScannedResults(
-					scanner,
-					getTablename());
-			final Iterator<Result> it = rS.iterator();
-
-			final Iterator<T> iter = getNativeIteratorWrapper(it);
-
-			if (iter.hasNext()) {
-				return iter.next() != null;
-			}
-			else {
-				return false;
-			}
-		}
-		catch (final IOException e) {
-			LOGGER.debug(
-					"Unable to check existence of object '" + getCombinedId(
-							primaryId,
-							secondaryId) + "'",
-					e);
-		}
+//		try {
+//			final Scan scanner = getScanner(
+//					primaryId,
+//					secondaryId);
+//			final ResultScanner rS = operations.getScannedResults(
+//					scanner,
+//					getTablename());
+//			final Iterator<Result> it = rS.iterator();
+//
+//			final Iterator<T> iter = getNativeIteratorWrapper(it);
+//
+//			if (iter.hasNext()) {
+//				return iter.next() != null;
+//			}
+//			else {
+//				return false;
+//			}
+//		}
+//		catch (final IOException e) {
+//			LOGGER.debug(
+//					"Unable to check existence of object '" + getCombinedId(
+//							primaryId,
+//							secondaryId) + "'",
+//					e);
+//		}
 		return false;
 	}
 

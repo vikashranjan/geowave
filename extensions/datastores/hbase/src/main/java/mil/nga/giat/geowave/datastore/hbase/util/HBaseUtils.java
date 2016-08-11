@@ -49,8 +49,6 @@ import org.apache.log4j.Logger;
 
 public class HBaseUtils
 {
-	private final static Boolean PUT_ONLY = Boolean.FALSE;
-
 	private final static Logger LOGGER = Logger.getLogger(HBaseUtils.class);
 
 	private static final byte[] BEG_AND_BYTE = "&".getBytes(StringUtils.UTF8_CHAR_SET);
@@ -84,6 +82,7 @@ public class HBaseUtils
 			final DataStoreEntryInfo ingestInfo ) {
 		final List<RowMutations> mutations = new ArrayList<RowMutations>();
 		final List<FieldInfo<?>> fieldInfoList = ingestInfo.getFieldInfo();
+		
 		for (final ByteArrayId rowId : ingestInfo.getRowIds()) {
 			final RowMutations mutation = new RowMutations(
 					rowId.getBytes());
@@ -103,29 +102,8 @@ public class HBaseUtils
 			}
 			mutations.add(mutation);
 		}
+
 		return mutations;
-	}
-
-	private static List<Put> buildPuts(
-			final byte[] adapterId,
-			final DataStoreEntryInfo ingestInfo ) {
-		final List<Put> puts = new ArrayList<Put>();
-
-		final List<FieldInfo<?>> fieldInfoList = ingestInfo.getFieldInfo();
-		for (final ByteArrayId rowId : ingestInfo.getRowIds()) {
-			final Put put = new Put(
-					rowId.getBytes());
-
-			for (final FieldInfo fieldInfo : fieldInfoList) {
-				put.addColumn(
-						adapterId,
-						fieldInfo.getDataValue().getId().getBytes(),
-						fieldInfo.getWrittenValue());
-			}
-			puts.add(put);
-		}
-
-		return puts;
 	}
 
 	private static <T> void addToRowIds(
@@ -176,34 +154,19 @@ public class HBaseUtils
 				entry,
 				customFieldVisibilityWriter);
 
-		if (PUT_ONLY) {
-			final List<Put> puts = buildPuts(
-					writableAdapter.getAdapterId().getBytes(),
-					ingestInfo);
+		final List<RowMutations> mutations = buildMutations(
+				writableAdapter.getAdapterId().getBytes(),
+				ingestInfo);
 
-			try {
-				writer.write(
-						puts,
-						writableAdapter.getAdapterId().getString());
-			}
-			catch (final IOException e) {
-				LOGGER.warn("Writing to table failed." + e);
-			}
+		try {
+			writer.write(
+					mutations,
+					writableAdapter.getAdapterId().getString());
 		}
-		else {
-			final List<RowMutations> mutations = buildMutations(
-					writableAdapter.getAdapterId().getBytes(),
-					ingestInfo);
+		catch (final IOException e) {
+			LOGGER.warn("Writing to table failed." + e);
+		}
 
-			try {
-				writer.write(
-						mutations,
-						writableAdapter.getAdapterId().getString());
-			}
-			catch (final IOException e) {
-				LOGGER.warn("Writing to table failed." + e);
-			}
-		}
 		return ingestInfo;
 	}
 

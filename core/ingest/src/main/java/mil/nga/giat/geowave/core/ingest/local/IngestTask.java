@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 public class IngestTask implements
 		Runnable
 {
-
 	private final static Logger LOGGER = LoggerFactory.getLogger(IngestTask.class);
 	private final String id;
 	private final BlockingQueue<GeoWaveData<?>> readQueue;
@@ -35,6 +34,9 @@ public class IngestTask implements
 	private final Map<ByteArrayId, PrimaryIndex> requiredIndexMap;
 	private volatile boolean isTerminated = false;
 	private volatile boolean isFinished = false;
+	
+	private Map<ByteArrayId, IndexWriter> indexWriters;
+	private Map<ByteArrayId, AdapterToIndexMapping> adapterMappings;
 
 	public IngestTask(
 			String id,
@@ -47,6 +49,9 @@ public class IngestTask implements
 		this.specifiedPrimaryIndexes = specifiedPrimaryIndexes;
 		this.requiredIndexMap = requiredIndexMap;
 		this.readQueue = queue;
+		
+		this.indexWriters = new HashMap<ByteArrayId, IndexWriter>();
+		this.adapterMappings = new HashMap<ByteArrayId, AdapterToIndexMapping>();
 	}
 
 	/**
@@ -83,8 +88,6 @@ public class IngestTask implements
 	})
 	@Override
 	public void run() {
-		Map<AdapterToIndexMapping, IndexWriter> indexWriters = new HashMap<AdapterToIndexMapping, IndexWriter>();
-		Map<ByteArrayId, AdapterToIndexMapping> adapterMappings = new HashMap<ByteArrayId, AdapterToIndexMapping>();
 		int count = 0;
 		try {
 			if (LOGGER.isDebugEnabled()) {
@@ -123,9 +126,7 @@ public class IngestTask implements
 				// Ingest the data!
 				ingestData(
 						geowaveData,
-						adapter,
-						indexWriters,
-						adapterMappings);
+						adapter);
 
 				count++;
 			}
@@ -143,10 +144,10 @@ public class IngestTask implements
 		}
 		finally {
 			// Clean up index writers
-			for (Entry<AdapterToIndexMapping, IndexWriter> writerEntry : indexWriters.entrySet()) {
+			for (Entry<ByteArrayId, IndexWriter> writerEntry : indexWriters.entrySet()) {
 				try {
 					runData.releaseIndexWriter(
-							writerEntry.getKey(),
+							adapterMappings.get(writerEntry.getKey()),
 							writerEntry.getValue());
 				}
 				catch (Exception e) {
@@ -170,9 +171,7 @@ public class IngestTask implements
 
 	public void ingestData(
 			GeoWaveData<?> geowaveData,
-			WritableDataAdapter adapter,
-			Map<AdapterToIndexMapping, IndexWriter> indexWriters,
-			Map<ByteArrayId, AdapterToIndexMapping> adapterMappings )
+			WritableDataAdapter adapter)
 			throws Exception {
 		AdapterToIndexMapping mapping = adapterMappings.get(adapter.getAdapterId());
 
@@ -206,13 +205,13 @@ public class IngestTask implements
 			// If we have the index checked out already, use that.
 			if (!indexWriters.containsKey(mapping)) {
 				indexWriters.put(
-						mapping,
+						mapping.getAdapterId(),
 						runData.getIndexWriter(mapping));
 			}
 		}
 
 		// Write the data to the data store.
-		IndexWriter writer = indexWriters.get(mapping);
+		IndexWriter writer = indexWriters.get(mapping.getAdapterId());
 
 		writer.write(geowaveData.getValue());
 	}
