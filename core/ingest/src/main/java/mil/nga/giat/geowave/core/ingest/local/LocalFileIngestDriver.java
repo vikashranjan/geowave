@@ -43,6 +43,10 @@ public class LocalFileIngestDriver extends
 	protected Map<String, LocalFileIngestPlugin<?>> ingestPlugins;
 	protected int threads;
 	protected ExecutorService ingestExecutor;
+	protected Map<AdapterToIndexMapping, IndexWriter> indexWriters;
+	protected Map<ByteArrayId, AdapterToIndexMapping> adapterMappings;
+
+
 
 	public LocalFileIngestDriver(
 			DataStorePluginOptions storeOptions,
@@ -58,6 +62,9 @@ public class LocalFileIngestDriver extends
 		this.ingestOptions = ingestOptions;
 		this.ingestPlugins = ingestPlugins;
 		this.threads = threads;
+		
+		this.indexWriters = new HashMap<AdapterToIndexMapping, IndexWriter>();
+		this.adapterMappings = new HashMap<ByteArrayId, AdapterToIndexMapping>();
 	}
 
 	public boolean runOperation(
@@ -193,8 +200,7 @@ public class LocalFileIngestDriver extends
 
 		// Create our Jobs. We submit as many jobs as we have executors for.
 		LOGGER.debug(String.format(
-				"Creating [%d] task to ingest file: [%s]",
-				threads,
+				"Creating task to ingest file: [%s]",
 				file.getName()));
 
 		String id = String.format(
@@ -207,9 +213,6 @@ public class LocalFileIngestDriver extends
 				specifiedPrimaryIndexes,
 				requiredIndexMap,
 				null);
-
-		Map<AdapterToIndexMapping, IndexWriter> indexWriters = new HashMap<AdapterToIndexMapping, IndexWriter>();
-		Map<ByteArrayId, AdapterToIndexMapping> adapterMappings = new HashMap<ByteArrayId, AdapterToIndexMapping>();
 
 		// Read files until EOF from the command line.
 		try (CloseableIterator<?> geowaveDataIt = plugin.toGeoWaveData(
