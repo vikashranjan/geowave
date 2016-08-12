@@ -88,6 +88,7 @@ public class HBaseIndexWriter<T> extends
 
 	private synchronized void ensureOpen() {
 		if (writer == null) {
+			LOGGER.error("KAM *** Writer is null!");
 			try {
 				writer = operations.createWriter(
 						StringUtils.stringFromBinary(index.getId().getBytes()),

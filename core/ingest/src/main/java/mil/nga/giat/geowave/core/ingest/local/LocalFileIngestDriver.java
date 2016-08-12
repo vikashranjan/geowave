@@ -41,7 +41,7 @@ public class LocalFileIngestDriver extends
 	protected Map<String, LocalFileIngestPlugin<?>> ingestPlugins;
 	protected int threads;
 	protected ExecutorService ingestExecutor;
-
+	
 	public LocalFileIngestDriver(
 			DataStorePluginOptions storeOptions,
 			List<IndexPluginOptions> indexOptions,
@@ -151,7 +151,7 @@ public class LocalFileIngestDriver extends
 			final LocalIngestRunData ingestRunData )
 			throws IOException {
 
-		LOGGER.info(String.format(
+		LOGGER.error(String.format(
 				"Beginning ingest for file: [%s]",
 				file.getName()));
 
@@ -190,7 +190,7 @@ public class LocalFileIngestDriver extends
 		}
 
 		// Create our Jobs. We submit as many jobs as we have executors for.
-		LOGGER.debug(String.format(
+		LOGGER.error(String.format(
 				"Creating task to ingest file: [%s]",
 				file.getName()));
 
@@ -218,7 +218,6 @@ public class LocalFileIngestDriver extends
 				task.ingestData(
 						geowaveData,
 						adapter);
-
 			}
 		}
 		catch (Exception e) {
@@ -229,7 +228,7 @@ public class LocalFileIngestDriver extends
 			task.terminate();
 		}
 
-		LOGGER.info(String.format(
+		LOGGER.error(String.format(
 				"Finished ingest for file: [%s]",
 				file.getName()));
 	}
