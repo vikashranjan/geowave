@@ -77,6 +77,15 @@ public class HBaseIndexWriter<T> extends
 		return entryInfo.getRowIds();
 	}
 
+	@Override
+	protected synchronized void closeInternal() {
+//		if (writer != null) {
+//			writer.close();
+//			writer = null;
+//		}
+		LOGGER.error("KAM *** Closing the writer!");
+	}
+
 	private synchronized void ensureOpen() {
 		if (writer == null) {
 			try {
