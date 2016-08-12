@@ -9,18 +9,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.NavigableMap;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.CellUtil;
-import org.apache.hadoop.hbase.KeyValue;
-import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.RowMutations;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.log4j.Logger;
-
 import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.index.ByteArrayRange;
 import mil.nga.giat.geowave.core.index.NumericIndexStrategy;
@@ -47,9 +35,20 @@ import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
 import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
 import mil.nga.giat.geowave.datastore.hbase.io.HBaseWriter;
 
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.RowMutations;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.log4j.Logger;
+
 public class HBaseUtils
 {
-
 	private final static Logger LOGGER = Logger.getLogger(HBaseUtils.class);
 
 	private static final byte[] BEG_AND_BYTE = "&".getBytes(StringUtils.UTF8_CHAR_SET);
@@ -83,6 +82,7 @@ public class HBaseUtils
 			final DataStoreEntryInfo ingestInfo ) {
 		final List<RowMutations> mutations = new ArrayList<RowMutations>();
 		final List<FieldInfo<?>> fieldInfoList = ingestInfo.getFieldInfo();
+		
 		for (final ByteArrayId rowId : ingestInfo.getRowIds()) {
 			final RowMutations mutation = new RowMutations(
 					rowId.getBytes());
@@ -102,6 +102,7 @@ public class HBaseUtils
 			}
 			mutations.add(mutation);
 		}
+
 		return mutations;
 	}
 
@@ -152,6 +153,7 @@ public class HBaseUtils
 				index,
 				entry,
 				customFieldVisibilityWriter);
+
 		final List<RowMutations> mutations = buildMutations(
 				writableAdapter.getAdapterId().getBytes(),
 				ingestInfo);
@@ -164,14 +166,14 @@ public class HBaseUtils
 		catch (final IOException e) {
 			LOGGER.warn("Writing to table failed." + e);
 		}
+
 		return ingestInfo;
 	}
 
 	public static String getQualifiedTableName(
 			final String tableNamespace,
 			final String unqualifiedTableName ) {
-		return ((tableNamespace == null) || tableNamespace.isEmpty()) ? unqualifiedTableName : tableNamespace + "_"
-				+ unqualifiedTableName;
+		return ((tableNamespace == null) || tableNamespace.isEmpty()) ? unqualifiedTableName : tableNamespace + "_" + unqualifiedTableName;
 	}
 
 	public static <T> DataStoreEntryInfo write(
@@ -429,15 +431,12 @@ public class HBaseUtils
 			throws IOException {
 		final List<KeyValue> map = new ArrayList<KeyValue>();
 		/*
-		 * ByteArrayInputStream in = new
-		 * ByteArrayInputStream(v.getValueArray()); DataInputStream din = new
-		 * DataInputStream( in); int numKeys = din.readInt(); for (int i = 0; i
-		 * < numKeys; i++) { byte[] cf = readField(din); // read the col fam
-		 * byte[] cq = readField(din); // read the col qual byte[] cv =
-		 * readField(din); // read the col visibility long timestamp =
-		 * din.readLong(); // read the timestamp byte[] valBytes =
-		 * readField(din); // read the value map.add(new KeyValue(
-		 * CellUtil.cloneRow(v), cf, cq, timestamp, valBytes));
+		 * ByteArrayInputStream in = new ByteArrayInputStream(v.getValueArray()); DataInputStream din = new
+		 * DataInputStream( in); int numKeys = din.readInt(); for (int i = 0; i < numKeys; i++) { byte[] cf =
+		 * readField(din); // read the col fam byte[] cq = readField(din); // read the col qual byte[] cv =
+		 * readField(din); // read the col visibility long timestamp = din.readLong(); // read the timestamp byte[]
+		 * valBytes = readField(din); // read the value map.add(new KeyValue( CellUtil.cloneRow(v), cf, cq, timestamp,
+		 * valBytes));
 		 */
 		final NavigableMap<byte[], NavigableMap<byte[], byte[]>> noVersionMap = row.getNoVersionMap();
 		for (final byte[] family : noVersionMap.keySet()) {
