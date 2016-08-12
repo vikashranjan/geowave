@@ -27,6 +27,7 @@ import mil.nga.giat.geowave.datastore.hbase.util.HBaseEntryIteratorWrapper;
 import mil.nga.giat.geowave.datastore.hbase.util.HBaseUtils;
 import mil.nga.giat.geowave.datastore.hbase.util.HBaseUtils.MultiScannerClosableWrapper;
 
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
@@ -134,10 +135,14 @@ public abstract class HBaseFilteredIndexQuery extends
 		final List<ResultScanner> results = new ArrayList<ResultScanner>();
 
 		try {
+			long hack = System.currentTimeMillis();
+
 			final ResultScanner rs = operations.getScannedResults(
 					multiScanner,
 					tableName,
 					authorizations);
+			
+			LOGGER.error("KAM *** HBase atomic DB query took " + (System.currentTimeMillis()-hack) + " ms.");
 
 			if (rs != null) {
 				results.add(rs);
@@ -184,8 +189,8 @@ public abstract class HBaseFilteredIndexQuery extends
 		final Scan scanner = new Scan();
 
 		// Performance recommendations
-		scanner.setCaching(1000);
-		scanner.setCacheBlocks(false);
+		scanner.setCaching(10000);
+		//scanner.setCacheBlocks(false);
 
 		FilterList filterList = new FilterList();
 
@@ -219,12 +224,13 @@ public abstract class HBaseFilteredIndexQuery extends
 
 		List<ByteArrayRange> ranges = getRanges();
 		if ((ranges == null) || ranges.isEmpty()) {
-			ranges = Collections.singletonList(new ByteArrayRange(
-					null,
-					null));
+			rowRanges.add(new RowRange(
+					HConstants.EMPTY_BYTE_ARRAY,
+					true,
+					HConstants.EMPTY_BYTE_ARRAY,
+					false));
 		}
-
-		if (!ranges.isEmpty()) {
+		else {
 			for (final ByteArrayRange range : ranges) {
 				if (range.getStart() != null) {
 					byte[] startRow = range.getStart().getBytes();
@@ -263,6 +269,13 @@ public abstract class HBaseFilteredIndexQuery extends
 		scanner.setFilter(filterList);
 
 		return scanner;
+	}
+
+	private byte[] getNextPrefix(
+			Scan scanner,
+			byte[] prefix ) {
+		return scanner.setRowPrefixFilter(
+				prefix).getStopRow();
 	}
 
 	private void handleSubsetOfFieldIds(

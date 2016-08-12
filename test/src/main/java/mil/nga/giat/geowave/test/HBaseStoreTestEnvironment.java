@@ -100,6 +100,10 @@ public class HBaseStoreTestEnvironment implements
 				LOGGER.debug("Using local zookeeper URL: " + zookeeper);
 
 				try {
+					Configuration conf = new Configuration();
+					conf.set(
+							"hbase.online.schema.update.enable",
+							"true");
 					hbaseLocalCluster = new HbaseLocalCluster.Builder()
 							.setHbaseMasterPort(
 									Integer.parseInt(propertyParser.getProperty(ConfigVars.HBASE_MASTER_PORT_KEY)))
@@ -120,7 +124,7 @@ public class HBaseStoreTestEnvironment implements
 									Boolean.parseBoolean(propertyParser
 											.getProperty(ConfigVars.HBASE_WAL_REPLICATION_ENABLED_KEY)))
 							.setHbaseConfiguration(
-									new Configuration())
+									conf)
 							.build();
 					hbaseLocalCluster.start();
 				}

@@ -14,6 +14,7 @@ import mil.nga.giat.geowave.core.store.query.aggregate.CountResult;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import com.google.common.base.Stopwatch;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -70,6 +71,8 @@ public class BBOXQuery extends
 			final ByteArrayId indexId,
 			final DataStore dataStore,
 			final boolean debug ) {
+		final Stopwatch stopWatch = new Stopwatch();
+
 		getBoxGeom();
 
 		long count = 0;
@@ -94,25 +97,33 @@ public class BBOXQuery extends
 			}
 		}
 		else {
-			try (final CloseableIterator<Object> it = dataStore.query(
+			stopWatch.start();
+
+			CloseableIterator<Object> it = dataStore.query(
 					new QueryOptions(
 							adapterId,
 							indexId),
 					new SpatialQuery(
-							geom))) {
-				while (it.hasNext()) {
-					if (debug) {
-						System.out.println(it.next());
-					}
-					else {
-						it.next();
-					}
-					count++;
+							geom));
+
+			stopWatch.stop();
+			System.out.println("Ran BBOX query in " + stopWatch.toString());
+
+			stopWatch.reset();
+			stopWatch.start();
+
+			while (it.hasNext()) {
+				if (debug) {
+					System.out.println(it.next());
 				}
+				else {
+					it.next();
+				}
+				count++;
 			}
-			catch (final IOException e) {
-				e.printStackTrace();
-			}
+
+			stopWatch.stop();
+			System.out.println("BBOX query results iteration took " + stopWatch.toString());
 		}
 		return count;
 	}
