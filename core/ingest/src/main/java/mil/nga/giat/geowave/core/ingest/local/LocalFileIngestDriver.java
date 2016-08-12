@@ -19,6 +19,7 @@ import mil.nga.giat.geowave.core.store.CloseableIterator;
 import mil.nga.giat.geowave.core.store.DataStore;
 import mil.nga.giat.geowave.core.store.adapter.WritableDataAdapter;
 import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
+import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
 import mil.nga.giat.geowave.core.store.operations.remote.options.DataStorePluginOptions;
 import mil.nga.giat.geowave.core.store.operations.remote.options.IndexPluginOptions;
 import mil.nga.giat.geowave.core.store.operations.remote.options.VisibilityOptions;
@@ -215,6 +216,7 @@ public class LocalFileIngestDriver extends
 			long hack = System.currentTimeMillis();
 			long count = 0;
 			long writeMs = 0;
+			DataStoreUtils.resetAccumulator();
 
 			while (geowaveDataIt.hasNext()) {
 				final GeoWaveData<?> geowaveData = (GeoWaveData<?>) geowaveDataIt.next();
@@ -229,6 +231,7 @@ public class LocalFileIngestDriver extends
 			
 			LOGGER.error("File ingest took " + (System.currentTimeMillis() - hack)/1000L + " seconds for " + count + " writes");
 			LOGGER.error("Actual write time was " + writeMs/1000L + " ms.");
+			LOGGER.error("Internal write time was " + DataStoreUtils.getAccumulator()/1000L + " ms.");
 		}
 		catch (Exception e) {
 			e.printStackTrace();
@@ -383,5 +386,5 @@ public class LocalFileIngestDriver extends
 		LOGGER.info(String.format(
 				"Finished ingest for file: [%s]",
 				file.getName()));
-	}
+	}	
 }

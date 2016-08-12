@@ -53,7 +53,7 @@ public class HBaseUtils
 
 	private static final byte[] BEG_AND_BYTE = "&".getBytes(StringUtils.UTF8_CHAR_SET);
 	private static final byte[] END_AND_BYTE = ")".getBytes(StringUtils.UTF8_CHAR_SET);
-
+	
 	private static final UniformVisibilityWriter DEFAULT_VISIBILITY = new UniformVisibilityWriter(
 			new UnconstrainedVisibilityHandler());
 
@@ -159,9 +159,13 @@ public class HBaseUtils
 				ingestInfo);
 
 		try {
+			long hack = System.currentTimeMillis();
+			
 			writer.write(
 					mutations,
 					writableAdapter.getAdapterId().getString());
+			
+			DataStoreUtils.addToAccumulator(System.currentTimeMillis() - hack);
 		}
 		catch (final IOException e) {
 			LOGGER.warn("Writing to table failed." + e);
@@ -568,5 +572,4 @@ public class HBaseUtils
 		}
 
 	}
-
 }

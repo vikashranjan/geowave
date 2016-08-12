@@ -46,7 +46,9 @@ import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
 public class DataStoreUtils
 {
 	private final static Logger LOGGER = Logger.getLogger(DataStoreUtils.class);
+	private static long accumulator = 0;
 
+	
 	@SuppressWarnings({
 		"rawtypes",
 		"unchecked"
@@ -728,5 +730,17 @@ public class DataStoreUtils
 			final int place ) {
 		throw new IllegalArgumentException(
 				msg + " for " + Arrays.toString(expression) + " at " + place);
+	}
+	
+	public static void addToAccumulator(long millis) {
+		accumulator += millis;
+	}
+	
+	public static void resetAccumulator() {
+		accumulator = 0;
+	}
+
+	public static long getAccumulator() {
+		return accumulator;
 	}
 }
