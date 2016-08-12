@@ -169,7 +169,7 @@ public class IngestTask implements
 		}
 	}
 
-	public void ingestData(
+	public long ingestData(
 			GeoWaveData<?> geowaveData,
 			WritableDataAdapter adapter)
 			throws Exception {
@@ -216,6 +216,8 @@ public class IngestTask implements
 		// Write the data to the data store.
 		IndexWriter writer = indexWriters.get(mapping.getAdapterId());
 
+		long hack = System.currentTimeMillis();
 		writer.write(geowaveData.getValue());
+		return System.currentTimeMillis() - hack;
 	}
 }

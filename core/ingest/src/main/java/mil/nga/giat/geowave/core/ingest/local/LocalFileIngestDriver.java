@@ -213,17 +213,22 @@ public class LocalFileIngestDriver extends
 			
 			LOGGER.error("Iterating through geowavedata...");
 			long hack = System.currentTimeMillis();
+			long count = 0;
+			long writeMs = 0;
 
 			while (geowaveDataIt.hasNext()) {
 				final GeoWaveData<?> geowaveData = (GeoWaveData<?>) geowaveDataIt.next();
 				final WritableDataAdapter adapter = ingestRunData.getDataAdapter(geowaveData);
 				
-				task.ingestData(
+				writeMs += task.ingestData(
 						geowaveData,
 						adapter);
+				
+				count++;
 			}
 			
-			LOGGER.error("File ingest took " + (System.currentTimeMillis() - hack)/1000L + " seconds");
+			LOGGER.error("File ingest took " + (System.currentTimeMillis() - hack)/1000L + " seconds for " + count + " writes");
+			LOGGER.error("Actual write time was " + writeMs/1000L + " ms.");
 		}
 		catch (Exception e) {
 			e.printStackTrace();
