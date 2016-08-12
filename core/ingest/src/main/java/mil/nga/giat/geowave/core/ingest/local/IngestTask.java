@@ -204,9 +204,12 @@ public class IngestTask implements
 
 			// If we have the index checked out already, use that.
 			if (!indexWriters.containsKey(mapping)) {
+				long hack = System.currentTimeMillis();
+				LOGGER.error("Going to DB for the index writer...");
 				indexWriters.put(
 						mapping.getAdapterId(),
 						runData.getIndexWriter(mapping));
+				LOGGER.error("DB round trip was " + (System.currentTimeMillis()-hack) + " ms.");
 			}
 		}
 

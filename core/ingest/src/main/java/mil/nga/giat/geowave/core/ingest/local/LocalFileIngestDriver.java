@@ -212,17 +212,18 @@ public class LocalFileIngestDriver extends
 				ingestOptions.getVisibility())) {
 			
 			LOGGER.error("Iterating through geowavedata...");
+			long hack = System.currentTimeMillis();
 
 			while (geowaveDataIt.hasNext()) {
 				final GeoWaveData<?> geowaveData = (GeoWaveData<?>) geowaveDataIt.next();
 				final WritableDataAdapter adapter = ingestRunData.getDataAdapter(geowaveData);
 				
-				LOGGER.error("Ingesting w/ adapter " + geowaveData.getAdapterId().getString());
-
 				task.ingestData(
 						geowaveData,
 						adapter);
 			}
+			
+			LOGGER.error("File ingest took " + (System.currentTimeMillis() - hack)/1000L + " seconds");
 		}
 		catch (Exception e) {
 			e.printStackTrace();
