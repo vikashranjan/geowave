@@ -210,10 +210,14 @@ public class LocalFileIngestDriver extends
 				file,
 				specifiedPrimaryIndexes.keySet(),
 				ingestOptions.getVisibility())) {
+			
+			LOGGER.error("Iterating through geowavedata...");
 
 			while (geowaveDataIt.hasNext()) {
 				final GeoWaveData<?> geowaveData = (GeoWaveData<?>) geowaveDataIt.next();
 				final WritableDataAdapter adapter = ingestRunData.getDataAdapter(geowaveData);
+				
+				LOGGER.error("Ingesting w/ adapter " + geowaveData.getAdapterId().getString());
 
 				task.ingestData(
 						geowaveData,
@@ -221,6 +225,7 @@ public class LocalFileIngestDriver extends
 			}
 		}
 		catch (Exception e) {
+			e.printStackTrace();
 			LOGGER.error(e.getMessage());
 		}
 		finally {
