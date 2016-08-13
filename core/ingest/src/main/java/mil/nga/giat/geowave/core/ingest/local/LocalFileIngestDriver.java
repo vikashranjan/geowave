@@ -230,8 +230,8 @@ public class LocalFileIngestDriver extends
 			}
 			
 			LOGGER.error("File ingest took " + (System.currentTimeMillis() - hack)/1000L + " seconds for " + count + " writes");
-			LOGGER.error("Actual write time was " + writeMs/1000L + " ms.");
-			LOGGER.error("Internal write time was " + DataStoreUtils.getAccumulator()/1000L + " ms.");
+			LOGGER.error("Total DB write time was " + writeMs/1000L + " seconds.");
+			LOGGER.error("Mutator write time was " + DataStoreUtils.getAccumulator()/1000L + " seconds.");
 		}
 		catch (Exception e) {
 			e.printStackTrace();

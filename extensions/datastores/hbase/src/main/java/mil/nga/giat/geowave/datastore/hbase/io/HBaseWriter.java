@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import mil.nga.giat.geowave.core.store.Writer;
+import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
 import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
 
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -54,7 +55,9 @@ public class HBaseWriter implements
 	public void write(
 			final RowMutations rowMutation ) {
 		try {
+			long hack = System.currentTimeMillis();
 			mutator.mutate(rowMutation.getMutations());
+			DataStoreUtils.addToAccumulator(System.currentTimeMillis() - hack);
 		}
 		catch (final IOException e) {
 			LOGGER.error(

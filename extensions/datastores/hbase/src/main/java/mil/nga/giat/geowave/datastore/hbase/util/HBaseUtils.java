@@ -159,13 +159,9 @@ public class HBaseUtils
 				ingestInfo);
 
 		try {
-			long hack = System.currentTimeMillis();
-			
 			writer.write(
 					mutations,
 					writableAdapter.getAdapterId().getString());
-			
-			DataStoreUtils.addToAccumulator(System.currentTimeMillis() - hack);
 		}
 		catch (final IOException e) {
 			LOGGER.warn("Writing to table failed." + e);

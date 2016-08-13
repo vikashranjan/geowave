@@ -79,16 +79,14 @@ public class HBaseIndexWriter<T> extends
 
 	@Override
 	protected synchronized void closeInternal() {
-//		if (writer != null) {
-//			writer.close();
-//			writer = null;
-//		}
-		LOGGER.error("KAM *** Closing the writer!");
+		if (writer != null) {
+			writer.close();
+			writer = null;
+		}
 	}
 
 	private synchronized void ensureOpen() {
 		if (writer == null) {
-			LOGGER.error("KAM *** Writer is null!");
 			try {
 				writer = operations.createWriter(
 						StringUtils.stringFromBinary(index.getId().getBytes()),
