@@ -218,10 +218,11 @@ public class IngestTask implements
 
 			// If we have the index checked out already, use that.
 			if (!indexWriters.containsKey(mapping)) {
+				long hack = System.currentTimeMillis();
 				indexWriters.put(
 						mapping.getAdapterId(),
 						runData.getIndexWriter(mapping));
-				LOGGER.error("KAM *** Getting index writer from DB!");
+				LOGGER.error("KAM *** Getting index writer from DB! Took " + (System.currentTimeMillis()-hack) + " ms");
 			}
 		}
 
