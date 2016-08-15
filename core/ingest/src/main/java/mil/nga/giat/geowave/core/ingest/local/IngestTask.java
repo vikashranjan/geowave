@@ -207,6 +207,7 @@ public class IngestTask implements
 				indexWriters.put(
 						mapping.getAdapterId(),
 						runData.getIndexWriter(mapping));
+				LOGGER.error("KAM *** Getting index writer from DB!");
 			}
 		}
 
