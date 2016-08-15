@@ -6,9 +6,15 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.Map.Entry;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 
 import mil.nga.giat.geowave.core.index.ByteArrayId;
@@ -38,7 +44,6 @@ import mil.nga.giat.geowave.core.store.data.visibility.UnconstrainedVisibilityHa
 import mil.nga.giat.geowave.core.store.data.visibility.UniformVisibilityWriter;
 import mil.nga.giat.geowave.core.store.index.CommonIndexModel;
 import mil.nga.giat.geowave.core.store.index.CommonIndexValue;
-import mil.nga.giat.geowave.core.store.index.IndexMetaDataSet;
 import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
 
 /*
@@ -68,6 +73,121 @@ public class DataStoreUtils
 					range.getEnd().getBytes());
 		}
 		return count;
+	}
+
+	public static <T> void readFieldInfo(
+			List<FieldInfo<?>> fieldInfoList,
+			PersistentDataset<CommonIndexValue> indexData,
+			PersistentDataset<Object> extendedData,
+			PersistentDataset<byte[]> unknownData,
+			byte[] compositeFieldIdBytes,
+			byte[] commonVisiblity,
+			byte[] byteValue,
+			DataAdapter<T> adapter,
+			CommonIndexModel indexModel ) {
+		final ByteArrayId compositeFieldId = new ByteArrayId(
+				compositeFieldIdBytes);
+		List<FlattenedFieldInfo> fieldInfos = DataStoreUtils.decomposeFlattenedFields(
+				compositeFieldId.getBytes(),
+				byteValue,
+				commonVisiblity,
+				-1).getFieldsRead();
+		for (final FlattenedFieldInfo fieldInfo : fieldInfos) {
+			final ByteArrayId fieldId = adapter.getFieldIdForPosition(
+					indexModel,
+					fieldInfo.getFieldPosition());
+			final FieldReader<? extends CommonIndexValue> indexFieldReader = indexModel.getReader(fieldId);
+			if (indexFieldReader != null) {
+				final CommonIndexValue indexValue = indexFieldReader.readField(fieldInfo.getValue());
+				indexValue.setVisibility(commonVisiblity);
+				final PersistentValue<CommonIndexValue> val = new PersistentValue<CommonIndexValue>(
+						fieldId,
+						indexValue);
+				indexData.addValue(val);
+				fieldInfoList.add(DataStoreUtils.getFieldInfo(
+						val,
+						fieldInfo.getValue(),
+						commonVisiblity));
+			}
+			else {
+				final FieldReader<?> extFieldReader = adapter.getReader(fieldId);
+				if (extFieldReader != null) {
+					final Object value = extFieldReader.readField(fieldInfo.getValue());
+					final PersistentValue<Object> val = new PersistentValue<Object>(
+							fieldId,
+							value);
+					extendedData.addValue(val);
+					fieldInfoList.add(DataStoreUtils.getFieldInfo(
+							val,
+							fieldInfo.getValue(),
+							commonVisiblity));
+				}
+				else {
+					LOGGER.error("field reader not found for data entry, the value may be ignored");
+					unknownData.addValue(new PersistentValue<byte[]>(
+							fieldId,
+							fieldInfo.getValue()));
+				}
+			}
+		}
+	}
+
+	/**
+	 *
+	 * Takes a byte array representing a serialized composite group of
+	 * FieldInfos sharing a common visibility and returns a List of the
+	 * individual FieldInfos
+	 *
+	 * @param compositeFieldId
+	 *            the composite bitmask representing the fields contained within
+	 *            the flattenedValue
+	 * @param flattenedValue
+	 *            the serialized composite FieldInfo
+	 * @param commonVisibility
+	 *            the shared visibility
+	 * @param maxFieldPosition
+	 *            can short-circuit read and defer decomposition of fields after
+	 *            a given position
+	 * @return the dataset that has been read
+	 */
+	public static <T> FlattenedDataSet decomposeFlattenedFields(
+			final byte[] bitmask,
+			final byte[] flattenedValue,
+			final byte[] commonVisibility,
+			final int maxFieldPosition ) {
+		final List<FlattenedFieldInfo> fieldInfoList = new ArrayList<FlattenedFieldInfo>();
+		final List<Integer> fieldPositions = BitmaskUtils.getFieldPositions(bitmask);
+
+		final boolean sharedVisibility = fieldPositions.size() > 1;
+		if (sharedVisibility) {
+			final ByteBuffer input = ByteBuffer.wrap(flattenedValue);
+			for (int i = 0; i < fieldPositions.size(); i++) {
+				final Integer fieldPosition = fieldPositions.get(i);
+				if ((maxFieldPosition > -1) && (fieldPosition > maxFieldPosition)) {
+					return new FlattenedDataSet(
+							fieldInfoList,
+							new FlattenedUnreadDataSingleRow(
+									input,
+									i,
+									fieldPositions));
+				}
+				final int fieldLength = input.getInt();
+				final byte[] fieldValueBytes = new byte[fieldLength];
+				input.get(fieldValueBytes);
+				fieldInfoList.add(new FlattenedFieldInfo(
+						fieldPosition,
+						fieldValueBytes));
+			}
+		}
+		else {
+			fieldInfoList.add(new FlattenedFieldInfo(
+					fieldPositions.get(0),
+					flattenedValue));
+
+		}
+		return new FlattenedDataSet(
+				fieldInfoList,
+				null);
 	}
 
 	public static List<ByteArrayRange> constraintsToByteArrayRanges(
@@ -728,5 +848,98 @@ public class DataStoreUtils
 			final int place ) {
 		throw new IllegalArgumentException(
 				msg + " for " + Arrays.toString(expression) + " at " + place);
+	}
+
+	/**
+	 * This method combines all FieldInfos that share a common visibility into a
+	 * single FieldInfo
+	 *
+	 * @param originalList
+	 * @return a new list of composite FieldInfos
+	 */
+	public static <T> List<FieldInfo<?>> composeFlattenedFields(
+			final List<FieldInfo<?>> originalList,
+			final CommonIndexModel model,
+			final WritableDataAdapter<?> writableAdapter ) {
+		final List<FieldInfo<?>> retVal = new ArrayList<>();
+		final Map<ByteArrayId, List<Pair<Integer, FieldInfo<?>>>> vizToFieldMap = new LinkedHashMap<>();
+		boolean sharedVisibility = false;
+		// organize FieldInfos by unique visibility
+		for (final FieldInfo<?> fieldInfo : originalList) {
+			final int fieldPosition = writableAdapter.getPositionOfOrderedField(
+					model,
+					fieldInfo.getDataValue().getId());
+			if (fieldPosition == -1) {
+				writableAdapter.getPositionOfOrderedField(
+						model,
+						fieldInfo.getDataValue().getId());
+			}
+			final ByteArrayId currViz = new ByteArrayId(
+					fieldInfo.getVisibility());
+			if (vizToFieldMap.containsKey(currViz)) {
+				sharedVisibility = true;
+				final List<Pair<Integer, FieldInfo<?>>> listForViz = vizToFieldMap.get(currViz);
+				listForViz.add(new ImmutablePair<Integer, DataStoreEntryInfo.FieldInfo<?>>(
+						fieldPosition,
+						fieldInfo));
+			}
+			else {
+				final List<Pair<Integer, FieldInfo<?>>> listForViz = new ArrayList<>();
+				listForViz.add(new ImmutablePair<Integer, DataStoreEntryInfo.FieldInfo<?>>(
+						fieldPosition,
+						fieldInfo));
+				vizToFieldMap.put(
+						currViz,
+						listForViz);
+			}
+		}
+		if (!sharedVisibility) {
+			// at a minimum, must return transformed (bitmasked) fieldInfos
+			final List<FieldInfo<?>> bitmaskedFieldInfos = new ArrayList<>();
+			for (final List<Pair<Integer, FieldInfo<?>>> list : vizToFieldMap.values()) {
+				// every list must have exactly one element
+				final Pair<Integer, FieldInfo<?>> fieldInfo = list.get(0);
+				bitmaskedFieldInfos.add(new FieldInfo<>(
+						new PersistentValue<Object>(
+								new ByteArrayId(
+										BitmaskUtils.generateCompositeBitmask(fieldInfo.getLeft())),
+								fieldInfo.getRight().getDataValue().getValue()),
+						fieldInfo.getRight().getWrittenValue(),
+						fieldInfo.getRight().getVisibility()));
+			}
+			return bitmaskedFieldInfos;
+		}
+		for (final Entry<ByteArrayId, List<Pair<Integer, FieldInfo<?>>>> entry : vizToFieldMap.entrySet()) {
+			final List<byte[]> fieldInfoBytesList = new ArrayList<>();
+			int totalLength = 0;
+			final SortedSet<Integer> fieldPositions = new TreeSet<Integer>();
+			final List<Pair<Integer, FieldInfo<?>>> fieldInfoList = entry.getValue();
+			Collections.sort(
+					fieldInfoList,
+					new BitmaskedFieldInfoComparator());
+			for (final Pair<Integer, FieldInfo<?>> fieldInfoPair : fieldInfoList) {
+				final FieldInfo<?> fieldInfo = fieldInfoPair.getRight();
+				final ByteBuffer fieldInfoBytes = ByteBuffer.allocate(4 + fieldInfo.getWrittenValue().length);
+				fieldPositions.add(fieldInfoPair.getLeft());
+				fieldInfoBytes.putInt(fieldInfo.getWrittenValue().length);
+				fieldInfoBytes.put(fieldInfo.getWrittenValue());
+				fieldInfoBytesList.add(fieldInfoBytes.array());
+				totalLength += fieldInfoBytes.array().length;
+			}
+			final ByteBuffer allFields = ByteBuffer.allocate(totalLength);
+			for (final byte[] bytes : fieldInfoBytesList) {
+				allFields.put(bytes);
+			}
+			final byte[] compositeBitmask = BitmaskUtils.generateCompositeBitmask(fieldPositions);
+			final FieldInfo<?> composite = new FieldInfo<T>(
+					new PersistentValue<T>(
+							new ByteArrayId(
+									compositeBitmask),
+							null), // unnecessary
+					allFields.array(),
+					entry.getKey().getBytes());
+			retVal.add(composite);
+		}
+		return retVal;
 	}
 }

@@ -1,18 +1,18 @@
-package mil.nga.giat.geowave.datastore.accumulo.encoding;
+package mil.nga.giat.geowave.core.store.memory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AccumuloUnreadDataSingleRow implements
-		AccumuloUnreadData
+public class FlattenedUnreadDataSingleRow implements
+		FlattenedUnreadData
 {
 	private final ByteBuffer partiallyConsumedBuffer;
 	private final int currentIndexInFieldPositions;
 	private final List<Integer> fieldPositions;
-	private List<AccumuloFieldInfo> cachedRead = null;
+	private List<FlattenedFieldInfo> cachedRead = null;
 
-	public AccumuloUnreadDataSingleRow(
+	public FlattenedUnreadDataSingleRow(
 			final ByteBuffer partiallyConsumedBuffer,
 			final int currentIndexInFieldPositions,
 			final List<Integer> fieldPositions ) {
@@ -21,7 +21,7 @@ public class AccumuloUnreadDataSingleRow implements
 		this.fieldPositions = fieldPositions;
 	}
 
-	public List<AccumuloFieldInfo> finishRead() {
+	public List<FlattenedFieldInfo> finishRead() {
 		if (cachedRead == null) {
 			cachedRead = new ArrayList<>();
 			for (int i = currentIndexInFieldPositions; i < fieldPositions.size(); i++) {
@@ -29,7 +29,7 @@ public class AccumuloUnreadDataSingleRow implements
 				final byte[] fieldValueBytes = new byte[fieldLength];
 				partiallyConsumedBuffer.get(fieldValueBytes);
 				final Integer fieldPosition = fieldPositions.get(i);
-				cachedRead.add(new AccumuloFieldInfo(
+				cachedRead.add(new FlattenedFieldInfo(
 						fieldPosition,
 						fieldValueBytes));
 			}

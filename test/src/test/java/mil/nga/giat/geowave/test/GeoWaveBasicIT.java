@@ -119,7 +119,7 @@ public class GeoWaveBasicIT
 	private static final String TEST_BASE_EXPORT_FILE_NAME = "basicIT-export.avro";
 
 	@GeoWaveTestStore({
-//		GeoWaveStoreType.ACCUMULO,
+		// GeoWaveStoreType.ACCUMULO,
 		GeoWaveStoreType.HBASE
 	})
 	protected DataStorePluginOptions dataStore;
@@ -148,7 +148,7 @@ public class GeoWaveBasicIT
 			final int nthreads ) {
 		LOGGER.setLevel(Level.DEBUG);
 		long mark = System.currentTimeMillis();
-		
+
 		LOGGER.debug("Testing DataStore Type: " + dataStore.getType());
 
 		// ingest both lines and points
@@ -157,18 +157,18 @@ public class GeoWaveBasicIT
 				DimensionalityType.SPATIAL,
 				HAIL_SHAPEFILE_FILE,
 				nthreads);
-		
+
 		long dur = (System.currentTimeMillis() - mark);
 		LOGGER.debug("Ingest (points) duration = " + dur + " ms with " + nthreads + " thread(s).");
-		
+
 		mark = System.currentTimeMillis();
-		
+
 		TestUtils.testLocalIngest(
 				dataStore,
 				DimensionalityType.SPATIAL,
 				TORNADO_TRACKS_SHAPEFILE_FILE,
 				nthreads);
-		
+
 		dur = (System.currentTimeMillis() - mark);
 		LOGGER.debug("Ingest (lines) duration = " + dur + " ms with " + nthreads + " thread(s).");
 
@@ -186,7 +186,7 @@ public class GeoWaveBasicIT
 					},
 					TestUtils.DEFAULT_SPATIAL_INDEX,
 					"bounding box constraint only");
-			
+
 			dur = (System.currentTimeMillis() - mark);
 			LOGGER.debug("BBOX query duration = " + dur + " ms.");
 		}
@@ -210,7 +210,7 @@ public class GeoWaveBasicIT
 					},
 					TestUtils.DEFAULT_SPATIAL_INDEX,
 					"polygon constraint only");
-			
+
 			dur = (System.currentTimeMillis() - mark);
 			LOGGER.debug("POLY query duration = " + dur + " ms.");
 		}

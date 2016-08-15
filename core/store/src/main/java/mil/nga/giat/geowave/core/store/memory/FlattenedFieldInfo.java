@@ -1,11 +1,11 @@
-package mil.nga.giat.geowave.datastore.accumulo.encoding;
+package mil.nga.giat.geowave.core.store.memory;
 
-public class AccumuloFieldInfo
+public class FlattenedFieldInfo
 {
 	private final int fieldPosition;
 	private final byte[] value;
 
-	public AccumuloFieldInfo(
+	public FlattenedFieldInfo(
 			final int fieldPosition,
 			final byte[] value ) {
 		this.fieldPosition = fieldPosition;
