@@ -51,6 +51,10 @@ public abstract class AbstractHBasePersistence<T extends Persistable> extends
 		if (cacheResult != null) {
 			return (T) cacheResult;
 		}
+
+		LOGGER.error("KAM *** Going to DB for adapter!");
+		long hack = System.currentTimeMillis();
+
 		final Scan scanner = getScanner(
 				primaryId,
 				secondaryId,
@@ -69,6 +73,8 @@ public abstract class AbstractHBasePersistence<T extends Persistable> extends
 						secondaryId).getString() + "' not found");
 				return null;
 			}
+
+			LOGGER.error("KAM *** retrieving adapter took " + (System.currentTimeMillis() - hack) + " ms.");
 			return iter.next();
 		}
 		catch (final IOException e) {
@@ -264,31 +270,31 @@ public abstract class AbstractHBasePersistence<T extends Persistable> extends
 				secondaryId) != null) {
 			return true;
 		}
-		try {
-			final Scan scanner = getScanner(
-					primaryId,
-					secondaryId);
-			final ResultScanner rS = operations.getScannedResults(
-					scanner,
-					getTablename());
-			final Iterator<Result> it = rS.iterator();
-
-			final Iterator<T> iter = getNativeIteratorWrapper(it);
-
-			if (iter.hasNext()) {
-				return iter.next() != null;
-			}
-			else {
-				return false;
-			}
-		}
-		catch (final IOException e) {
-			LOGGER.debug(
-					"Unable to check existence of object '" + getCombinedId(
-							primaryId,
-							secondaryId) + "'",
-					e);
-		}
+		// try {
+		// final Scan scanner = getScanner(
+		// primaryId,
+		// secondaryId);
+		// final ResultScanner rS = operations.getScannedResults(
+		// scanner,
+		// getTablename());
+		// final Iterator<Result> it = rS.iterator();
+		//
+		// final Iterator<T> iter = getNativeIteratorWrapper(it);
+		//
+		// if (iter.hasNext()) {
+		// return iter.next() != null;
+		// }
+		// else {
+		// return false;
+		// }
+		// }
+		// catch (final IOException e) {
+		// LOGGER.debug(
+		// "Unable to check existence of object '" + getCombinedId(
+		// primaryId,
+		// secondaryId) + "'",
+		// e);
+		// }
 		return false;
 	}
 

@@ -9,18 +9,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.NavigableMap;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.CellUtil;
-import org.apache.hadoop.hbase.KeyValue;
-import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.RowMutations;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.log4j.Logger;
-
 import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.index.ByteArrayRange;
 import mil.nga.giat.geowave.core.index.NumericIndexStrategy;
@@ -48,9 +36,20 @@ import mil.nga.giat.geowave.core.store.memory.FlattenedFieldInfo;
 import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
 import mil.nga.giat.geowave.datastore.hbase.io.HBaseWriter;
 
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.RowMutations;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.log4j.Logger;
+
 public class HBaseUtils
 {
-
 	private final static Logger LOGGER = Logger.getLogger(HBaseUtils.class);
 
 	private static final byte[] BEG_AND_BYTE = "&".getBytes(StringUtils.UTF8_CHAR_SET);
@@ -89,6 +88,7 @@ public class HBaseUtils
 				ingestInfo.getFieldInfo(),
 				index.getIndexModel(),
 				writableAdapter);
+
 		for (final ByteArrayId rowId : ingestInfo.getRowIds()) {
 			final RowMutations mutation = new RowMutations(
 					rowId.getBytes());
@@ -108,6 +108,7 @@ public class HBaseUtils
 			}
 			mutations.add(mutation);
 		}
+
 		return mutations;
 	}
 
@@ -153,11 +154,18 @@ public class HBaseUtils
 			final T entry,
 			final HBaseWriter writer,
 			final VisibilityWriter<T> customFieldVisibilityWriter ) {
+		long hack = System.currentTimeMillis();
+
 		final DataStoreEntryInfo ingestInfo = DataStoreUtils.getIngestInfo(
 				writableAdapter,
 				index,
 				entry,
 				customFieldVisibilityWriter);
+
+		DataStoreUtils.addToAccumulator(
+				"hbaseIngest",
+				System.currentTimeMillis() - hack);
+
 		final List<RowMutations> mutations = buildMutations(
 				writableAdapter.getAdapterId().getBytes(),
 				ingestInfo,
@@ -172,6 +180,7 @@ public class HBaseUtils
 		catch (final IOException e) {
 			LOGGER.warn("Writing to table failed." + e);
 		}
+
 		return ingestInfo;
 	}
 
@@ -548,5 +557,4 @@ public class HBaseUtils
 		}
 
 	}
-
 }
