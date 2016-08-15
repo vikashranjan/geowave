@@ -89,6 +89,8 @@ public class IngestTask implements
 	@Override
 	public void run() {
 		int count = 0;
+		long dbWriteMs = 0L;
+		
 		try {
 			if (LOGGER.isDebugEnabled()) {
 				LOGGER.debug(String.format(
@@ -124,7 +126,7 @@ public class IngestTask implements
 				}
 
 				// Ingest the data!
-				ingestData(
+				dbWriteMs +=ingestData(
 						geowaveData,
 						adapter);
 
@@ -159,12 +161,12 @@ public class IngestTask implements
 				}
 			}
 
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug(String.format(
-						"Worker exited for plugin [%s]; Ingested %d items",
-						this.getId(),
-						count));
-			}
+			LOGGER.error(String.format(
+					"Worker exited for plugin [%s]; Ingested %d items in %d seconds",
+					this.getId(),
+					count,
+					(int)dbWriteMs/1000));
+
 			isFinished = true;
 		}
 	}

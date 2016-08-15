@@ -51,6 +51,8 @@ public abstract class AbstractHBasePersistence<T extends Persistable> extends
 		if (cacheResult != null) {
 			return (T) cacheResult;
 		}
+		
+		LOGGER.error("KAM *** Going to DB for adapter!");
 		final Scan scanner = getScanner(
 				primaryId,
 				secondaryId,
