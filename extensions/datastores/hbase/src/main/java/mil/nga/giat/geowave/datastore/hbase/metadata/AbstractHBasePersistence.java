@@ -53,6 +53,8 @@ public abstract class AbstractHBasePersistence<T extends Persistable> extends
 		}
 		
 		LOGGER.error("KAM *** Going to DB for adapter!");
+		long hack = System.currentTimeMillis();
+		
 		final Scan scanner = getScanner(
 				primaryId,
 				secondaryId,
@@ -71,6 +73,8 @@ public abstract class AbstractHBasePersistence<T extends Persistable> extends
 						secondaryId).getString() + "' not found");
 				return null;
 			}
+			
+			LOGGER.error("KAM *** retrieving adapter took " + (System.currentTimeMillis()-hack) + " ms.");
 			return iter.next();
 		}
 		catch (final IOException e) {

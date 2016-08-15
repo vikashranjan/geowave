@@ -14,6 +14,7 @@ import mil.nga.giat.geowave.core.store.AdapterToIndexMapping;
 import mil.nga.giat.geowave.core.store.IndexWriter;
 import mil.nga.giat.geowave.core.store.adapter.WritableDataAdapter;
 import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
+import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,7 @@ public class IngestTask implements
 	private final Map<ByteArrayId, PrimaryIndex> requiredIndexMap;
 	private volatile boolean isTerminated = false;
 	private volatile boolean isFinished = false;
-	
+
 	private Map<ByteArrayId, IndexWriter> indexWriters;
 	private Map<ByteArrayId, AdapterToIndexMapping> adapterMappings;
 
@@ -49,7 +50,7 @@ public class IngestTask implements
 		this.specifiedPrimaryIndexes = specifiedPrimaryIndexes;
 		this.requiredIndexMap = requiredIndexMap;
 		this.readQueue = queue;
-		
+
 		this.indexWriters = new HashMap<ByteArrayId, IndexWriter>();
 		this.adapterMappings = new HashMap<ByteArrayId, AdapterToIndexMapping>();
 	}
@@ -90,13 +91,13 @@ public class IngestTask implements
 	public void run() {
 		int count = 0;
 		long dbWriteMs = 0L;
-		
+		DataStoreUtils.resetAccumulator();
+
 		try {
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug(String.format(
-						"Worker executing for plugin [%s]",
-						this.getId()));
-			}
+			LOGGER.debug(String.format(
+					"Worker executing for plugin [%s]",
+					this.getId()));
+
 			while (true) {
 				GeoWaveData<?> geowaveData = readQueue.poll(
 						100,
@@ -126,7 +127,7 @@ public class IngestTask implements
 				}
 
 				// Ingest the data!
-				dbWriteMs +=ingestData(
+				dbWriteMs += ingestData(
 						geowaveData,
 						adapter);
 
@@ -165,7 +166,12 @@ public class IngestTask implements
 					"Worker exited for plugin [%s]; Ingested %d items in %d seconds",
 					this.getId(),
 					count,
-					(int)dbWriteMs/1000));
+					(int) dbWriteMs / 1000));
+			
+			long writeAccum = DataStoreUtils.getAccumulator();
+			LOGGER.error(String.format(
+					"Actual DB write time took %d seconds",
+					(int) writeAccum / 1000));
 
 			isFinished = true;
 		}
@@ -173,7 +179,7 @@ public class IngestTask implements
 
 	public long ingestData(
 			GeoWaveData<?> geowaveData,
-			WritableDataAdapter adapter)
+			WritableDataAdapter adapter )
 			throws Exception {
 		AdapterToIndexMapping mapping = adapterMappings.get(adapter.getAdapterId());
 
