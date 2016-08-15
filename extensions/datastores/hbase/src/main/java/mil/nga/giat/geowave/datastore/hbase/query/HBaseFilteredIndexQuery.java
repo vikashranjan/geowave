@@ -229,10 +229,10 @@ public abstract class HBaseFilteredIndexQuery extends
 					byte[] startRow = range.getStart().getBytes();
 					byte[] stopRow;
 					if (!range.isSingleValue()) {
-						stopRow = getNextPrefix(scanner, range.getEnd().getBytes());
+						stopRow = HBaseUtils.getNextPrefix(range.getEnd().getBytes());
 					}
 					else {
-						stopRow = getNextPrefix(scanner, range.getStart().getBytes());
+						stopRow = HBaseUtils.getNextPrefix(range.getStart().getBytes());
 					}
 
 					RowRange rowRange = new RowRange(
