@@ -1,4 +1,4 @@
-package mil.nga.giat.geowave.datastore.accumulo.util;
+package mil.nga.giat.geowave.core.store.memory;
 
 import java.util.ArrayList;
 import java.util.Collections;

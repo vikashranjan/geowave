@@ -10,6 +10,8 @@ import mil.nga.giat.geowave.core.store.data.PersistentValue;
 import mil.nga.giat.geowave.core.store.data.field.FieldReader;
 import mil.nga.giat.geowave.core.store.index.CommonIndexModel;
 import mil.nga.giat.geowave.core.store.index.CommonIndexValue;
+import mil.nga.giat.geowave.core.store.memory.FlattenedFieldInfo;
+import mil.nga.giat.geowave.core.store.memory.FlattenedUnreadData;
 
 /**
  * Consults adapter to lookup field readers based on bitmasked fieldIds when
@@ -21,7 +23,7 @@ public class AccumuloCommonIndexedPersistenceEncoding extends
 		AbstractAdapterPersistenceEncoding
 {
 
-	private final AccumuloUnreadData unreadData;
+	private final FlattenedUnreadData unreadData;
 
 	public AccumuloCommonIndexedPersistenceEncoding(
 			final ByteArrayId adapterId,
@@ -29,7 +31,7 @@ public class AccumuloCommonIndexedPersistenceEncoding extends
 			final ByteArrayId indexInsertionId,
 			final int duplicateCount,
 			final PersistentDataset<CommonIndexValue> commonData,
-			final AccumuloUnreadData unreadData ) {
+			final FlattenedUnreadData unreadData ) {
 		super(
 				adapterId,
 				dataId,
@@ -47,8 +49,8 @@ public class AccumuloCommonIndexedPersistenceEncoding extends
 			final DataAdapter<?> adapter,
 			final CommonIndexModel model ) {
 		if (unreadData != null) {
-			final List<AccumuloFieldInfo> fields = unreadData.finishRead();
-			for (final AccumuloFieldInfo field : fields) {
+			final List<FlattenedFieldInfo> fields = unreadData.finishRead();
+			for (final FlattenedFieldInfo field : fields) {
 				final ByteArrayId fieldId = adapter.getFieldIdForPosition(
 						model,
 						field.getFieldPosition());

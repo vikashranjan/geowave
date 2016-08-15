@@ -44,6 +44,7 @@ import mil.nga.giat.geowave.core.store.filter.QueryFilter;
 import mil.nga.giat.geowave.core.store.index.CommonIndexModel;
 import mil.nga.giat.geowave.core.store.index.CommonIndexValue;
 import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
+import mil.nga.giat.geowave.core.store.memory.FlattenedFieldInfo;
 import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
 import mil.nga.giat.geowave.datastore.hbase.io.HBaseWriter;
 
@@ -78,11 +79,16 @@ public class HBaseUtils
 		return buffer.array();
 	}
 
-	private static List<RowMutations> buildMutations(
+	private static <T> List<RowMutations> buildMutations(
 			final byte[] adapterId,
-			final DataStoreEntryInfo ingestInfo ) {
+			final DataStoreEntryInfo ingestInfo,
+			final PrimaryIndex index,
+			final WritableDataAdapter<T> writableAdapter ) {
 		final List<RowMutations> mutations = new ArrayList<RowMutations>();
-		final List<FieldInfo<?>> fieldInfoList = ingestInfo.getFieldInfo();
+		final List<FieldInfo<?>> fieldInfoList = DataStoreUtils.composeFlattenedFields(
+				ingestInfo.getFieldInfo(),
+				index.getIndexModel(),
+				writableAdapter);
 		for (final ByteArrayId rowId : ingestInfo.getRowIds()) {
 			final RowMutations mutation = new RowMutations(
 					rowId.getBytes());
@@ -154,7 +160,9 @@ public class HBaseUtils
 				customFieldVisibilityWriter);
 		final List<RowMutations> mutations = buildMutations(
 				writableAdapter.getAdapterId().getBytes(),
-				ingestInfo);
+				ingestInfo,
+				index,
+				writableAdapter);
 
 		try {
 			writer.write(
@@ -338,49 +346,20 @@ public class HBaseUtils
 				}
 				adapterMatchVerified = true;
 			}
-			final ByteArrayId fieldId = new ByteArrayId(
-					entry.getQualifier());
 			// entry.getKey().getColumnQualifierData().getBackingArray());
-			final CommonIndexModel indexModel;
-			indexModel = index.getIndexModel();
-
-			// first check if this field is part of the index model
-			final FieldReader<? extends CommonIndexValue> indexFieldReader = indexModel.getReader(fieldId);
+			final CommonIndexModel indexModel = index.getIndexModel();
 			final byte byteValue[] = entry.getValue();
-			if (indexFieldReader != null) {
-				final CommonIndexValue indexValue = indexFieldReader.readField(byteValue);
-				// indexValue.setVisibility(entry.getKey().getColumnVisibilityData().getBackingArray());
-				final PersistentValue<CommonIndexValue> val = new PersistentValue<CommonIndexValue>(
-						fieldId,
-						indexValue);
-				indexData.addValue(val);
-				fieldInfoList.add(getFieldInfo(
-						val,
-						byteValue,
-						indexValue.getVisibility()));
-			}
-			else {
-				// next check if this field is part of the adapter's
-				// extended data model
-				final FieldReader<?> extFieldReader = adapter.getReader(fieldId);
-				if (extFieldReader == null) {
-					LOGGER.error("field reader not found for data entry, the value may be ignored");
-					unknownData.addValue(new PersistentValue<byte[]>(
-							fieldId,
-							byteValue));
-					continue;
-				}
-				final Object value = extFieldReader.readField(byteValue);
-				final PersistentValue<Object> val = new PersistentValue<Object>(
-						fieldId,
-						value);
-				extendedData.addValue(val);
-				fieldInfoList.add(getFieldInfo(
-						val,
-						byteValue,
-						null));
-				// entry.getKey().getColumnVisibility().getBytes()));
-			}
+
+			DataStoreUtils.readFieldInfo(
+					fieldInfoList,
+					indexData,
+					extendedData,
+					unknownData,
+					entry.getQualifier(),
+					new byte[] {},
+					byteValue,
+					adapter,
+					indexModel);
 		}
 
 		final IndexedAdapterPersistenceEncoding encodedRow = new IndexedAdapterPersistenceEncoding(

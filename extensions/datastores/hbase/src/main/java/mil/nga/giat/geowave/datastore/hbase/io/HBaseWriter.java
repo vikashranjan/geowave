@@ -19,7 +19,8 @@ import org.apache.log4j.Logger;
 /**
  * Functionality similar to <code> BatchWriterWrapper </code>
  *
- * This class directly writes to the HBase table instead of using any existing Writer API provided by HBase.
+ * This class directly writes to the HBase table instead of using any existing
+ * Writer API provided by HBase.
  *
  */
 public class HBaseWriter implements
@@ -121,7 +122,7 @@ public class HBaseWriter implements
 
 					found = tableDescriptor.hasFamily(columnFamily.getBytes());
 				}
-				
+
 				cfMap.put(
 						columnFamily,
 						found);

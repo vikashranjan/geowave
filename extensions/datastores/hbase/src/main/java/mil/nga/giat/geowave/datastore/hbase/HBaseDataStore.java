@@ -73,7 +73,7 @@ public class HBaseDataStore extends
 		MapReduceDataStore
 {
 	public final static String TYPE = "hbase";
-	
+
 	private final static Logger LOGGER = Logger.getLogger(HBaseDataStore.class);
 
 	private final BasicHBaseOperations operations;

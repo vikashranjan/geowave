@@ -1,4 +1,4 @@
-package mil.nga.giat.geowave.datastore.accumulo.util;
+package mil.nga.giat.geowave.core.store.memory;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -13,6 +13,8 @@ import org.junit.Test;
 
 import mil.nga.giat.geowave.core.store.DataStoreEntryInfo.FieldInfo;
 import mil.nga.giat.geowave.core.store.data.PersistentValue;
+import mil.nga.giat.geowave.core.store.memory.BitmaskUtils;
+import mil.nga.giat.geowave.core.store.memory.BitmaskedFieldInfoComparator;
 
 public class BitmaskUtilsTest
 {

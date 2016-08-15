@@ -97,20 +97,25 @@ public abstract class HBaseFilteredIndexQuery extends
 			final BasicHBaseOperations operations,
 			final AdapterStore adapterStore,
 			final Integer limit ) {
-//		try {
-//			if (!validateAdapters(operations)) {
-//				LOGGER.warn("Query contains no valid adapters.");
-//				return new CloseableIterator.Empty();
-//			}
-//			if (!operations.tableExists(StringUtils.stringFromBinary(index.getId().getBytes()))) {
-//				LOGGER.warn("Table does not exist " + StringUtils.stringFromBinary(index.getId().getBytes()));
-//				return new CloseableIterator.Empty();
-//			}
-//		}
-//		catch (final IOException ex) {
-//			LOGGER.warn("Unabe to check if " + StringUtils.stringFromBinary(index.getId().getBytes()) + " table exists");
-//			return new CloseableIterator.Empty();
-//		}
+		// try {
+		// if (!validateAdapters(operations)) {
+		// LOGGER.warn("Query contains no valid adapters.");
+		// return new CloseableIterator.Empty();
+		// }
+		// if
+		// (!operations.tableExists(StringUtils.stringFromBinary(index.getId().getBytes())))
+		// {
+		// LOGGER.warn("Table does not exist " +
+		// StringUtils.stringFromBinary(index.getId().getBytes()));
+		// return new CloseableIterator.Empty();
+		// }
+		// }
+		// catch (final IOException ex) {
+		// LOGGER.warn("Unabe to check if " +
+		// StringUtils.stringFromBinary(index.getId().getBytes()) +
+		// " table exists");
+		// return new CloseableIterator.Empty();
+		// }
 		final String tableName = StringUtils.stringFromBinary(index.getId().getBytes());
 
 		final List<Filter> distributableFilters = getDistributableFilter();
@@ -169,7 +174,8 @@ public abstract class HBaseFilteredIndexQuery extends
 
 	protected abstract List<Filter> getDistributableFilter();
 
-	// experiment to test a single multi-scanner vs multiple single-range scanners
+	// experiment to test a single multi-scanner vs multiple single-range
+	// scanners
 	protected Scan getMultiScanner(
 			final Integer limit,
 			final List<Filter> distributableFilters,
@@ -252,7 +258,8 @@ public abstract class HBaseFilteredIndexQuery extends
 			e.printStackTrace();
 		}
 
-		// Set the filter list for the scan and return the scan list (with the single multi-range scan)
+		// Set the filter list for the scan and return the scan list (with the
+		// single multi-range scan)
 		scanner.setFilter(filterList);
 
 		return scanner;
@@ -307,8 +314,9 @@ public abstract class HBaseFilteredIndexQuery extends
 				adapterStore,
 				index,
 				resultsIterator,
-				filters.isEmpty() ? null : filters.size() == 1 ? filters.get(0) : new mil.nga.giat.geowave.core.store.filter.FilterList<QueryFilter>(
-						filters),
+				filters.isEmpty() ? null : filters.size() == 1 ? filters.get(0)
+						: new mil.nga.giat.geowave.core.store.filter.FilterList<QueryFilter>(
+								filters),
 				scanCallback);
 	}
 
