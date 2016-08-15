@@ -250,9 +250,16 @@ public class BasicHBaseOperations implements
 			scanner.setAuthorizations(new Authorizations(
 					authorizations));
 		}
-		return conn.getTable(
-				getTableName(getQualifiedTableName(tableName))).getScanner(
+		
+		Table table = conn.getTable(
+				getTableName(getQualifiedTableName(tableName)));
+		
+		ResultScanner results = table.getScanner(
 				scanner);
+		
+		table.close();
+		
+		return results;
 	}
 
 	public boolean deleteTable(
