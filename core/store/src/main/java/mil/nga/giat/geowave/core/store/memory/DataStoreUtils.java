@@ -10,13 +10,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.Map.Entry;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.log4j.Logger;
 
 import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.index.ByteArrayRange;
@@ -47,6 +43,10 @@ import mil.nga.giat.geowave.core.store.index.CommonIndexModel;
 import mil.nga.giat.geowave.core.store.index.CommonIndexValue;
 import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.log4j.Logger;
+
 /*
  */
 public class DataStoreUtils
@@ -65,8 +65,7 @@ public class DataStoreUtils
 			final PrimaryIndex index,
 			final Map<ByteArrayId, DataStatistics<T>> stats,
 			List<ByteArrayRange> ranges ) {
-		RowRangeHistogramStatistics rangeStats = (RowRangeHistogramStatistics) stats.get(RowRangeHistogramStatistics
-				.composeId(index.getId()));
+		RowRangeHistogramStatistics rangeStats = (RowRangeHistogramStatistics) stats.get(RowRangeHistogramStatistics.composeId(index.getId()));
 		if (rangeStats == null) return Long.MAX_VALUE - 1;
 		long count = 0;
 		for (ByteArrayRange range : ranges) {
@@ -136,20 +135,17 @@ public class DataStoreUtils
 
 	/**
 	 *
-	 * Takes a byte array representing a serialized composite group of
-	 * FieldInfos sharing a common visibility and returns a List of the
-	 * individual FieldInfos
+	 * Takes a byte array representing a serialized composite group of FieldInfos sharing a common visibility and
+	 * returns a List of the individual FieldInfos
 	 *
 	 * @param compositeFieldId
-	 *            the composite bitmask representing the fields contained within
-	 *            the flattenedValue
+	 *            the composite bitmask representing the fields contained within the flattenedValue
 	 * @param flattenedValue
 	 *            the serialized composite FieldInfo
 	 * @param commonVisibility
 	 *            the shared visibility
 	 * @param maxFieldPosition
-	 *            can short-circuit read and defer decomposition of fields after
-	 *            a given position
+	 *            can short-circuit read and defer decomposition of fields after a given position
 	 * @return the dataset that has been read
 	 */
 	public static <T> FlattenedDataSet decomposeFlattenedFields(
@@ -240,8 +236,7 @@ public class DataStoreUtils
 	public static String getQualifiedTableName(
 			final String tableNamespace,
 			final String unqualifiedTableName ) {
-		return ((tableNamespace == null) || tableNamespace.isEmpty()) ? unqualifiedTableName : tableNamespace + "_"
-				+ unqualifiedTableName;
+		return ((tableNamespace == null) || tableNamespace.isEmpty()) ? unqualifiedTableName : tableNamespace + "_" + unqualifiedTableName;
 	}
 
 	public static <T> List<EntryRow> entryToRows(
@@ -472,8 +467,7 @@ public class DataStoreUtils
 			final T entry,
 			final VisibilityWriter<T> customFieldVisibilityWriter ) {
 		final FieldWriter fieldWriter = dataWriter.getWriter(fieldValue.getId());
-		final FieldVisibilityHandler<T, Object> customVisibilityHandler = customFieldVisibilityWriter
-				.getFieldVisibilityHandler(fieldValue.getId());
+		final FieldVisibilityHandler<T, Object> customVisibilityHandler = customFieldVisibilityWriter.getFieldVisibilityHandler(fieldValue.getId());
 		if (fieldWriter != null) {
 			final Object value = fieldValue.getValue();
 			return new FieldInfo<T>(
@@ -490,8 +484,7 @@ public class DataStoreUtils
 									value)));
 		}
 		else if (fieldValue.getValue() != null) {
-			LOGGER.warn("Data writer of class " + dataWriter.getClass() + " does not support field for "
-					+ fieldValue.getValue());
+			LOGGER.warn("Data writer of class " + dataWriter.getClass() + " does not support field for " + fieldValue.getValue());
 		}
 		return null;
 	}
@@ -853,8 +846,7 @@ public class DataStoreUtils
 	}
 
 	/**
-	 * This method combines all FieldInfos that share a common visibility into a
-	 * single FieldInfo
+	 * This method combines all FieldInfos that share a common visibility into a single FieldInfo
 	 *
 	 * @param originalList
 	 * @return a new list of composite FieldInfos
