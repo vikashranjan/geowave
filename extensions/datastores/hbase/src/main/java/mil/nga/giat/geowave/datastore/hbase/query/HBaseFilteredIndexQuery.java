@@ -97,6 +97,7 @@ public abstract class HBaseFilteredIndexQuery extends
 			final BasicHBaseOperations operations,
 			final AdapterStore adapterStore,
 			final Integer limit ) {
+// KAM: Maybe all this validation is overkill for the standard case:
 //		try {
 //			if (!validateAdapters(operations)) {
 //				LOGGER.warn("Query contains no valid adapters.");
@@ -129,10 +130,14 @@ public abstract class HBaseFilteredIndexQuery extends
 		final List<ResultScanner> results = new ArrayList<ResultScanner>();
 
 		try {
+			long hack = System.currentTimeMillis();
+
 			final ResultScanner rs = operations.getScannedResults(
 					multiScanner,
 					tableName,
 					authorizations);
+			
+			LOGGER.error("KAM *** HBase atomic DB query took " + (System.currentTimeMillis()-hack) + " ms.");
 
 			if (rs != null) {
 				results.add(rs);
@@ -178,8 +183,8 @@ public abstract class HBaseFilteredIndexQuery extends
 		final Scan scanner = new Scan();
 
 		// Performance recommendations
-		scanner.setCaching(1000);
-		scanner.setCacheBlocks(false);
+		scanner.setCaching(10000);
+		//scanner.setCacheBlocks(false);
 
 		FilterList filterList = new FilterList();
 
@@ -224,10 +229,10 @@ public abstract class HBaseFilteredIndexQuery extends
 					byte[] startRow = range.getStart().getBytes();
 					byte[] stopRow;
 					if (!range.isSingleValue()) {
-						stopRow = HBaseUtils.getNextPrefix(range.getEnd().getBytes());
+						stopRow = getNextPrefix(scanner, range.getEnd().getBytes());
 					}
 					else {
-						stopRow = HBaseUtils.getNextPrefix(range.getStart().getBytes());
+						stopRow = getNextPrefix(scanner, range.getStart().getBytes());
 					}
 
 					RowRange rowRange = new RowRange(
@@ -256,6 +261,13 @@ public abstract class HBaseFilteredIndexQuery extends
 		scanner.setFilter(filterList);
 
 		return scanner;
+	}
+
+	private byte[] getNextPrefix(
+			Scan scanner,
+			byte[] prefix ) {
+		return scanner.setRowPrefixFilter(
+				prefix).getStopRow();
 	}
 
 	private void handleSubsetOfFieldIds(

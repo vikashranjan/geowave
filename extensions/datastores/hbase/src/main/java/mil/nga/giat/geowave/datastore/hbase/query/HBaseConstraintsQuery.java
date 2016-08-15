@@ -124,10 +124,16 @@ public class HBaseConstraintsQuery extends
 			final BasicHBaseOperations operations,
 			final AdapterStore adapterStore,
 			final Integer limit ) {
+		long hack = System.currentTimeMillis();
+		
 		final CloseableIterator<Object> it = super.query(
 				operations,
 				adapterStore,
 				limit);
+		
+		LOGGER.error("KAM *** HBase query took " + (System.currentTimeMillis()-hack) + " ms.");
+		hack = System.currentTimeMillis();
+		
 		if (isAggregation() && (it != null) && it.hasNext()) {
 			// TODO implement aggregation as a co-processor on the server side,
 			// but for now simply aggregate client-side here
@@ -150,16 +156,15 @@ public class HBaseConstraintsQuery extends
 							"Unable to close hbase scanner",
 							e);
 				}
+				
+				LOGGER.error("KAM *** Aggregation took " + (System.currentTimeMillis()-hack) + " ms.");
+
 				return new Wrapper(
 						Iterators.singletonIterator(aggregationFunction.getResult()));
 			}
 		}
-//		else {
-//			return super.query(
-//					operations,
-//					adapterStore,
-//					limit);
-//		}
+				
+		LOGGER.error("KAM *** Non-aggregation took " + (System.currentTimeMillis()-hack) + " ms.");
 		
 		return it;
 	}
