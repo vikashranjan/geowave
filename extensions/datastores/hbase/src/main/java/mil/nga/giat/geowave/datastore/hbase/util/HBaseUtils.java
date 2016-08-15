@@ -148,11 +148,15 @@ public class HBaseUtils
 			final T entry,
 			final HBaseWriter writer,
 			final VisibilityWriter<T> customFieldVisibilityWriter ) {
+		long hack = System.currentTimeMillis();
+		
 		final DataStoreEntryInfo ingestInfo = DataStoreUtils.getIngestInfo(
 				writableAdapter,
 				index,
 				entry,
 				customFieldVisibilityWriter);
+		
+		DataStoreUtils.addToAccumulator("hbaseIngest", System.currentTimeMillis()-hack);
 
 		final List<RowMutations> mutations = buildMutations(
 				writableAdapter.getAdapterId().getBytes(),

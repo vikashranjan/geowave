@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,7 +47,7 @@ import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
 public class DataStoreUtils
 {
 	private final static Logger LOGGER = Logger.getLogger(DataStoreUtils.class);
-	private static long accumulator = 0;
+	private static HashMap<String, Long> accumulator = new HashMap<String, Long>();
 
 	
 	@SuppressWarnings({
@@ -732,15 +733,26 @@ public class DataStoreUtils
 				msg + " for " + Arrays.toString(expression) + " at " + place);
 	}
 	
-	public static void addToAccumulator(long millis) {
-		accumulator += millis;
+	public static void addToAccumulator(String key, Long millis) {
+		Long acc = getOrCreateAccumulator(key);
+		acc += millis;
+		accumulator.put(key, acc);
 	}
 	
-	public static void resetAccumulator() {
-		accumulator = 0;
-	}
+	public static void resetAccumulator(String key) {
+		accumulator.put(key, 0L);	}
 
-	public static long getAccumulator() {
-		return accumulator;
+	public static long getAccumulator(String key) {
+		return getOrCreateAccumulator(key);
+	}
+	
+	private static Long getOrCreateAccumulator(String key) {
+		Long acc = accumulator.get(key);
+		if (acc == null) {
+			acc = 0L;
+			accumulator.put(key, acc);			
+		}
+		
+		return acc;
 	}
 }

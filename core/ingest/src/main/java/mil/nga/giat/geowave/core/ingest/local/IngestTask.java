@@ -91,8 +91,9 @@ public class IngestTask implements
 	public void run() {
 		int count = 0;
 		long dbWriteMs = 0L;
-		DataStoreUtils.resetAccumulator();
-
+		DataStoreUtils.resetAccumulator("hbaseWrite");
+		DataStoreUtils.resetAccumulator("hbaseIngest");
+		
 		try {
 			LOGGER.debug(String.format(
 					"Worker executing for plugin [%s]",
@@ -168,7 +169,12 @@ public class IngestTask implements
 					count,
 					(int) dbWriteMs / 1000));
 			
-			long writeAccum = DataStoreUtils.getAccumulator();
+			long ingestAccum = DataStoreUtils.getAccumulator("hbaseIngest");
+			LOGGER.error(String.format(
+					"IngestInfo setup time took %d seconds",
+					(int) ingestAccum / 1000));
+			
+			long writeAccum = DataStoreUtils.getAccumulator("hbaseWrite");
 			LOGGER.error(String.format(
 					"Actual DB write time took %d seconds",
 					(int) writeAccum / 1000));

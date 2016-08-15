@@ -57,7 +57,7 @@ public class HBaseWriter implements
 		try {
 			long hack = System.currentTimeMillis();
 			mutator.mutate(rowMutation.getMutations());
-			DataStoreUtils.addToAccumulator(System.currentTimeMillis() - hack);
+			DataStoreUtils.addToAccumulator("hbaseWrite", System.currentTimeMillis() - hack);
 		}
 		catch (final IOException e) {
 			LOGGER.error(
