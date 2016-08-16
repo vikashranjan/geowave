@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
+import mil.nga.giat.geowave.core.index.StringUtils;
+import mil.nga.giat.geowave.core.store.Writer;
+import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
+import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
+
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
@@ -15,16 +20,10 @@ import org.apache.hadoop.hbase.client.RowMutations;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-import mil.nga.giat.geowave.core.index.StringUtils;
-import mil.nga.giat.geowave.core.store.Writer;
-import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
-import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
-
 /**
  * Functionality similar to <code> BatchWriterWrapper </code>
  *
- * This class directly writes to the HBase table instead of using any existing
- * Writer API provided by HBase.
+ * This class directly writes to the HBase table instead of using any existing Writer API provided by HBase.
  *
  */
 public class HBaseWriter implements
@@ -37,6 +36,8 @@ public class HBaseWriter implements
 	private final HashMap<String, Boolean> cfMap;
 	private HTableDescriptor tableDescriptor = null;
 	private final BufferedMutator mutator;
+
+	private final boolean schemaUpdateEnabled;
 
 	static {
 		LOGGER.setLevel(Level.DEBUG);
@@ -51,6 +52,20 @@ public class HBaseWriter implements
 		this.mutator = mutator;
 
 		cfMap = new HashMap<String, Boolean>();
+
+		schemaUpdateEnabled = admin.getConfiguration().getBoolean(
+				"hbase.online.schema.update.enable",
+				false);
+		
+		LOGGER.debug("Schema Update Enabled = " + schemaUpdateEnabled);
+		
+		String check = admin.getConfiguration().get("hbase.online.schema.update.enable");
+		if (check == null) {
+			LOGGER.debug("'hbase.online.schema.update.enable' property does not exist in hbase config");
+		}
+		else {
+			LOGGER.debug("'hbase.online.schema.update.enable' property exists in hbase config");
+		}
 	}
 
 	@Override
@@ -152,7 +167,7 @@ public class HBaseWriter implements
 
 			if (!found) {
 				synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-					if (!admin.isTableEnabled(tableName)) {
+					if (!schemaUpdateEnabled && !admin.isTableEnabled(tableName)) {
 						admin.enableTable(tableName);
 					}
 
@@ -186,9 +201,10 @@ public class HBaseWriter implements
 				columnFamilyName);
 
 		synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-			if (!admin.isTableDisabled(tableName)) {
+			if (!schemaUpdateEnabled && !admin.isTableDisabled(tableName)) {
 				admin.disableTable(tableName);
 			}
+			
 			admin.addColumn(
 					tableName,
 					cfDescriptor);
@@ -197,7 +213,9 @@ public class HBaseWriter implements
 					Boolean.TRUE);
 
 			// Enable table once done
-			admin.enableTable(tableName);
+			if (!schemaUpdateEnabled) {
+				admin.enableTable(tableName);
+			}
 		}
 	}
 
