@@ -61,10 +61,7 @@ public class HBaseWriter implements
 		
 		String check = admin.getConfiguration().get("hbase.online.schema.update.enable");
 		if (check == null) {
-			LOGGER.debug("'hbase.online.schema.update.enable' property does not exist in hbase config");
-		}
-		else {
-			LOGGER.debug("'hbase.online.schema.update.enable' property exists in hbase config");
+			LOGGER.warn("'hbase.online.schema.update.enable' property should be true for best performance");
 		}
 	}
 
