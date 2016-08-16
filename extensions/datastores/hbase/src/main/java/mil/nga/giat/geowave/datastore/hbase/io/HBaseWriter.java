@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
+import mil.nga.giat.geowave.core.index.StringUtils;
 import mil.nga.giat.geowave.core.store.Writer;
 import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
 import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
@@ -147,7 +148,7 @@ public class HBaseWriter implements
 					// update the table descriptor
 					tableDescriptor = admin.getTableDescriptor(tableName);
 
-					found = tableDescriptor.hasFamily(columnFamily.getBytes());
+					found = tableDescriptor.hasFamily(columnFamily.getBytes(StringUtils.UTF8_CHAR_SET));
 				}
 
 				cfMap.put(
