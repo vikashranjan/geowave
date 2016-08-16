@@ -27,6 +27,7 @@ import mil.nga.giat.geowave.datastore.hbase.util.HBaseEntryIteratorWrapper;
 import mil.nga.giat.geowave.datastore.hbase.util.HBaseUtils;
 import mil.nga.giat.geowave.datastore.hbase.util.HBaseUtils.MultiScannerClosableWrapper;
 
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
@@ -224,12 +225,13 @@ public abstract class HBaseFilteredIndexQuery extends
 
 		List<ByteArrayRange> ranges = getRanges();
 		if ((ranges == null) || ranges.isEmpty()) {
-			ranges = Collections.singletonList(new ByteArrayRange(
-					null,
-					null));
+			rowRanges.add(new RowRange(
+					HConstants.EMPTY_BYTE_ARRAY,
+					true,
+					HConstants.EMPTY_BYTE_ARRAY,
+					false));
 		}
-
-		if (!ranges.isEmpty()) {
+		else {
 			for (final ByteArrayRange range : ranges) {
 				if (range.getStart() != null) {
 					byte[] startRow = range.getStart().getBytes();

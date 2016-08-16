@@ -101,7 +101,9 @@ public class HBaseStoreTestEnvironment implements
 
 				try {
 					Configuration conf = new Configuration();
-					conf.set("hbase.online.schema.update.enable", "true");
+					conf.set(
+							"hbase.online.schema.update.enable",
+							"true");
 					hbaseLocalCluster = new HbaseLocalCluster.Builder()
 							.setHbaseMasterPort(
 									Integer.parseInt(propertyParser.getProperty(ConfigVars.HBASE_MASTER_PORT_KEY)))
