@@ -4,10 +4,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
-import mil.nga.giat.geowave.core.store.Writer;
-import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
-import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
-
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
@@ -18,6 +14,11 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.RowMutations;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+
+import mil.nga.giat.geowave.core.index.StringUtils;
+import mil.nga.giat.geowave.core.store.Writer;
+import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
+import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
 
 /**
  * Functionality similar to <code> BatchWriterWrapper </code>
@@ -49,14 +50,14 @@ public class HBaseWriter implements
 		this.tableName = TableName.valueOf(tableName);
 		this.mutator = mutator;
 
-		this.cfMap = new HashMap<String, Boolean>();
+		cfMap = new HashMap<String, Boolean>();
 	}
 
 	@Override
 	public void write(
 			final RowMutations rowMutation ) {
 		try {
-			long hack = System.currentTimeMillis();
+			final long hack = System.currentTimeMillis();
 			mutator.mutate(rowMutation.getMutations());
 			DataStoreUtils.addToAccumulator(
 					"hbaseWrite",
@@ -78,7 +79,16 @@ public class HBaseWriter implements
 	}
 
 	@Override
-	public void close() {}
+	public void close() {
+		try {
+			mutator.close();
+		}
+		catch (final IOException e) {
+			LOGGER.warn(
+					"Unable to close BufferedMutator",
+					e);
+		}
+	}
 
 	public void write(
 			final Iterable<RowMutations> iterable,
@@ -112,10 +122,12 @@ public class HBaseWriter implements
 			final RowMutations mutation,
 			final String columnFamily ) {
 		try {
-			if (!columnFamilyExists(columnFamily)) {
-				addColumnFamilyToTable(
-						tableName,
-						columnFamily);
+			synchronized (cfMap) {
+				if (!columnFamilyExists(columnFamily)) {
+					addColumnFamilyToTable(
+							tableName,
+							columnFamily);
+				}
 			}
 		}
 		catch (final IOException e) {
@@ -147,7 +159,7 @@ public class HBaseWriter implements
 					// update the table descriptor
 					tableDescriptor = admin.getTableDescriptor(tableName);
 
-					found = tableDescriptor.hasFamily(columnFamily.getBytes());
+					found = tableDescriptor.hasFamily(columnFamily.getBytes(StringUtils.UTF8_CHAR_SET));
 				}
 
 				cfMap.put(
@@ -155,8 +167,10 @@ public class HBaseWriter implements
 						found);
 			}
 		}
-		catch (IOException e) {
-			e.printStackTrace();
+		catch (final IOException e) {
+			LOGGER.warn(
+					"Unable to check existence of column family " + columnFamily,
+					e);
 		}
 
 		return found;
@@ -175,11 +189,9 @@ public class HBaseWriter implements
 			if (!admin.isTableDisabled(tableName)) {
 				admin.disableTable(tableName);
 			}
-
 			admin.addColumn(
 					tableName,
 					cfDescriptor);
-
 			cfMap.put(
 					columnFamilyName,
 					Boolean.TRUE);
@@ -210,6 +222,15 @@ public class HBaseWriter implements
 	}
 
 	@Override
-	public void flush() {}
+	public void flush() {
+		try {
+			mutator.flush();
+		}
+		catch (final IOException e) {
+			LOGGER.warn(
+					"Unable to flush BufferedMutator",
+					e);
+		}
+	}
 
 }
