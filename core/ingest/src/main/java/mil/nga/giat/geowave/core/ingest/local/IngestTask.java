@@ -220,7 +220,7 @@ public class IngestTask implements
 					mapping);
 
 			// If we have the index checked out already, use that.
-			if (!indexWriters.containsKey(mapping)) {
+			if (!indexWriters.containsKey(mapping.getAdapterId())) {
 				long hack = System.currentTimeMillis();
 				indexWriters.put(
 						mapping.getAdapterId(),
