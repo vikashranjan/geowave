@@ -82,7 +82,7 @@ public class BasicHBaseOperations implements
 				TableName.valueOf(tableName));
 
 		// Set write buffer?
-//		params.writeBufferSize(WRITE_BUFFER_SIZE);
+		params.writeBufferSize(WRITE_BUFFER_SIZE);
 
 		params.listener(new ExceptionListener() {
 			@Override
