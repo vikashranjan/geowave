@@ -131,14 +131,10 @@ public abstract class HBaseFilteredIndexQuery extends
 		final List<ResultScanner> results = new ArrayList<ResultScanner>();
 
 		try {
-			long hack = System.currentTimeMillis();
-
 			final ResultScanner rs = operations.getScannedResults(
 					multiScanner,
 					tableName,
 					authorizations);
-
-			LOGGER.error("KAM *** HBase atomic DB query took " + (System.currentTimeMillis() - hack) + " ms.");
 
 			if (rs != null) {
 				results.add(rs);
@@ -258,6 +254,8 @@ public abstract class HBaseFilteredIndexQuery extends
 		// Set the filter list for the scan and return the scan list (with the
 		// single multi-range scan)
 		scanner.setFilter(filterList);
+		
+		// Only return the most recent version
 		scanner.setMaxVersions(1);
 		
 		return scanner;

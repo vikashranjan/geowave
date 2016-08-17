@@ -3,6 +3,13 @@ package mil.nga.giat.geowave.datastore.hbase.operations;
 import java.io.IOException;
 import java.util.Set;
 
+import mil.nga.giat.geowave.core.index.ByteArrayId;
+import mil.nga.giat.geowave.core.store.DataStoreOperations;
+import mil.nga.giat.geowave.datastore.hbase.io.HBaseWriter;
+import mil.nga.giat.geowave.datastore.hbase.operations.config.HBaseRequiredOptions;
+import mil.nga.giat.geowave.datastore.hbase.util.ConnectionPool;
+import mil.nga.giat.geowave.datastore.hbase.util.HBaseUtils;
+
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
@@ -18,19 +25,9 @@ import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.security.visibility.Authorizations;
 import org.apache.log4j.Logger;
 
-import mil.nga.giat.geowave.core.index.ByteArrayId;
-import mil.nga.giat.geowave.core.store.DataStoreOperations;
-import mil.nga.giat.geowave.datastore.hbase.io.HBaseWriter;
-import mil.nga.giat.geowave.datastore.hbase.operations.config.HBaseRequiredOptions;
-import mil.nga.giat.geowave.datastore.hbase.util.ConnectionPool;
-import mil.nga.giat.geowave.datastore.hbase.util.HBaseUtils;
-
 public class BasicHBaseOperations implements
 		DataStoreOperations
 {
-	// (bytes) Default is 2M. Trying 32M here.
-	private static final long WRITE_BUFFER_SIZE = (32L * 1024L) * 1024L;
-
 	private final static Logger LOGGER = Logger.getLogger(BasicHBaseOperations.class);
 	private static final String DEFAULT_TABLE_NAMESPACE = "";
 	public static final Object ADMIN_MUTEX = new Object();
@@ -83,9 +80,6 @@ public class BasicHBaseOperations implements
 		final BufferedMutatorParams params = new BufferedMutatorParams(
 				TableName.valueOf(tableName));
 
-		// Set write buffer?
-		params.writeBufferSize(WRITE_BUFFER_SIZE);
-
 		params.listener(new ExceptionListener() {
 			@Override
 			public void onException(
@@ -97,6 +91,7 @@ public class BasicHBaseOperations implements
 		});
 
 		final BufferedMutator mutator = conn.getBufferedMutator(params);
+
 		return mutator;
 	}
 

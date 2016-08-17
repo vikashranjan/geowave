@@ -20,10 +20,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An IngestTask is a thread which listens to items from a blocking queue, and
- * writes those items to IndexWriter objects obtained from LocalIngestRunData
- * (where they are constructed but also cached from the DataStore object). Read
- * items until isTerminated == true.
+ * An IngestTask is a thread which listens to items from a blocking queue, and writes those items to IndexWriter objects
+ * obtained from LocalIngestRunData (where they are constructed but also cached from the DataStore object). Read items
+ * until isTerminated == true.
  */
 public class IngestTask implements
 		Runnable
@@ -57,8 +56,7 @@ public class IngestTask implements
 	}
 
 	/**
-	 * This function is called by the thread placing items on the blocking
-	 * queue.
+	 * This function is called by the thread placing items on the blocking queue.
 	 */
 	public void terminate() {
 		isTerminated = true;
@@ -83,8 +81,7 @@ public class IngestTask implements
 	}
 
 	/**
-	 * This function will continue to read from the BlockingQueue until
-	 * isTerminated is true and the queue is empty.
+	 * This function will continue to read from the BlockingQueue until isTerminated is true and the queue is empty.
 	 */
 	@SuppressWarnings({
 		"unchecked",
@@ -94,8 +91,6 @@ public class IngestTask implements
 	public void run() {
 		int count = 0;
 		long dbWriteMs = 0L;
-		DataStoreUtils.resetAccumulator("hbaseWrite");
-		DataStoreUtils.resetAccumulator("hbaseIngest");
 
 		try {
 			LOGGER.debug(String.format(
@@ -113,11 +108,10 @@ public class IngestTask implements
 					}
 					// Didn't receive an item. Make sure we haven't been
 					// terminated.
-					if (LOGGER.isDebugEnabled()) {
-						LOGGER.debug(String.format(
-								"Worker waiting for item [%s]",
-								this.getId()));
-					}
+					LOGGER.debug(String.format(
+							"Worker waiting for item [%s]",
+							this.getId()));
+
 					continue;
 				}
 
@@ -140,8 +134,7 @@ public class IngestTask implements
 		}
 		catch (Exception e) {
 			// This should really never happen, because we don't limit the
-			// amount of items
-			// in the IndexWriter pool.
+			// amount of items in the IndexWriter pool.
 			LOGGER.error(
 					"Fatal error occured while trying to get an index writer.",
 					e);
@@ -166,27 +159,17 @@ public class IngestTask implements
 				}
 			}
 
-			LOGGER.error(String.format(
+			LOGGER.debug(String.format(
 					"Worker exited for plugin [%s]; Ingested %d items in %d seconds",
 					this.getId(),
 					count,
 					(int) dbWriteMs / 1000));
 
-			long ingestAccum = DataStoreUtils.getAccumulator("hbaseIngest");
-			LOGGER.error(String.format(
-					"IngestInfo setup time took %d seconds",
-					(int) ingestAccum / 1000));
-
-			long writeAccum = DataStoreUtils.getAccumulator("hbaseWrite");
-			LOGGER.error(String.format(
-					"Actual DB write time took %d seconds",
-					(int) writeAccum / 1000));
-
 			isFinished = true;
 		}
 	}
 
-	public long ingestData(
+	private long ingestData(
 			GeoWaveData<?> geowaveData,
 			WritableDataAdapter adapter )
 			throws Exception {
@@ -221,20 +204,20 @@ public class IngestTask implements
 
 			// If we have the index checked out already, use that.
 			if (!indexWriters.containsKey(mapping.getAdapterId())) {
-				long hack = System.currentTimeMillis();
 				indexWriters.put(
 						mapping.getAdapterId(),
 						runData.getIndexWriter(mapping));
-				LOGGER.error("KAM *** Getting index writer from DB! Took " + (System.currentTimeMillis() - hack)
-						+ " ms");
 			}
 		}
 
 		// Write the data to the data store.
 		IndexWriter writer = indexWriters.get(mapping.getAdapterId());
 
+		// Time the DB write
 		long hack = System.currentTimeMillis();
 		writer.write(geowaveData.getValue());
-		return System.currentTimeMillis() - hack;
+		long durMs = System.currentTimeMillis() - hack;
+		
+		return durMs;
 	}
 }

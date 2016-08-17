@@ -6,7 +6,6 @@ import java.util.List;
 
 import mil.nga.giat.geowave.core.index.StringUtils;
 import mil.nga.giat.geowave.core.store.Writer;
-import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
 import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
 
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -40,10 +39,6 @@ public class HBaseWriter implements
 
 	private final boolean schemaUpdateEnabled;
 
-	static {
-		LOGGER.setLevel(Level.DEBUG);
-	}
-
 	public HBaseWriter(
 			final Admin admin,
 			final String tableName,
@@ -71,11 +66,7 @@ public class HBaseWriter implements
 	public void write(
 			final RowMutations rowMutation ) {
 		try {
-			final long hack = System.currentTimeMillis();
 			mutator.mutate(rowMutation.getMutations());
-			DataStoreUtils.addToAccumulator(
-					"hbaseWrite",
-					System.currentTimeMillis() - hack);
 		}
 		catch (final IOException e) {
 			LOGGER.error(
