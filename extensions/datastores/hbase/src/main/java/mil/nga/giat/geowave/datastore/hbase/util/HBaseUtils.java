@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.NavigableMap;
 
 import mil.nga.giat.geowave.core.index.ByteArrayId;
@@ -302,14 +303,7 @@ public class HBaseUtils
 			return null;
 		}
 		DataAdapter<T> adapter = dataAdapter;
-		List<KeyValue> rowMapping;
-		try {
-			rowMapping = getSortedRowMapping(row);
-		}
-		catch (final IOException e) {
-			LOGGER.error("Could not decode row from iterator. Ensure whole row iterators are being used.");
-			return null;
-		}
+
 		// build a persistence encoding object first, pass it through the
 		// client filters and if its accepted, use the data adapter to
 		// decode the persistence model into the native data type
@@ -330,16 +324,14 @@ public class HBaseUtils
 			adapterMatchVerified = true;
 			adapterId = null;
 		}
+		NavigableMap<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> map = row.getMap();
+		final List<FieldInfo<?>> fieldInfoList = new ArrayList<FieldInfo<?>>();
 
-		final List<FieldInfo<?>> fieldInfoList = new ArrayList<FieldInfo<?>>(
-				rowMapping.size());
-
-		for (final KeyValue entry : rowMapping) {
+		for (final Entry<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> cfEntry : map.entrySet()) {
 			// the column family is the data element's type ID
 			if (adapterId == null) {
 				adapterId = new ByteArrayId(
-						entry.getFamily());
-				// entry.getKey().getColumnFamilyData().getBackingArray());
+						cfEntry.getKey());
 			}
 
 			if (adapter == null) {
@@ -355,20 +347,21 @@ public class HBaseUtils
 				}
 				adapterMatchVerified = true;
 			}
-			// entry.getKey().getColumnQualifierData().getBackingArray());
-			final CommonIndexModel indexModel = index.getIndexModel();
-			final byte byteValue[] = entry.getValue();
+			for (final Entry<byte[], NavigableMap<Long, byte[]>> cqEntry : cfEntry.getValue().entrySet()) {
+				final CommonIndexModel indexModel = index.getIndexModel();
+				final byte byteValue[] = cqEntry.getValue().lastEntry().getValue();
 
-			DataStoreUtils.readFieldInfo(
-					fieldInfoList,
-					indexData,
-					extendedData,
-					unknownData,
-					entry.getQualifier(),
-					new byte[] {},
-					byteValue,
-					adapter,
-					indexModel);
+				DataStoreUtils.readFieldInfo(
+						fieldInfoList,
+						indexData,
+						extendedData,
+						unknownData,
+						cqEntry.getKey(),
+						new byte[] {},
+						byteValue,
+						adapter,
+						indexModel);
+			}
 		}
 
 		final IndexedAdapterPersistenceEncoding encodedRow = new IndexedAdapterPersistenceEncoding(

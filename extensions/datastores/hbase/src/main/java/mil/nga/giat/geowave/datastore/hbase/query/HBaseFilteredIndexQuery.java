@@ -191,7 +191,7 @@ public abstract class HBaseFilteredIndexQuery extends
 
 		// Performance recommendations
 		scanner.setCaching(10000);
-		// scanner.setCacheBlocks(false);
+		scanner.setCacheBlocks(true);
 
 		FilterList filterList = new FilterList();
 
@@ -215,11 +215,6 @@ public abstract class HBaseFilteredIndexQuery extends
 					scanner,
 					adapters);
 		}
-
-		if ((limit != null) && (limit > 0) && (limit < scanner.getBatch())) {
-			scanner.setBatch(limit);
-		}
-
 		// create the multi-row filter
 		final List<RowRange> rowRanges = new ArrayList<RowRange>();
 
@@ -268,15 +263,8 @@ public abstract class HBaseFilteredIndexQuery extends
 		// Set the filter list for the scan and return the scan list (with the
 		// single multi-range scan)
 		scanner.setFilter(filterList);
-
+		scanner.setMaxVersions(1);
 		return scanner;
-	}
-
-	private byte[] getNextPrefix(
-			Scan scanner,
-			byte[] prefix ) {
-		return scanner.setRowPrefixFilter(
-				prefix).getStopRow();
 	}
 
 	private void handleSubsetOfFieldIds(

@@ -23,7 +23,8 @@ import org.apache.log4j.Logger;
 /**
  * Functionality similar to <code> BatchWriterWrapper </code>
  *
- * This class directly writes to the HBase table instead of using any existing Writer API provided by HBase.
+ * This class directly writes to the HBase table instead of using any existing
+ * Writer API provided by HBase.
  *
  */
 public class HBaseWriter implements
@@ -56,10 +57,11 @@ public class HBaseWriter implements
 		schemaUpdateEnabled = admin.getConfiguration().getBoolean(
 				"hbase.online.schema.update.enable",
 				false);
-		
+
 		LOGGER.debug("Schema Update Enabled = " + schemaUpdateEnabled);
-		
-		String check = admin.getConfiguration().get("hbase.online.schema.update.enable");
+
+		String check = admin.getConfiguration().get(
+				"hbase.online.schema.update.enable");
 		if (check == null) {
 			LOGGER.warn("'hbase.online.schema.update.enable' property should be true for best performance");
 		}
@@ -201,7 +203,7 @@ public class HBaseWriter implements
 			if (!schemaUpdateEnabled && !admin.isTableDisabled(tableName)) {
 				admin.disableTable(tableName);
 			}
-			
+
 			admin.addColumn(
 					tableName,
 					cfDescriptor);
