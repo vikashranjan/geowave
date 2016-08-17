@@ -1,9 +1,7 @@
 package mil.nga.giat.geowave.datastore.hbase.util;
 
 import java.io.Closeable;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,7 +23,6 @@ import mil.nga.giat.geowave.core.store.adapter.WritableDataAdapter;
 import mil.nga.giat.geowave.core.store.data.PersistentDataset;
 import mil.nga.giat.geowave.core.store.data.PersistentValue;
 import mil.nga.giat.geowave.core.store.data.VisibilityWriter;
-import mil.nga.giat.geowave.core.store.data.field.FieldReader;
 import mil.nga.giat.geowave.core.store.data.visibility.UnconstrainedVisibilityHandler;
 import mil.nga.giat.geowave.core.store.data.visibility.UniformVisibilityWriter;
 import mil.nga.giat.geowave.core.store.entities.GeowaveRowId;
@@ -33,7 +30,6 @@ import mil.nga.giat.geowave.core.store.filter.QueryFilter;
 import mil.nga.giat.geowave.core.store.index.CommonIndexModel;
 import mil.nga.giat.geowave.core.store.index.CommonIndexValue;
 import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
-import mil.nga.giat.geowave.core.store.memory.FlattenedFieldInfo;
 import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
 import mil.nga.giat.geowave.datastore.hbase.io.HBaseWriter;
 
@@ -58,26 +54,6 @@ public class HBaseUtils
 	
 	private static final UniformVisibilityWriter DEFAULT_VISIBILITY = new UniformVisibilityWriter(
 			new UnconstrainedVisibilityHandler());
-
-	private static byte[] merge(
-			final byte vis1[],
-			final byte vis2[] ) {
-		if ((vis1 == null) || (vis1.length == 0)) {
-			return vis2;
-		}
-		else if ((vis2 == null) || (vis2.length == 0)) {
-			return vis1;
-		}
-
-		final ByteBuffer buffer = ByteBuffer.allocate(vis1.length + 3 + vis2.length);
-		buffer.putChar('(');
-		buffer.put(vis1);
-		buffer.putChar(')');
-		buffer.put(BEG_AND_BYTE);
-		buffer.put(vis2);
-		buffer.put(END_AND_BYTE);
-		return buffer.array();
-	}
 
 	private static <T> List<RowMutations> buildMutations(
 			final byte[] adapterId,
@@ -155,13 +131,12 @@ public class HBaseUtils
 			final T entry,
 			final HBaseWriter writer,
 			final VisibilityWriter<T> customFieldVisibilityWriter ) {
-		long hack = System.currentTimeMillis();
-		
 		final DataStoreEntryInfo ingestInfo = DataStoreUtils.getIngestInfo(
 				writableAdapter,
 				index,
 				entry,
 				customFieldVisibilityWriter);
+
 		final List<RowMutations> mutations = buildMutations(
 				writableAdapter.getAdapterId().getBytes(),
 				ingestInfo,
@@ -184,7 +159,8 @@ public class HBaseUtils
 	public static String getQualifiedTableName(
 			final String tableNamespace,
 			final String unqualifiedTableName ) {
-		return ((tableNamespace == null) || tableNamespace.isEmpty()) ? unqualifiedTableName : tableNamespace + "_" + unqualifiedTableName;
+		return ((tableNamespace == null) || tableNamespace.isEmpty()) ? unqualifiedTableName : tableNamespace + "_"
+				+ unqualifiedTableName;
 	}
 
 	public static <T> DataStoreEntryInfo write(
@@ -404,15 +380,8 @@ public class HBaseUtils
 			final Result row )
 			throws IOException {
 		final List<KeyValue> map = new ArrayList<KeyValue>();
-		/*
-		 * ByteArrayInputStream in = new ByteArrayInputStream(v.getValueArray()); DataInputStream din = new
-		 * DataInputStream( in); int numKeys = din.readInt(); for (int i = 0; i < numKeys; i++) { byte[] cf =
-		 * readField(din); // read the col fam byte[] cq = readField(din); // read the col qual byte[] cv =
-		 * readField(din); // read the col visibility long timestamp = din.readLong(); // read the timestamp byte[]
-		 * valBytes = readField(din); // read the value map.add(new KeyValue( CellUtil.cloneRow(v), cf, cq, timestamp,
-		 * valBytes));
-		 */
 		final NavigableMap<byte[], NavigableMap<byte[], byte[]>> noVersionMap = row.getNoVersionMap();
+
 		for (final byte[] family : noVersionMap.keySet()) {
 			for (final byte[] qualifier : noVersionMap.get(
 					family).keySet()) {
@@ -430,22 +399,6 @@ public class HBaseUtils
 			}
 		}
 		return map;
-	}
-
-	private static byte[] readField(
-			final DataInputStream din )
-			throws IOException {
-		final int len = din.readInt();
-		final byte[] b = new byte[len];
-		final int readLen = din.read(b);
-		if ((len > 0) && (len != readLen)) {
-			throw new IOException(
-					String.format(
-							"Expected to read %d bytes but read %d",
-							len,
-							readLen));
-		}
-		return b;
 	}
 
 	public static <T> void writeAltIndex(

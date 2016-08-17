@@ -52,7 +52,6 @@ import org.apache.log4j.Logger;
 public class DataStoreUtils
 {
 	private final static Logger LOGGER = Logger.getLogger(DataStoreUtils.class);
-	private static HashMap<String, Long> accumulator = new HashMap<String, Long>();
 
 	
 	@SuppressWarnings({

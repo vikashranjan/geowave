@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
+import mil.nga.giat.geowave.core.index.StringUtils;
+import mil.nga.giat.geowave.core.store.Writer;
+import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
+
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
@@ -12,19 +16,12 @@ import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.RowMutations;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-
-import mil.nga.giat.geowave.core.index.StringUtils;
-import mil.nga.giat.geowave.core.store.Writer;
-import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
-import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
 
 /**
  * Functionality similar to <code> BatchWriterWrapper </code>
  *
- * This class directly writes to the HBase table instead of using any existing
- * Writer API provided by HBase.
+ * This class directly writes to the HBase table instead of using any existing Writer API provided by HBase.
  *
  */
 public class HBaseWriter implements
@@ -33,16 +30,13 @@ public class HBaseWriter implements
 	private final static Logger LOGGER = Logger.getLogger(HBaseWriter.class);
 	private final TableName tableName;
 	private final Admin admin;
+	private static final long SLEEP_INTERVAL_FOR_CF_VERIFY = 1L;
 
 	private final HashMap<String, Boolean> cfMap;
 	private HTableDescriptor tableDescriptor = null;
 	private final BufferedMutator mutator;
 
 	private final boolean schemaUpdateEnabled;
-
-	static {
-		LOGGER.setLevel(Level.DEBUG);
-	}
 
 	public HBaseWriter(
 			final Admin admin,
@@ -60,7 +54,7 @@ public class HBaseWriter implements
 
 		LOGGER.debug("Schema Update Enabled = " + schemaUpdateEnabled);
 
-		String check = admin.getConfiguration().get(
+		final String check = admin.getConfiguration().get(
 				"hbase.online.schema.update.enable");
 		if (check == null) {
 			LOGGER.warn("'hbase.online.schema.update.enable' property should be true for best performance");
@@ -71,9 +65,7 @@ public class HBaseWriter implements
 	public void write(
 			final RowMutations rowMutation ) {
 		try {
-			final long hack = System.currentTimeMillis();
 			mutator.mutate(rowMutation.getMutations());
-			DataStoreUtils.addToAccumulator("hbaseWrite", System.currentTimeMillis() - hack);
 		}
 		catch (final IOException e) {
 			LOGGER.error(
@@ -106,11 +98,7 @@ public class HBaseWriter implements
 			final Iterable<RowMutations> iterable,
 			final String columnFamily )
 			throws IOException {
-		if (!columnFamilyExists(columnFamily)) {
-			addColumnFamilyToTable(
-					tableName,
-					columnFamily);
-		}
+		addColumnFamilyIfNotExist(columnFamily);
 
 		for (final RowMutations rowMutation : iterable) {
 			write(rowMutation);
@@ -121,26 +109,28 @@ public class HBaseWriter implements
 			final List<Put> puts,
 			final String columnFamily )
 			throws IOException {
-		if (!columnFamilyExists(columnFamily)) {
-			addColumnFamilyToTable(
-					tableName,
-					columnFamily);
-		}
+		addColumnFamilyIfNotExist(columnFamily);
 
 		mutator.mutate(puts);
+	}
+
+	private void addColumnFamilyIfNotExist(
+			final String columnFamily )
+			throws IOException {
+		synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
+			if (!columnFamilyExists(columnFamily)) {
+				addColumnFamilyToTable(
+						tableName,
+						columnFamily);
+			}
+		}
 	}
 
 	public void write(
 			final RowMutations mutation,
 			final String columnFamily ) {
 		try {
-			synchronized (cfMap) {
-				if (!columnFamilyExists(columnFamily)) {
-					addColumnFamilyToTable(
-							tableName,
-							columnFamily);
-				}
-			}
+			addColumnFamilyIfNotExist(columnFamily);
 		}
 		catch (final IOException e) {
 			LOGGER.warn(
@@ -163,20 +153,19 @@ public class HBaseWriter implements
 			}
 
 			if (!found) {
-				synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-					if (!schemaUpdateEnabled && !admin.isTableEnabled(tableName)) {
-						admin.enableTable(tableName);
-					}
-
-					// update the table descriptor
-					tableDescriptor = admin.getTableDescriptor(tableName);
-
-					found = tableDescriptor.hasFamily(columnFamily.getBytes(StringUtils.UTF8_CHAR_SET));
+				if (!schemaUpdateEnabled && !admin.isTableEnabled(tableName)) {
+					admin.enableTable(tableName);
 				}
+
+				// update the table descriptor
+				tableDescriptor = admin.getTableDescriptor(tableName);
+
+				found = tableDescriptor.hasFamily(columnFamily.getBytes(StringUtils.UTF8_CHAR_SET));
 
 				cfMap.put(
 						columnFamily,
 						found);
+				System.err.println("exists: " + found);
 			}
 		}
 		catch (final IOException e) {
@@ -192,27 +181,42 @@ public class HBaseWriter implements
 			final TableName tableName,
 			final String columnFamilyName )
 			throws IOException {
-		LOGGER.debug("Creating column family: " + columnFamilyName);
+		LOGGER.warn("Creating column family: " + columnFamilyName);
 
 		final HColumnDescriptor cfDescriptor = new HColumnDescriptor(
 				columnFamilyName);
 
-		synchronized (BasicHBaseOperations.ADMIN_MUTEX) {
-			if (!schemaUpdateEnabled && !admin.isTableDisabled(tableName)) {
-				admin.disableTable(tableName);
-			}
+		if (!schemaUpdateEnabled && !admin.isTableDisabled(tableName)) {
+			admin.disableTable(tableName);
+		}
 
-			admin.addColumn(
-					tableName,
-					cfDescriptor);
-			cfMap.put(
-					columnFamilyName,
-					Boolean.TRUE);
+		// Try adding column family to the table descriptor instead
+		admin.addColumn(
+				tableName,
+				cfDescriptor);
 
-			// Enable table once done
-			if (!schemaUpdateEnabled) {
-				admin.enableTable(tableName);
+		if (schemaUpdateEnabled) {
+			do {
+				try {
+					System.err.println("sleeping");
+					Thread.sleep(SLEEP_INTERVAL_FOR_CF_VERIFY);
+
+				}
+				catch (final InterruptedException e) {
+					LOGGER.warn(
+							"Sleeping while column family added interrupted",
+							e);
+				}
 			}
+			while (!columnFamilyExists(columnFamilyName));
+		}
+		cfMap.put(
+				columnFamilyName,
+				Boolean.TRUE);
+
+		// Enable table once done
+		if (!schemaUpdateEnabled) {
+			admin.enableTable(tableName);
 		}
 	}
 

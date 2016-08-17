@@ -119,7 +119,7 @@ public class GeoWaveBasicIT
 	private static final String TEST_BASE_EXPORT_FILE_NAME = "basicIT-export.avro";
 
 	@GeoWaveTestStore({
-		GeoWaveStoreType.ACCUMULO,
+//		GeoWaveStoreType.ACCUMULO,
 		GeoWaveStoreType.HBASE
 	})
 	protected DataStorePluginOptions dataStore;
@@ -139,7 +139,7 @@ public class GeoWaveBasicIT
 		testIngestAndQuerySpatialPointsAndLines(4);
 	}
 
-	@Test
+//	@Test
 	public void testSingleThreadedIngestAndQuerySpatialPointsAndLines() {
 		testIngestAndQuerySpatialPointsAndLines(1);
 	}
@@ -572,7 +572,7 @@ public class GeoWaveBasicIT
 		}
 	}
 
-	@Test
+//	@Test
 	public void testIngestAndQuerySpatialTemporalPointsAndLines() {
 		// ingest both lines and points
 		TestUtils.testLocalIngest(
@@ -670,7 +670,7 @@ public class GeoWaveBasicIT
 		TestUtils.deleteAll(dataStore);
 	}
 
-	@Test
+//	@Test
 	public void testFeatureSerialization()
 			throws IOException {
 
