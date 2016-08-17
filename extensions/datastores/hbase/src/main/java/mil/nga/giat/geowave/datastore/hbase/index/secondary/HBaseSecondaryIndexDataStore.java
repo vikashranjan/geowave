@@ -69,8 +69,11 @@ public class HBaseSecondaryIndexDataStore extends
 		try {
 			writer = hbaseOperations.createWriter(
 					TABLE_PREFIX + secondaryIndexName,
-					StringUtils.stringFromBinary(secondaryIndex.getId().getBytes()),
-					true);
+					new String[] {
+						StringUtils.stringFromBinary(secondaryIndex.getId().getBytes())
+					},
+					true,
+					secondaryIndex.getIndexStrategy().getNaturalSplits());
 		}
 		catch (final IOException e) {
 			LOGGER.error(

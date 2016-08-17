@@ -387,7 +387,7 @@ public class HBaseDataStore extends
 			throws Exception {
 		return operations.createWriter(
 				indexTableName,
-				"",
+				new String[] {},
 				false);
 	}
 
@@ -400,7 +400,7 @@ public class HBaseDataStore extends
 		try {
 			deleter = operations.createWriter(
 					tableName,
-					columnFamily,
+					new String[] {},
 					false);
 			final Scan scanner = new Scan();
 			try (ResultScanner results = operations.getScannedResults(
@@ -507,7 +507,9 @@ public class HBaseDataStore extends
 
 			altIdxWriter = operations.createWriter(
 					altIdxTableName,
-					adapter.getAdapterId().getString(),
+					new String[] {
+						adapter.getAdapterId().getString()
+					},
 					hbaseOptions.isCreateTable());
 		}
 

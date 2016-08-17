@@ -1,6 +1,7 @@
 package mil.nga.giat.geowave.datastore.hbase.operations;
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -17,6 +18,7 @@ import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.security.visibility.Authorizations;
 import org.apache.log4j.Logger;
 
+import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.store.DataStoreOperations;
 import mil.nga.giat.geowave.datastore.hbase.io.HBaseWriter;
 import mil.nga.giat.geowave.datastore.hbase.operations.config.HBaseRequiredOptions;
@@ -98,16 +100,6 @@ public class BasicHBaseOperations implements
 		return mutator;
 	}
 
-	public HBaseWriter createWriter(
-			final String tableName,
-			final String columnFamily )
-			throws IOException {
-		return createWriter(
-				tableName,
-				columnFamily,
-				true);
-	}
-
 	private TableName getTableName(
 			final String tableName ) {
 		return TableName.valueOf(tableName);
@@ -115,16 +107,30 @@ public class BasicHBaseOperations implements
 
 	public HBaseWriter createWriter(
 			final String sTableName,
-			final String columnFamily,
+			final String[] columnFamilies,
 			final boolean createTable )
+			throws IOException {
+		return createWriter(
+				sTableName,
+				columnFamilies,
+				createTable,
+				null);
+	}
+
+	public HBaseWriter createWriter(
+			final String sTableName,
+			final String[] columnFamilies,
+			final boolean createTable,
+			final Set<ByteArrayId> splits )
 			throws IOException {
 		final String qTableName = getQualifiedTableName(sTableName);
 		final BufferedMutator mutator = getBufferedMutator(qTableName);
 
 		if (createTable) {
 			createTable(
-					columnFamily,
-					getTableName(qTableName));
+					columnFamilies,
+					getTableName(qTableName),
+					splits);
 		}
 
 		return new HBaseWriter(
@@ -133,42 +139,34 @@ public class BasicHBaseOperations implements
 				mutator);
 	}
 
-	/*
-	 * private Table getTable( final boolean create, TableName name ) throws IOException { return getTable( create,
-	 * DEFAULT_COLUMN_FAMILY, name); }
-	 */
-
-	private Table getTable(
-			final boolean create,
-			final String columnFamily,
-			final String tableName )
-			throws IOException {
-		final TableName name = TableName.valueOf(tableName);
-
-		synchronized (ADMIN_MUTEX) {
-			if (create) {
-				createTable(
-						columnFamily,
-						name);
-			}
-		}
-
-		return conn.getTable(name);
-	}
-
 	private void createTable(
-			final String columnFamily,
-			final TableName name )
+			final String[] columnFamilies,
+			final TableName name,
+			final Set<ByteArrayId> splits )
 			throws IOException {
 		synchronized (ADMIN_MUTEX) {
 			if (!conn.getAdmin().isTableAvailable(
 					name)) {
 				final HTableDescriptor desc = new HTableDescriptor(
 						name);
-				desc.addFamily(new HColumnDescriptor(
-						columnFamily));
-				conn.getAdmin().createTable(
-						desc);
+				for (final String columnFamily : columnFamilies) {
+					desc.addFamily(new HColumnDescriptor(
+							columnFamily));
+				}
+				if ((splits != null) && !splits.isEmpty()) {
+					final byte[][] splitKeys = new byte[splits.size()][];
+					int i = 0;
+					for (final ByteArrayId split : splits) {
+						splitKeys[i++] = split.getBytes();
+					}
+					conn.getAdmin().createTable(
+							desc,
+							splitKeys);
+				}
+				else {
+					conn.getAdmin().createTable(
+							desc);
+				}
 			}
 		}
 	}

@@ -90,8 +90,11 @@ public class HBaseIndexWriter<T> extends
 			try {
 				writer = operations.createWriter(
 						StringUtils.stringFromBinary(index.getId().getBytes()),
-						adapter.getAdapterId().getString(),
-						options.isCreateTable());
+						new String[] {
+							adapter.getAdapterId().getString()
+						},
+						options.isCreateTable(),
+						index.getIndexStrategy().getNaturalSplits());
 			}
 			catch (final IOException e) {
 				LOGGER.error(
