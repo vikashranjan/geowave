@@ -27,7 +27,7 @@ public class BasicHBaseOperations implements
 		DataStoreOperations
 {
 	// (bytes) Default is 2M. Trying 32M here.
-	private static final long WRITE_BUFFER_SIZE = (32L * 1024L) & 1024L;
+	private static final long WRITE_BUFFER_SIZE = (32L * 1024L) * 1024L;
 
 	private final static Logger LOGGER = Logger.getLogger(BasicHBaseOperations.class);
 	private static final String DEFAULT_TABLE_NAMESPACE = "";
@@ -81,7 +81,8 @@ public class BasicHBaseOperations implements
 		final BufferedMutatorParams params = new BufferedMutatorParams(
 				TableName.valueOf(tableName));
 
-		params.writeBufferSize(WRITE_BUFFER_SIZE);
+		// Set write buffer?
+//		params.writeBufferSize(WRITE_BUFFER_SIZE);
 
 		params.listener(new ExceptionListener() {
 			@Override
