@@ -3,7 +3,6 @@ package mil.nga.giat.geowave.datastore.hbase.query;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -99,25 +98,21 @@ public abstract class HBaseFilteredIndexQuery extends
 			final AdapterStore adapterStore,
 			final Integer limit ) {
 		// KAM: Maybe all this validation is overkill for the standard case:
-		// try {
-		// if (!validateAdapters(operations)) {
-		// LOGGER.warn("Query contains no valid adapters.");
-		// return new CloseableIterator.Empty();
-		// }
-		// if
-		// (!operations.tableExists(StringUtils.stringFromBinary(index.getId().getBytes())))
-		// {
-		// LOGGER.warn("Table does not exist " +
-		// StringUtils.stringFromBinary(index.getId().getBytes()));
-		// return new CloseableIterator.Empty();
-		// }
-		// }
-		// catch (final IOException ex) {
-		// LOGGER.warn("Unabe to check if " +
-		// StringUtils.stringFromBinary(index.getId().getBytes()) +
-		// " table exists");
-		// return new CloseableIterator.Empty();
-		// }
+		try {
+			if (!validateAdapters(operations)) {
+				LOGGER.warn("Query contains no valid adapters.");
+				return new CloseableIterator.Empty();
+			}
+			if (!operations.tableExists(StringUtils.stringFromBinary(index.getId().getBytes()))) {
+				LOGGER.warn("Table does not exist " + StringUtils.stringFromBinary(index.getId().getBytes()));
+				return new CloseableIterator.Empty();
+			}
+		}
+		catch (final IOException ex) {
+			LOGGER.warn("Unabe to check if " + StringUtils.stringFromBinary(index.getId().getBytes()) + " table exists");
+			return new CloseableIterator.Empty();
+		}
+		
 		final String tableName = StringUtils.stringFromBinary(index.getId().getBytes());
 
 		final List<Filter> distributableFilters = getDistributableFilter();
@@ -264,6 +259,7 @@ public abstract class HBaseFilteredIndexQuery extends
 		// single multi-range scan)
 		scanner.setFilter(filterList);
 		scanner.setMaxVersions(1);
+		
 		return scanner;
 	}
 
