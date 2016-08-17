@@ -105,10 +105,10 @@ public class BBOXQuery extends
 							indexId),
 					new SpatialQuery(
 							geom));
-			
+
 			stopWatch.stop();
 			System.out.println("Ran BBOX query in " + stopWatch.toString());
-			
+
 			stopWatch.reset();
 			stopWatch.start();
 
@@ -121,7 +121,7 @@ public class BBOXQuery extends
 				}
 				count++;
 			}
-			
+
 			stopWatch.stop();
 			System.out.println("BBOX query results iteration took " + stopWatch.toString());
 		}
