@@ -109,10 +109,12 @@ public abstract class HBaseFilteredIndexQuery extends
 			}
 		}
 		catch (final IOException ex) {
-			LOGGER.warn("Unabe to check if " + StringUtils.stringFromBinary(index.getId().getBytes()) + " table exists");
+			LOGGER
+					.warn("Unabe to check if " + StringUtils.stringFromBinary(index.getId().getBytes())
+							+ " table exists");
 			return new CloseableIterator.Empty();
 		}
-		
+
 		final String tableName = StringUtils.stringFromBinary(index.getId().getBytes());
 
 		final List<Filter> distributableFilters = getDistributableFilter();
@@ -254,10 +256,10 @@ public abstract class HBaseFilteredIndexQuery extends
 		// Set the filter list for the scan and return the scan list (with the
 		// single multi-range scan)
 		scanner.setFilter(filterList);
-		
+
 		// Only return the most recent version
 		scanner.setMaxVersions(1);
-		
+
 		return scanner;
 	}
 

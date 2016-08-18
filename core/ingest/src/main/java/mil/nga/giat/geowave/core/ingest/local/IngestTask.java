@@ -20,9 +20,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An IngestTask is a thread which listens to items from a blocking queue, and writes those items to IndexWriter objects
- * obtained from LocalIngestRunData (where they are constructed but also cached from the DataStore object). Read items
- * until isTerminated == true.
+ * An IngestTask is a thread which listens to items from a blocking queue, and
+ * writes those items to IndexWriter objects obtained from LocalIngestRunData
+ * (where they are constructed but also cached from the DataStore object). Read
+ * items until isTerminated == true.
  */
 public class IngestTask implements
 		Runnable
@@ -56,7 +57,8 @@ public class IngestTask implements
 	}
 
 	/**
-	 * This function is called by the thread placing items on the blocking queue.
+	 * This function is called by the thread placing items on the blocking
+	 * queue.
 	 */
 	public void terminate() {
 		isTerminated = true;
@@ -81,7 +83,8 @@ public class IngestTask implements
 	}
 
 	/**
-	 * This function will continue to read from the BlockingQueue until isTerminated is true and the queue is empty.
+	 * This function will continue to read from the BlockingQueue until
+	 * isTerminated is true and the queue is empty.
 	 */
 	@SuppressWarnings({
 		"unchecked",
@@ -217,7 +220,7 @@ public class IngestTask implements
 		long hack = System.currentTimeMillis();
 		writer.write(geowaveData.getValue());
 		long durMs = System.currentTimeMillis() - hack;
-		
+
 		return durMs;
 	}
 }
