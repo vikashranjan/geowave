@@ -9,6 +9,7 @@ import mil.nga.giat.geowave.core.store.Writer;
 import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
 
 import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HRegionInfo;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
@@ -156,7 +157,7 @@ public class HBaseWriter implements
 				if (!schemaUpdateEnabled && !admin.isTableEnabled(tableName)) {
 					admin.enableTable(tableName);
 				}
-
+				
 				// update the table descriptor
 				tableDescriptor = admin.getTableDescriptor(tableName);
 
@@ -165,7 +166,8 @@ public class HBaseWriter implements
 				cfMap.put(
 						columnFamily,
 						found);
-				System.err.println("exists: " + found);
+				
+				System.err.println(tableName + ":" + columnFamily + " exists: " + found);
 			}
 		}
 		catch (final IOException e) {
@@ -194,22 +196,28 @@ public class HBaseWriter implements
 		admin.addColumn(
 				tableName,
 				cfDescriptor);
-
-		if (schemaUpdateEnabled) {
-			do {
-				try {
-					System.err.println("sleeping");
-					Thread.sleep(SLEEP_INTERVAL_FOR_CF_VERIFY);
-
-				}
-				catch (final InterruptedException e) {
-					LOGGER.warn(
-							"Sleeping while column family added interrupted",
-							e);
-				}
-			}
-			while (!columnFamilyExists(columnFamilyName));
+		
+		List<HRegionInfo> regions = admin.getTableRegions(tableName);
+		for (HRegionInfo hRegionInfo : regions) {
+			admin.flushRegion(hRegionInfo.getRegionName());
 		}
+
+//		if (schemaUpdateEnabled) {
+//			do {
+//				try {
+//					System.err.println("sleeping");
+//					Thread.sleep(SLEEP_INTERVAL_FOR_CF_VERIFY);
+//
+//				}
+//				catch (final InterruptedException e) {
+//					LOGGER.warn(
+//							"Sleeping while column family added interrupted",
+//							e);
+//				}
+//			}
+//			while (!columnFamilyExists(columnFamilyName));
+//		}
+
 		cfMap.put(
 				columnFamilyName,
 				Boolean.TRUE);
