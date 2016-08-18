@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
+import mil.nga.giat.geowave.core.index.StringUtils;
+import mil.nga.giat.geowave.core.store.Writer;
+import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
+
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
@@ -14,15 +18,10 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.RowMutations;
 import org.apache.log4j.Logger;
 
-import mil.nga.giat.geowave.core.index.StringUtils;
-import mil.nga.giat.geowave.core.store.Writer;
-import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
-
 /**
  * Functionality similar to <code> BatchWriterWrapper </code>
  *
- * This class directly writes to the HBase table instead of using any existing
- * Writer API provided by HBase.
+ * This class directly writes to the HBase table instead of using any existing Writer API provided by HBase.
  *
  */
 public class HBaseWriter implements
@@ -31,7 +30,7 @@ public class HBaseWriter implements
 	private final static Logger LOGGER = Logger.getLogger(HBaseWriter.class);
 	private final TableName tableName;
 	private final Admin admin;
-	private static final long SLEEP_INTERVAL_FOR_CF_VERIFY = 100L;
+	private static final long SLEEP_INTERVAL_FOR_CF_VERIFY = 1L;
 
 	private final HashMap<String, Boolean> cfMap;
 	private HTableDescriptor tableDescriptor = null;
@@ -166,7 +165,7 @@ public class HBaseWriter implements
 				cfMap.put(
 						columnFamily,
 						found);
-				System.err.println("exists: " +found);
+				System.err.println("exists: " + found);
 			}
 		}
 		catch (final IOException e) {
@@ -192,15 +191,10 @@ public class HBaseWriter implements
 		}
 
 		// Try adding column family to the table descriptor instead
-//		admin.addColumn(
-//				tableName,
-//				cfDescriptor);
-		
-		tableDescriptor = admin.getTableDescriptor(tableName);
-		tableDescriptor.addFamily(cfDescriptor);
-		
-		admin.modifyTable(tableName, tableDescriptor);
-		
+		admin.addColumn(
+				tableName,
+				cfDescriptor);
+
 		if (schemaUpdateEnabled) {
 			do {
 				try {
@@ -216,7 +210,6 @@ public class HBaseWriter implements
 			}
 			while (!columnFamilyExists(columnFamilyName));
 		}
-		
 		cfMap.put(
 				columnFamilyName,
 				Boolean.TRUE);
