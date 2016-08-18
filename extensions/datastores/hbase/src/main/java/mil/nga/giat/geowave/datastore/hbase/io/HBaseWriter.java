@@ -34,7 +34,7 @@ public class HBaseWriter implements
 	private final static Logger LOGGER = Logger.getLogger(HBaseWriter.class);
 	private final TableName tableName;
 	private final Admin admin;
-	private static final long SLEEP_INTERVAL_FOR_CF_VERIFY = 200L;
+	private static final long SLEEP_INTERVAL_FOR_CF_VERIFY = 100L;
 
 	private final HashMap<String, Boolean> cfMap;
 	private BufferedMutator mutator;
@@ -226,7 +226,6 @@ public class HBaseWriter implements
 			do {
 				try {
 					Thread.sleep(SLEEP_INTERVAL_FOR_CF_VERIFY);
-
 				}
 				catch (final InterruptedException e) {
 					LOGGER.warn(
@@ -234,7 +233,7 @@ public class HBaseWriter implements
 							e);
 				}
 			}
-			while (!columnFamilyExists(columnFamilyName));
+			while (admin.getAlterStatus(tableName).getFirst() > 0);
 		}
 		cfMap.put(
 				columnFamilyName,
