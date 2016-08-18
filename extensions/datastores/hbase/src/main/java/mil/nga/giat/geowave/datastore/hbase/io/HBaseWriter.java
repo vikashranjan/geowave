@@ -31,7 +31,7 @@ public class HBaseWriter implements
 	private final static Logger LOGGER = Logger.getLogger(HBaseWriter.class);
 	private final TableName tableName;
 	private final Admin admin;
-	private static final long SLEEP_INTERVAL_FOR_CF_VERIFY = 1L;
+	private static final long SLEEP_INTERVAL_FOR_CF_VERIFY = 100L;
 
 	private final HashMap<String, Boolean> cfMap;
 	private HTableDescriptor tableDescriptor = null;
@@ -199,6 +199,8 @@ public class HBaseWriter implements
 		tableDescriptor = admin.getTableDescriptor(tableName);
 		tableDescriptor.addFamily(cfDescriptor);
 		
+		admin.modifyTable(tableName, tableDescriptor);
+		
 		if (schemaUpdateEnabled) {
 			do {
 				try {
@@ -214,6 +216,7 @@ public class HBaseWriter implements
 			}
 			while (!columnFamilyExists(columnFamilyName));
 		}
+		
 		cfMap.put(
 				columnFamilyName,
 				Boolean.TRUE);
