@@ -197,6 +197,8 @@ public class HBaseWriter implements
 				tableName,
 				cfDescriptor);
 		
+		admin.flush(tableName);
+		
 		List<HRegionInfo> regions = admin.getTableRegions(tableName);
 		for (HRegionInfo hRegionInfo : regions) {
 			admin.flushRegion(hRegionInfo.getRegionName());
