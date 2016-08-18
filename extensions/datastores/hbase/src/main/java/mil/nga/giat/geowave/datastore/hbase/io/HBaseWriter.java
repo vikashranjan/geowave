@@ -191,9 +191,14 @@ public class HBaseWriter implements
 			admin.disableTable(tableName);
 		}
 
-		admin.addColumn(
-				tableName,
-				cfDescriptor);
+		// Try adding column family to the table descriptor instead
+//		admin.addColumn(
+//				tableName,
+//				cfDescriptor);
+		
+		tableDescriptor = admin.getTableDescriptor(tableName);
+		tableDescriptor.addFamily(cfDescriptor);
+		
 		if (schemaUpdateEnabled) {
 			do {
 				try {
