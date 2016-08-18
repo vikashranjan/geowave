@@ -57,7 +57,7 @@ public abstract class AbstractHBasePersistence<T extends Persistable> extends
 		if (cacheResult != null) {
 			return (T) cacheResult;
 		}
-		
+
 		final Scan scanner = getScanner(
 				primaryId,
 				secondaryId,
@@ -252,12 +252,13 @@ public abstract class AbstractHBasePersistence<T extends Persistable> extends
 				l.add(deleteMutations);
 
 			}
-			final HBaseWriter deleter = operations.createWriter(
+			try (final HBaseWriter deleter = operations.createWriter(
 					getTablename(),
 					METADATA_CFS,
-					false);
+					false)) {
 
-			deleter.delete(l);
+				deleter.delete(l);
+			}
 			return true;
 		}
 		catch (final IOException e) {

@@ -8,10 +8,10 @@ import mil.nga.giat.geowave.core.store.adapter.DataAdapter;
 import mil.nga.giat.geowave.core.store.data.PersistentDataset;
 import mil.nga.giat.geowave.core.store.data.PersistentValue;
 import mil.nga.giat.geowave.core.store.data.field.FieldReader;
+import mil.nga.giat.geowave.core.store.flatten.FlattenedFieldInfo;
+import mil.nga.giat.geowave.core.store.flatten.FlattenedUnreadData;
 import mil.nga.giat.geowave.core.store.index.CommonIndexModel;
 import mil.nga.giat.geowave.core.store.index.CommonIndexValue;
-import mil.nga.giat.geowave.core.store.memory.FlattenedFieldInfo;
-import mil.nga.giat.geowave.core.store.memory.FlattenedUnreadData;
 
 /**
  * Consults adapter to lookup field readers based on bitmasked fieldIds when

@@ -13,9 +13,9 @@ import mil.nga.giat.geowave.core.index.ByteArrayRange;
 import mil.nga.giat.geowave.core.index.StringUtils;
 import mil.nga.giat.geowave.core.store.CloseableIterator;
 import mil.nga.giat.geowave.core.store.CloseableIteratorWrapper;
-import mil.nga.giat.geowave.core.store.ScanCallback;
 import mil.nga.giat.geowave.core.store.adapter.AdapterStore;
 import mil.nga.giat.geowave.core.store.adapter.DataAdapter;
+import mil.nga.giat.geowave.core.store.callback.ScanCallback;
 import mil.nga.giat.geowave.core.store.dimension.NumericDimensionField;
 import mil.nga.giat.geowave.core.store.filter.QueryFilter;
 import mil.nga.giat.geowave.core.store.index.CommonIndexValue;
@@ -136,8 +136,6 @@ public abstract class HBaseFilteredIndexQuery extends
 					multiScanner,
 					tableName,
 					authorizations);
-			
-			LOGGER.error("KAM *** HBase atomic DB query took " + (System.currentTimeMillis()-hack) + " ms.");
 
 			if (rs != null) {
 				results.add(rs);

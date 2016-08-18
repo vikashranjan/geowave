@@ -16,8 +16,8 @@ import org.apache.hadoop.io.Text;
 
 import mil.nga.giat.geowave.core.store.data.CommonIndexedPersistenceEncoding;
 import mil.nga.giat.geowave.core.store.data.PersistentDataset;
+import mil.nga.giat.geowave.core.store.flatten.FlattenedUnreadData;
 import mil.nga.giat.geowave.core.store.index.CommonIndexValue;
-import mil.nga.giat.geowave.core.store.memory.FlattenedUnreadData;
 import mil.nga.giat.geowave.datastore.accumulo.encoding.AccumuloUnreadDataList;
 
 public class WholeRowAggregationIterator extends

@@ -14,9 +14,9 @@ import org.apache.hadoop.io.Text;
 import org.apache.log4j.Logger;
 
 import mil.nga.giat.geowave.core.store.data.PersistentDataset;
+import mil.nga.giat.geowave.core.store.flatten.FlattenedFieldInfo;
+import mil.nga.giat.geowave.core.store.flatten.FlattenedUnreadData;
 import mil.nga.giat.geowave.core.store.index.CommonIndexValue;
-import mil.nga.giat.geowave.core.store.memory.FlattenedFieldInfo;
-import mil.nga.giat.geowave.core.store.memory.FlattenedUnreadData;
 import mil.nga.giat.geowave.datastore.accumulo.AccumuloRowId;
 import mil.nga.giat.geowave.datastore.accumulo.encoding.AccumuloUnreadDataList;
 

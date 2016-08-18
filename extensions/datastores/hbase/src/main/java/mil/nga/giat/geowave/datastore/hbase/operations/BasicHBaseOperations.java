@@ -74,27 +74,6 @@ public class BasicHBaseOperations implements
 				options.getGeowaveNamespace());
 	}
 
-	public BufferedMutator getBufferedMutator(
-			final String tableName )
-			throws IOException {
-		final BufferedMutatorParams params = new BufferedMutatorParams(
-				TableName.valueOf(tableName));
-
-		params.listener(new ExceptionListener() {
-			@Override
-			public void onException(
-					final RetriesExhaustedWithDetailsException exception,
-					final BufferedMutator mutator )
-					throws RetriesExhaustedWithDetailsException {
-				LOGGER.error(exception);
-			}
-		});
-
-		final BufferedMutator mutator = conn.getBufferedMutator(params);
-
-		return mutator;
-	}
-
 	private TableName getTableName(
 			final String tableName ) {
 		return TableName.valueOf(tableName);
@@ -119,7 +98,6 @@ public class BasicHBaseOperations implements
 			final Set<ByteArrayId> splits )
 			throws IOException {
 		final String qTableName = getQualifiedTableName(sTableName);
-		final BufferedMutator mutator = getBufferedMutator(qTableName);
 
 		if (createTable) {
 			createTable(
@@ -130,8 +108,7 @@ public class BasicHBaseOperations implements
 
 		return new HBaseWriter(
 				conn.getAdmin(),
-				qTableName,
-				mutator);
+				qTableName);
 	}
 
 	private void createTable(
@@ -241,7 +218,7 @@ public class BasicHBaseOperations implements
 		final ResultScanner results = table.getScanner(scanner);
 
 		table.close();
-		
+
 		return results;
 	}
 
