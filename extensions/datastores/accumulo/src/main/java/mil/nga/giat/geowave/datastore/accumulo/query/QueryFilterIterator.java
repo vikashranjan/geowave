@@ -26,12 +26,12 @@ import mil.nga.giat.geowave.core.store.data.field.FieldReader;
 import mil.nga.giat.geowave.core.store.dimension.NumericDimensionField;
 import mil.nga.giat.geowave.core.store.entities.GeowaveRowId;
 import mil.nga.giat.geowave.core.store.filter.DistributableQueryFilter;
+import mil.nga.giat.geowave.core.store.flatten.FlattenedDataSet;
+import mil.nga.giat.geowave.core.store.flatten.FlattenedFieldInfo;
+import mil.nga.giat.geowave.core.store.flatten.FlattenedUnreadData;
 import mil.nga.giat.geowave.core.store.index.CommonIndexModel;
 import mil.nga.giat.geowave.core.store.index.CommonIndexValue;
-import mil.nga.giat.geowave.core.store.memory.FlattenedFieldInfo;
-import mil.nga.giat.geowave.core.store.memory.FlattenedUnreadData;
-import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
-import mil.nga.giat.geowave.core.store.memory.FlattenedDataSet;
+import mil.nga.giat.geowave.core.store.util.DataStoreUtils;
 import mil.nga.giat.geowave.datastore.accumulo.encoding.AccumuloCommonIndexedPersistenceEncoding;
 import mil.nga.giat.geowave.datastore.accumulo.util.AccumuloUtils;
 

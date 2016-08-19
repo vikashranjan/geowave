@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import mil.nga.giat.geowave.core.index.StringUtils;
-import mil.nga.giat.geowave.core.store.Writer;
+import mil.nga.giat.geowave.core.store.base.Writer;
 import mil.nga.giat.geowave.datastore.hbase.operations.BasicHBaseOperations;
 
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -233,7 +233,8 @@ public class HBaseWriter implements
 							e);
 				}
 			}
-			while (admin.getAlterStatus(tableName).getFirst() > 0);
+			while (admin.getAlterStatus(
+					tableName).getFirst() > 0);
 		}
 		cfMap.put(
 				columnFamilyName,

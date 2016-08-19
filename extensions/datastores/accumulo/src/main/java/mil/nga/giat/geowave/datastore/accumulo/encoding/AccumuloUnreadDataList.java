@@ -3,8 +3,8 @@ package mil.nga.giat.geowave.datastore.accumulo.encoding;
 import java.util.ArrayList;
 import java.util.List;
 
-import mil.nga.giat.geowave.core.store.memory.FlattenedFieldInfo;
-import mil.nga.giat.geowave.core.store.memory.FlattenedUnreadData;
+import mil.nga.giat.geowave.core.store.flatten.FlattenedFieldInfo;
+import mil.nga.giat.geowave.core.store.flatten.FlattenedUnreadData;
 
 public class AccumuloUnreadDataList implements
 		FlattenedUnreadData

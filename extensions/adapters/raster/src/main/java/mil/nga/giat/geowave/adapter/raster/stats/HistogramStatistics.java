@@ -32,8 +32,8 @@ import mil.nga.giat.geowave.adapter.raster.Resolution;
 import mil.nga.giat.geowave.core.index.ByteArrayId;
 import mil.nga.giat.geowave.core.index.Mergeable;
 import mil.nga.giat.geowave.core.index.PersistenceUtils;
-import mil.nga.giat.geowave.core.store.DataStoreEntryInfo;
 import mil.nga.giat.geowave.core.store.adapter.statistics.AbstractDataStatistics;
+import mil.nga.giat.geowave.core.store.base.DataStoreEntryInfo;
 
 public class HistogramStatistics extends
 		AbstractDataStatistics<GridCoverage>
